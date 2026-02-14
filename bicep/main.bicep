@@ -35,7 +35,7 @@ param vaultwardenImageTag string = 'latest'
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 var namingPrefix = '${resourceGroupName}'
-var storageAccountName = '${replace(resourceGroupName, '-', '')}sa'
+var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}sa')
 var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'
 
 // Resource Group
@@ -66,7 +66,9 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
         delegations: [
           {
             name: 'MicrosoftAppEnvironments'
-            serviceName: 'Microsoft.App/environments'
+            properties: {
+              serviceName: 'Microsoft.App/environments'
+            }
           }
         ]
       }
