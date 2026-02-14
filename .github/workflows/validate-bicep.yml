@@ -1,0 +1,36 @@
+name: Validate Bicep Templates
+
+on:
+  pull_request:
+    paths:
+      - 'bicep/**'
+      - 'validate.sh'
+      - '.github/workflows/validate-bicep.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - 'validate.sh'
+      - '.github/workflows/validate-bicep.yml'
+
+jobs:
+  validate:
+    name: Validate Bicep Templates
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Run validation script
+        run: |
+          chmod +x validate.sh
+          ./validate.sh
