@@ -109,7 +109,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Deploy Container App Environment with Azure Files storage
+// Deploy Container App Environment
 module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
@@ -120,14 +120,19 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
     internal: false
     zoneRedundant: false
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    storages: [
-      {
-        kind: 'SMB'
-        shareName: 'vaultwarden-data'
-        storageAccountName: storageAccountName
-        accessMode: 'ReadWrite'
-      }
-    ]
+  }
+}
+
+// Deploy storage for Container App Environment
+resource containerAppEnvStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+  name: '${containerAppEnv.outputs.name}/vaultwarden-storage'
+  properties: {
+    azureFile: {
+      accountName: storageAccountName
+      accountKey: storageAccountResource.listKeys().keys[0].value
+      shareName: 'vaultwarden-data'
+      accessMode: 'ReadWrite'
+    }
   }
   dependsOn: [
     storageAccount
@@ -241,10 +246,8 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
     ingressAllowInsecure: false
     trafficWeight: 100
     trafficLatestRevision: true
-    scaleSettings: {
-      minReplicas: 1
-      maxReplicas: 3
-    }
+    scaleMinReplicas: 1
+    scaleMaxReplicas: 3
   }
 }
 
