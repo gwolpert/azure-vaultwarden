@@ -190,7 +190,6 @@ check_file_structure() {
     local optional_files=(
         "deploy.sh"
         ".gitignore"
-        "bicep/main.parameters.json"
     )
     
     for file in "${optional_files[@]}"; do

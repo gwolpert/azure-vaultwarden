@@ -20,9 +20,10 @@
 │  │  │  │  │                                    │     │   │  │ │
 │  │  │  │  │  ┌──────────────────────────┐    │     │   │  │ │
 │  │  │  │  │  │  Vaultwarden Container   │    │     │   │  │ │
-│  │  │  │  │  │  - Image: vaultwarden    │    │     │   │  │ │
+│  │  │  │  │  │  - Image: vaultwarden    │◄───┼─────┼───┼──┼─┐
 │  │  │  │  │  │  - Port: 80              │    │     │   │  │ │
 │  │  │  │  │  │  - Volume: /data         │    │     │   │  │ │
+│  │  │  │  │  │  - Managed Identity      │    │     │   │  │ │
 │  │  │  │  │  └──────────┬───────────────┘    │     │   │  │ │
 │  │  │  │  │             │                     │     │   │  │ │
 │  │  │  │  │             │ Mounts              │     │   │  │ │
@@ -46,6 +47,13 @@
 │  │  └────────────────────────────────────────────────────┘    │ │
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
+│  │  │        Azure Key Vault                             │    │ │
+│  │  │        - Admin token secret                        │────┼─┘
+│  │  │        - RBAC enabled                              │      
+│  │  │        - System-assigned identity access           │      
+│  │  └────────────────────────────────────────────────────┘      
+│  │                                                              │ │
+│  │  ┌────────────────────────────────────────────────────┐    │ │
 │  │  │        Log Analytics Workspace                     │    │ │
 │  │  │        - Container logs                            │    │ │
 │  │  │        - Metrics                                   │    │ │
@@ -67,9 +75,10 @@
 
 1. **User Access**: Users access Vaultwarden via HTTPS through the Container App's public endpoint
 2. **Container App**: Runs the Vaultwarden container with automatic HTTPS termination
-3. **Data Storage**: Container mounts Azure File Share for persistent data storage
-4. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
-5. **Networking**: Container App runs in a dedicated subnet within the Virtual Network
+3. **Secrets Management**: Container App uses its system-assigned managed identity to retrieve admin token from Key Vault
+4. **Data Storage**: Container mounts Azure File Share for persistent data storage
+5. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
+6. **Networking**: Container App runs in a dedicated subnet within the Virtual Network
 
 ## Security Features
 
@@ -91,8 +100,10 @@
 ### Application Security
 - Admin panel disabled by default
 - User signups disabled by default
-- Secrets stored in Container App secrets (not environment variables)
+- Secrets stored in Azure Key Vault (not in configuration)
+- Container App uses managed identity for Key Vault access
 - System-assigned managed identity for Azure resource access
+- RBAC-based access control for Key Vault
 
 ## Scaling and High Availability
 

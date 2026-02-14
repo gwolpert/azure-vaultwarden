@@ -61,7 +61,6 @@ OPTIONS:
     -l, --location LOCATION       Azure region (default: eastus)
     -e, --environment ENV         Environment name: dev, staging, prod (default: dev)
     -n, --name NAME              Deployment name (default: vaultwarden-deployment)
-    -p, --parameters FILE        Path to parameters file (default: bicep/main.parameters.json)
     -h, --help                   Display this help message
 
 EXAMPLES:
@@ -71,14 +70,10 @@ EXAMPLES:
     # Deploy to West Europe in production
     ./deploy.sh --location westeurope --environment prod
 
-    # Deploy with custom parameters file
-    ./deploy.sh --parameters custom-params.json
-
 EOF
 }
 
 # Parse command line arguments
-PARAMS_FILE="bicep/main.parameters.json"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -92,10 +87,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -n|--name)
             DEPLOYMENT_NAME="$2"
-            shift 2
-            ;;
-        -p|--parameters)
-            PARAMS_FILE="$2"
             shift 2
             ;;
         -h|--help)
@@ -116,7 +107,6 @@ main() {
     print_info "Location: $LOCATION"
     print_info "Environment: $ENVIRONMENT"
     print_info "Deployment Name: $DEPLOYMENT_NAME"
-    print_info "Parameters File: $PARAMS_FILE"
     echo ""
     
     # Check prerequisites
@@ -146,7 +136,8 @@ main() {
         --name "$DEPLOYMENT_NAME" \
         --location "$LOCATION" \
         --template-file bicep/main.bicep \
-        --parameters "$PARAMS_FILE" \
+        --parameters resourceGroupName="rg-vaultwarden-$ENVIRONMENT" \
+        --parameters location="$LOCATION" \
         --parameters environmentName="$ENVIRONMENT"; then
         
         print_info "Deployment completed successfully!"

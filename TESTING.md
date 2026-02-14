@@ -19,23 +19,22 @@ az deployment sub what-if \
   --name vaultwarden-deployment \
   --location eastus \
   --template-file bicep/main.bicep \
-  --parameters bicep/main.parameters.json
+  --parameters resourceGroupName="rg-vaultwarden-dev" \
+  --parameters location="eastus" \
+  --parameters environmentName="dev"
 ```
 
 Expected: Shows all resources that will be created without actually deploying
 
 ### 2. Parameters Validation
 
-Check that all required parameters are set:
-```bash
-cat bicep/main.parameters.json | jq '.parameters'
-```
-
-Verify:
-- [ ] Resource group name is appropriate
+For GitHub Environments deployment, verify environment variables are configured:
+- [ ] Resource group name is set in GitHub Environment
 - [ ] Location is a valid Azure region
 - [ ] Environment name is dev/staging/prod
 - [ ] Image tag is specified
+
+For manual deployment, you can validate by running a what-if first (see above).
 
 ## Post-Deployment Verification
 

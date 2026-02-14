@@ -189,14 +189,21 @@ Each GitHub Environment (dev, staging, prod) should have its own configuration:
 
 To use a custom domain:
 
-1. Update the `domainName` parameter in `main.parameters.json`:
-   ```json
-   "domainName": {
-     "value": "https://vault.example.com"
-   }
+1. Update the `DOMAIN_NAME` variable in your GitHub Environment to your custom domain (e.g., `https://vault.example.com`)
+
+2. Redeploy via GitHub Actions, or manually:
+   ```bash
+   az deployment sub create \
+     --name vaultwarden-deployment \
+     --location eastus \
+     --template-file bicep/main.bicep \
+     --parameters domainName="https://vault.example.com" \
+     --parameters resourceGroupName="rg-vaultwarden-dev" \
+     --parameters location="eastus" \
+     --parameters environmentName="dev"
    ```
 
-2. After deployment, get the Container App's FQDN:
+3. After deployment, get the Container App's FQDN:
    ```bash
    az containerapp show \
      --name vw-dev-app \
@@ -205,9 +212,9 @@ To use a custom domain:
      --output tsv
    ```
 
-3. Create a CNAME record in your DNS pointing to this FQDN
+4. Create a CNAME record in your DNS pointing to this FQDN
 
-4. Add custom domain to Container App:
+5. Add custom domain to Container App:
    ```bash
    az containerapp hostname add \
      --hostname vault.example.com \

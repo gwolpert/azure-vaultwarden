@@ -123,6 +123,38 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
+// Deploy Key Vault for secrets management
+module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
+  scope: rg
+  name: 'keyvault-deployment'
+  params: {
+    name: '${namingPrefix}-kv-${uniqueSuffix}'
+    location: location
+    sku: 'standard'
+    enableRbacAuthorization: true
+    enableVaultForDeployment: false
+    enableVaultForDiskEncryption: false
+    enableVaultForTemplateDeployment: true
+    publicNetworkAccess: 'Enabled'
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+  }
+}
+
+// Store admin token in Key Vault (only if provided)
+resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (adminToken != '') {
+  scope: rg
+  name: '${keyVault.outputs.name}/vaultwarden-admin-token'
+  properties: {
+    value: adminToken
+  }
+  dependsOn: [
+    keyVault
+  ]
+}
+
 // Deploy Container App for Vaultwarden
 module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   scope: rg
@@ -139,7 +171,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
           cpu: json('0.5')
           memory: '1Gi'
         }
-        env: [
+        env: concat([
           {
             name: 'DOMAIN'
             value: domainName != '' ? domainName : 'https://${namingPrefix}-app.${containerAppEnv.outputs.defaultDomain}'
@@ -152,11 +184,12 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
             name: 'ENABLE_DB_WAL'
             value: 'true'
           }
+        ], adminToken != '' ? [
           {
             name: 'ADMIN_TOKEN'
             secretRef: 'admin-token'
           }
-        ]
+        ] : [])
         volumeMounts: [
           {
             volumeName: 'vaultwarden-data'
@@ -173,11 +206,17 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
       }
     ]
     secrets: {
-      secureList: [
+      secureList: adminToken != '' ? [
         {
           name: 'admin-token'
-          value: adminToken != '' ? adminToken : 'disabled'
+          keyVaultUrl: '${keyVault.outputs.uri}secrets/vaultwarden-admin-token'
+          identity: 'system'
         }
+        {
+          name: 'storage-account-key'
+          value: storageAccountResource.listKeys().keys[0].value
+        }
+      ] : [
         {
           name: 'storage-account-key'
           value: storageAccountResource.listKeys().keys[0].value
@@ -215,6 +254,21 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   }
   dependsOn: [
     storageAccount
+    keyVault
+  ]
+}
+
+// Grant Container App managed identity access to Key Vault secrets
+resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (adminToken != '') {
+  scope: keyVault
+  name: guid(keyVault.outputs.resourceId, containerApp.outputs.systemAssignedMIPrincipalId, 'Key Vault Secrets User')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: containerApp.outputs.systemAssignedMIPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [
+    containerApp
   ]
 }
 
@@ -224,3 +278,4 @@ output vaultwardenUrl string = 'https://${containerApp.outputs.fqdn}'
 output storageAccountName string = storageAccountName
 output containerAppName string = containerApp.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
+output keyVaultName string = keyVault.outputs.name
