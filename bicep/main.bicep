@@ -109,7 +109,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Deploy Container App Environment with Azure Files storage
+// Deploy Container App Environment
 module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
@@ -120,18 +120,21 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
     internal: false
     zoneRedundant: false
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    storages: [
-      {
-        kind: 'SMB'
-        shareName: 'vaultwarden-data'
-        storageAccountName: storageAccountName
-        accessMode: 'ReadWrite'
-      }
-    ]
   }
-  dependsOn: [
-    storageAccount
-  ]
+}
+
+// Deploy storage for Container App Environment
+module containerAppEnvStorage 'managed-environment-storage.bicep' = {
+  scope: rg
+  name: 'containerapp-env-storage-deployment'
+  params: {
+    managedEnvironmentName: containerAppEnv.outputs.name
+    storageName: 'vaultwarden-storage'
+    storageAccountName: storageAccountName
+    storageAccountKey: storageAccountResource.listKeys().keys[0].value
+    shareName: 'vaultwarden-data'
+    accessMode: 'ReadWrite'
+  }
 }
 
 // Deploy Key Vault for secrets management
@@ -241,11 +244,12 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
     ingressAllowInsecure: false
     trafficWeight: 100
     trafficLatestRevision: true
-    scaleSettings: {
-      minReplicas: 1
-      maxReplicas: 3
-    }
+    scaleMinReplicas: 1
+    scaleMaxReplicas: 3
   }
+  dependsOn: [
+    containerAppEnvStorage
+  ]
 }
 
 // Grant Container App managed identity access to Key Vault secrets
