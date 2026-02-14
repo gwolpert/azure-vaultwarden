@@ -6,7 +6,7 @@ targetScope = 'subscription'
 
 // Parameters
 @description('The name of the resource group')
-param resourceGroupName string = 'rg-vaultwarden'
+param resourceGroupName string = 'vaultwarden-dev'
 
 @description('The Azure region where resources will be deployed')
 param location string = 'eastus'
@@ -33,13 +33,14 @@ param signupsAllowed bool = false
 param vaultwardenImageTag string = 'latest'
 
 // Variables
-var uniqueSuffix = uniqueString(subscription().subscriptionId, resourceGroupName, location)
-var namingPrefix = 'vw-${environmentName}'
-var storageAccountName = 'vw${environmentName}st${uniqueSuffix}'
+var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
+var namingPrefix = '${resourceGroupName}'
+var storageAccountName = '${replace(resourceGroupName, '-', '')}sa'
+var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-  name: resourceGroupName
+  name: resourceGroupNameWithSuffix
   location: location
   tags: {
     Application: 'Vaultwarden'
@@ -62,6 +63,12 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
       {
         name: 'container-apps-subnet'
         addressPrefix: '10.0.0.0/23'
+        delegations: [
+          {
+            name: 'MicrosoftAppEnvironments'
+            serviceName: 'Microsoft.App/environments'
+          }
+        ]
       }
     ]
   }
@@ -142,7 +149,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   scope: rg
   name: 'keyvault-deployment'
   params: {
-    name: 'kv${environmentName}${uniqueSuffix}'
+    name: keyVaultName
     location: location
     sku: 'standard'
     enableRbacAuthorization: true
