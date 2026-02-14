@@ -134,7 +134,7 @@ For each environment, add the following **Variables**:
 
 | Variable Name | Description | Example Value |
 |--------------|-------------|---------------|
-| `RESOURCE_GROUP_NAME` | Resource group name | `rg-vaultwarden-dev` |
+| `RESOURCE_GROUP_NAME` | Resource group name | `vaultwarden-dev` |
 | `AZURE_LOCATION` | Azure region | `eastus` |
 | `ENVIRONMENT_NAME` | Environment identifier | `dev` |
 | `DOMAIN_NAME` | Custom domain (optional) | `` (empty for auto-generated) |
@@ -145,7 +145,7 @@ For each environment, add the following **Variables**:
 
 | Variable Name | Value |
 |--------------|-------|
-| `RESOURCE_GROUP_NAME` | `rg-vaultwarden-staging` |
+| `RESOURCE_GROUP_NAME` | `vaultwarden-staging` |
 | `AZURE_LOCATION` | `eastus` |
 | `ENVIRONMENT_NAME` | `staging` |
 | `DOMAIN_NAME` | `https://vault-staging.yourdomain.com` |
@@ -156,7 +156,7 @@ For each environment, add the following **Variables**:
 
 | Variable Name | Value |
 |--------------|-------|
-| `RESOURCE_GROUP_NAME` | `rg-vaultwarden-prod` |
+| `RESOURCE_GROUP_NAME` | `vaultwarden-prod` |
 | `AZURE_LOCATION` | `eastus` |
 | `ENVIRONMENT_NAME` | `prod` |
 | `DOMAIN_NAME` | `https://vault.yourdomain.com` |
@@ -285,7 +285,7 @@ ADMIN_TOKEN: <strong-secure-random-token-from-password-manager>
 
 **Variables:**
 ```
-RESOURCE_GROUP_NAME: rg-vaultwarden-prod
+RESOURCE_GROUP_NAME: vaultwarden-prod
 AZURE_LOCATION: eastus
 ENVIRONMENT_NAME: prod
 DOMAIN_NAME: https://vault.example.com

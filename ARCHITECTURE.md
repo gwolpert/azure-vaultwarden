@@ -178,7 +178,7 @@
 #### Recent Container Logs
 ```kql
 ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "vw-dev-app"
+| where ContainerAppName_s == "vaultwarden-dev-app"
 | order by TimeGenerated desc
 | take 100
 ```
@@ -186,7 +186,7 @@ ContainerAppConsoleLogs_CL
 #### Error Logs
 ```kql
 ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "vw-dev-app"
+| where ContainerAppName_s == "vaultwarden-dev-app"
 | where Log_s contains "ERROR" or Log_s contains "error"
 | order by TimeGenerated desc
 ```
@@ -194,7 +194,7 @@ ContainerAppConsoleLogs_CL
 #### HTTP Request Stats
 ```kql
 ContainerAppSystemLogs_CL
-| where ContainerAppName_s == "vw-dev-app"
+| where ContainerAppName_s == "vaultwarden-dev-app"
 | summarize count() by ResultCode_s
 ```
 
