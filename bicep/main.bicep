@@ -49,7 +49,7 @@ var storageAccountNameBase = toLower(replace(resourceGroupName, '-', ''))
 var storageAccountName = '${storageAccountNameBase}st'
 
 // Assert that storage account name is valid (3-24 characters)
-assert storageAccountNameValid = length(storageAccountName) >= 3 && length(storageAccountName) <= 24
+assert storageAccountNameWithinLimits = length(storageAccountName) >= 3 && length(storageAccountName) <= 24
 
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
@@ -122,7 +122,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   scope: rg
-  #disable-next-line BCP334 // Storage account name is validated by assert above
+  #disable-next-line BCP334 // The assert above ensures the storage account name meets Azure's 3-24 character requirement
   name: storageAccountName
   dependsOn: [
     storageAccount
