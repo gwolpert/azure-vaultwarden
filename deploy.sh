@@ -87,17 +87,10 @@ check_prerequisites() {
         print_warning "If you don't have User Access Administrator role, the deployment will fail."
         print_warning ""
         print_warning "To grant the required role, an administrator can run:"
-        if [[ "$CURRENT_USER_TYPE" == "user" ]]; then
-            echo -e "${YELLOW}  az role assignment create \\${NC}"
-            echo -e "${YELLOW}    --assignee \"$ASSIGNEE_ID\" \\${NC}"
-            echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
-            echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
-        else
-            echo -e "${YELLOW}  az role assignment create \\${NC}"
-            echo -e "${YELLOW}    --assignee \"$ASSIGNEE_ID\" \\${NC}"
-            echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
-            echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
-        fi
+        echo -e "${YELLOW}  az role assignment create \\${NC}"
+        echo -e "${YELLOW}    --assignee \"$ASSIGNEE_ID\" \\${NC}"
+        echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
+        echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
         echo ""
         read -p "Do you want to continue anyway? (y/n) " -n 1 -r
         echo

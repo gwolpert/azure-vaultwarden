@@ -30,20 +30,26 @@ az account set --subscription "<your-subscription-id>"
 
 # Create a service principal with Contributor and User Access Administrator roles
 # Both roles are required: Contributor for resource management, User Access Administrator for role assignments
-az ad sp create-for-rbac \
+SP_OUTPUT=$(az ad sp create-for-rbac \
   --name "github-vaultwarden-deployer" \
   --role contributor \
   --scopes /subscriptions/<your-subscription-id> \
-  --sdk-auth
+  --sdk-auth)
+
+echo "$SP_OUTPUT"
+
+# Extract the Object ID from the service principal
+SP_APP_ID=$(echo "$SP_OUTPUT" | jq -r '.clientId')
+SP_OBJECT_ID=$(az ad sp show --id $SP_APP_ID --query id -o tsv)
 
 # Also assign User Access Administrator role (required for creating role assignments)
-# Get the service principal's Object ID from the output above
-SP_OBJECT_ID="<service-principal-object-id>"
 az role assignment create \
   --assignee $SP_OBJECT_ID \
   --role "User Access Administrator" \
   --scope /subscriptions/<your-subscription-id>
 ```
+
+**Important:** Save the entire JSON output from the first command - you'll need it for GitHub secrets.
 
 **Note:** For newer Azure CLI versions (2.37.0+), use federated credentials instead:
 
