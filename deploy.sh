@@ -64,9 +64,11 @@ check_prerequisites() {
     
     # Try to check role assignments (this will fail gracefully if not authorized)
     if [[ -n "$ASSIGNEE_ID" ]]; then
-        HAS_CONTRIBUTOR=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "Contributor" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Contributor" && echo "yes" || echo "no")
-        HAS_UAA=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "User Access Administrator" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "User Access Administrator" && echo "yes" || echo "no")
-        HAS_OWNER=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "Owner" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Owner" && echo "yes" || echo "no")
+        # Fetch all role assignments once and check for required roles
+        ALL_ROLES=$(az role assignment list --assignee "$ASSIGNEE_ID" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null)
+        HAS_CONTRIBUTOR=$(echo "$ALL_ROLES" | grep -q "Contributor" && echo "yes" || echo "no")
+        HAS_UAA=$(echo "$ALL_ROLES" | grep -q "User Access Administrator" && echo "yes" || echo "no")
+        HAS_OWNER=$(echo "$ALL_ROLES" | grep -q "Owner" && echo "yes" || echo "no")
     else
         HAS_CONTRIBUTOR="no"
         HAS_UAA="no"
@@ -85,17 +87,17 @@ check_prerequisites() {
         print_warning "If you don't have User Access Administrator role, the deployment will fail."
         print_warning ""
         print_warning "To grant the required role, an administrator can run:"
-        echo -e "${YELLOW}  # For user account:${NC}"
-        echo -e "${YELLOW}  az role assignment create \\${NC}"
-        echo -e "${YELLOW}    --assignee \"\$(az ad signed-in-user show --query id -o tsv)\" \\${NC}"
-        echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
-        echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
-        echo ""
-        echo -e "${YELLOW}  # For service principal:${NC}"
-        echo -e "${YELLOW}  az role assignment create \\${NC}"
-        echo -e "${YELLOW}    --assignee \"<service-principal-object-id>\" \\${NC}"
-        echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
-        echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
+        if [[ "$CURRENT_USER_TYPE" == "user" ]]; then
+            echo -e "${YELLOW}  az role assignment create \\${NC}"
+            echo -e "${YELLOW}    --assignee \"$ASSIGNEE_ID\" \\${NC}"
+            echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
+            echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
+        else
+            echo -e "${YELLOW}  az role assignment create \\${NC}"
+            echo -e "${YELLOW}    --assignee \"$ASSIGNEE_ID\" \\${NC}"
+            echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
+            echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
+        fi
         echo ""
         read -p "Do you want to continue anyway? (y/n) " -n 1 -r
         echo
