@@ -44,6 +44,11 @@ SP_APP_ID=$(echo "$SP_OUTPUT" | jq -r '.clientId')
 # OR manually copy the clientId from the output above and use it here:
 # SP_APP_ID="<client-id-from-output>"
 
+if [ -z "$SP_APP_ID" ]; then
+  echo "Error: Could not extract client ID. Please install jq or manually set SP_APP_ID"
+  exit 1
+fi
+
 SP_OBJECT_ID=$(az ad sp show --id $SP_APP_ID --query id -o tsv)
 
 # Also assign User Access Administrator role (required for creating role assignments)
@@ -348,11 +353,17 @@ The client does not have permission to perform action 'Microsoft.Authorization/r
 **Solution:** Assign the "User Access Administrator" role to the service principal:
 ```bash
 # Get your service principal's Object ID
-az ad sp list --display-name "github-vaultwarden-deployer" --query [0].id -o tsv
+SP_OBJECT_ID=$(az ad sp list --display-name "github-vaultwarden-deployer" --query [0].id -o tsv)
+
+# Verify the service principal was found
+if [ -z "$SP_OBJECT_ID" ]; then
+  echo "Error: Service principal 'github-vaultwarden-deployer' not found"
+  exit 1
+fi
 
 # Assign User Access Administrator role
 az role assignment create \
-  --assignee "<service-principal-object-id>" \
+  --assignee "$SP_OBJECT_ID" \
   --role "User Access Administrator" \
   --scope /subscriptions/<your-subscription-id>
 ```

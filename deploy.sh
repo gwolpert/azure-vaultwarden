@@ -55,7 +55,10 @@ check_prerequisites() {
     # For user: returns user object ID
     # For service principal: returns service principal object ID
     CURRENT_USER_TYPE=$(az account show --query user.type -o tsv 2>/dev/null)
-    if [[ "$CURRENT_USER_TYPE" == "user" ]]; then
+    if [[ -z "$CURRENT_USER_TYPE" ]]; then
+        # Unable to determine user type, skip permission check
+        ASSIGNEE_ID=""
+    elif [[ "$CURRENT_USER_TYPE" == "user" ]]; then
         ASSIGNEE_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null)
     else
         # For service principal, extract the object ID from the user.name field
@@ -68,10 +71,11 @@ check_prerequisites() {
     # If you have roles assigned at parent scopes and get a warning, you can safely continue.
     if [[ -n "$ASSIGNEE_ID" ]]; then
         # Fetch all role assignments once and check for required roles
+        # Use -w flag with grep to match whole words only (avoid partial matches like "Storage Blob Data Contributor")
         ALL_ROLES=$(az role assignment list --assignee "$ASSIGNEE_ID" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null)
-        HAS_CONTRIBUTOR=$(echo "$ALL_ROLES" | grep -q "Contributor" && echo "yes" || echo "no")
-        HAS_UAA=$(echo "$ALL_ROLES" | grep -q "User Access Administrator" && echo "yes" || echo "no")
-        HAS_OWNER=$(echo "$ALL_ROLES" | grep -q "Owner" && echo "yes" || echo "no")
+        HAS_CONTRIBUTOR=$(echo "$ALL_ROLES" | grep -qw "Contributor" && echo "yes" || echo "no")
+        HAS_UAA=$(echo "$ALL_ROLES" | grep -qw "User Access Administrator" && echo "yes" || echo "no")
+        HAS_OWNER=$(echo "$ALL_ROLES" | grep -qw "Owner" && echo "yes" || echo "no")
     else
         HAS_CONTRIBUTOR="no"
         HAS_UAA="no"
