@@ -5,7 +5,7 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group (without -rg suffix). Min 3 characters (the value is used to build the storage account name as {resourceGroupName without dashes}st, which must be 3-24 characters). Must contain at least 1 alphanumeric character. Max 22 characters to ensure storage/keyvault names stay within Azure limits.')
+@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character. The value is used to build the storage account name as {resourceGroupName without dashes}st, which must be 3-24 characters and contain only lowercase letters and numbers.')
 @minLength(3)
 @maxLength(22)
 param resourceGroupName string = 'vaultwarden-dev'
