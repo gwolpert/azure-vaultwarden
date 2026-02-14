@@ -45,7 +45,12 @@ var namingPrefix = resourceGroupName
 // Example: vaultwarden-dev -> vaultwardendevst (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
 // NOTE: The resourceGroupName must contain at least 1 alphanumeric character to ensure the storage account name is at least 3 chars
-var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
+var storageAccountNameBase = toLower(replace(resourceGroupName, '-', ''))
+var storageAccountName = '${storageAccountNameBase}st'
+
+// Assert that storage account name is valid (3-24 characters)
+assert storageAccountNameValid = length(storageAccountName) >= 3 && length(storageAccountName) <= 24
+
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
 // Pattern: {resourceGroupName without dashes}kv (hyphens removed for consistency with storage account)
@@ -117,6 +122,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   scope: rg
+  #disable-next-line BCP334 // Storage account name is validated by assert above
   name: storageAccountName
   dependsOn: [
     storageAccount
@@ -134,6 +140,13 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
 }
 
 // Deploy Container App Environment
+// NOTE: Azure Container Apps automatically creates a managed infrastructure resource group
+// with the "ME_" prefix (e.g., ME_vaultwarden-dev-cae). This resource group contains
+// infrastructure components like load balancers and public IPs managed by Azure.
+// The infrastructureResourceGroup parameter exists in the API but is currently not
+// supported/functional in the AVM module. This is expected behavior and the managed
+// resource group is required for Container Apps to function.
+// See: https://github.com/Azure/bicep/issues/11221
 module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
