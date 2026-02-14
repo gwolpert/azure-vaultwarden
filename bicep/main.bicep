@@ -44,9 +44,9 @@ var namingPrefix = '${resourceGroupName}'
 // Example: vaultwarden-dev -> vaultwardendevst (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
 var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
-// Key Vault: Must be 3-24 chars, alphanumeric and hyphens
+// Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
-// Pattern: {resourceGroupName without dashes}kv
+// Pattern: {resourceGroupName without dashes}kv (hyphens removed for consistency with storage account)
 // Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
 var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'

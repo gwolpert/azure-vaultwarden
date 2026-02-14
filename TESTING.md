@@ -42,7 +42,7 @@ For manual deployment, you can validate by running a what-if first (see above).
 
 #### Verify Resource Group
 ```bash
-az group show --name rg-vaultwarden-dev
+az group show --name vaultwarden-dev-rg
 ```
 
 Expected: Resource group exists with correct tags

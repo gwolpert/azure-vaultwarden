@@ -265,7 +265,7 @@ ADMIN_TOKEN: (leave empty or set a test token)
 
 **Variables:**
 ```
-RESOURCE_GROUP_NAME: rg-vaultwarden-dev
+RESOURCE_GROUP_NAME: vaultwarden-dev
 AZURE_LOCATION: eastus
 ENVIRONMENT_NAME: dev
 DOMAIN_NAME: (empty)

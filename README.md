@@ -157,7 +157,7 @@ Parameters are configured through GitHub Environment Variables and Secrets (see 
 
 | Variable Name | Description | Default | Example |
 |--------------|-------------|---------|---------|
-| `RESOURCE_GROUP_NAME` | Name of the resource group | `vaultwarden-dev-rg` | `vaultwarden-prod-rg` |
+| `RESOURCE_GROUP_NAME` | Name of the resource group | `vaultwarden-dev` | `vaultwarden-prod` |
 | `AZURE_LOCATION` | Azure region | `eastus` | `westeurope` |
 | `ENVIRONMENT_NAME` | Environment (dev/staging/prod) | `dev` | `prod` |
 | `DOMAIN_NAME` | Custom domain name | `""` (uses default) | `https://vault.example.com` |
