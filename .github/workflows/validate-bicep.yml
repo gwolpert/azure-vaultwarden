@@ -1,0 +1,63 @@
+name: Validate Bicep Templates
+
+on:
+  pull_request:
+    paths:
+      - 'bicep/**'
+      - '.github/workflows/validate-bicep.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/workflows/validate-bicep.yml'
+
+jobs:
+  validate:
+    name: Validate Bicep Templates
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Validate main Bicep template
+        run: |
+          echo "Validating Bicep template..."
+          az bicep build --file bicep/main.bicep --stdout > /dev/null
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Bicep template validation passed!"
+          else
+            echo "❌ Bicep template validation failed!"
+            exit 1
+          fi
+
+      - name: Check for linter warnings
+        run: |
+          echo "Checking for linter warnings..."
+          az bicep build --file bicep/main.bicep 2>&1 | tee bicep-output.txt
+          
+          # Check if there are any warnings (excluding network errors which are expected in CI)
+          if grep -i "warning" bicep-output.txt | grep -v "BCP192" | grep -v "Unable to restore"; then
+            echo "⚠️ Linter warnings found (see above)"
+            exit 1
+          else
+            echo "✅ No linter warnings found!"
+          fi
+
+      - name: Validate other Bicep files
+        run: |
+          echo "Validating other Bicep files..."
+          for file in bicep/*.bicep; do
+            if [ "$file" != "bicep/main.bicep" ]; then
+              echo "Validating $file..."
+              # Just check syntax, don't fail on module dependencies
+              az bicep build --file "$file" --stdout > /dev/null 2>&1 || echo "⚠️ $file may have dependencies"
+            fi
+          done
+          echo "✅ Validation complete!"

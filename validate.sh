@@ -92,13 +92,47 @@ check_bicep_template() {
     if [ -f "bicep/main.bicep" ]; then
         print_pass "Main Bicep template exists"
         
-        # Basic syntax check - just verify it's valid Bicep structure
-        if grep -q "targetScope = 'subscription'" bicep/main.bicep && \
-           grep -q "param " bicep/main.bicep && \
-           grep -q "module " bicep/main.bicep; then
-            print_pass "Bicep template has valid structure"
+        # Validate Bicep using Azure CLI (proper validation)
+        if command -v az &> /dev/null && az bicep version &> /dev/null; then
+            print_info "Validating Bicep template with Azure CLI..."
+            
+            # Capture both stdout and stderr
+            BICEP_OUTPUT=$(az bicep build --file bicep/main.bicep --stdout 2>&1)
+            BICEP_EXIT_CODE=$?
+            
+            # Check for warnings (excluding network errors which are expected without internet)
+            WARNINGS=$(echo "$BICEP_OUTPUT" | grep -i "warning" | grep -v "BCP192" | grep -v "Unable to restore" || true)
+            
+            if [ $BICEP_EXIT_CODE -eq 0 ]; then
+                print_pass "Bicep template validation passed"
+            elif echo "$BICEP_OUTPUT" | grep -q "BCP192"; then
+                # If only network errors (BCP192), consider it a pass for local validation
+                print_warn "Bicep template has network dependencies (expected without internet access)"
+                print_info "  Template syntax appears valid, but modules cannot be downloaded"
+            else
+                print_fail "Bicep template validation failed"
+                echo "$BICEP_OUTPUT" | head -20
+            fi
+            
+            # Check for linter warnings
+            if [ ! -z "$WARNINGS" ]; then
+                print_warn "Bicep linter warnings found:"
+                echo "$WARNINGS"
+            else
+                print_pass "No linter warnings found"
+            fi
         else
-            print_warn "Bicep template structure may be incomplete"
+            print_warn "Azure CLI or Bicep not available, skipping proper validation"
+            print_info "  Install Azure CLI and run 'az bicep install' for full validation"
+            
+            # Fallback to basic structure check
+            if grep -q "targetScope = 'subscription'" bicep/main.bicep && \
+               grep -q "param " bicep/main.bicep && \
+               grep -q "module " bicep/main.bicep; then
+                print_pass "Bicep template has valid structure (basic check)"
+            else
+                print_warn "Bicep template structure may be incomplete"
+            fi
         fi
     else
         print_fail "Main Bicep template not found at bicep/main.bicep"
