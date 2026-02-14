@@ -5,7 +5,7 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character. The value is used to build the storage account name as {resourceGroupName without dashes}st, which must be 3-24 characters and contain only lowercase letters and numbers.')
+@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character. The value is used to build the storage account name as {resourceGroupName without dashes}st (e.g., "vaultwarden-dev" becomes "vaultwardendevst"), resulting in a 5-24 character storage account name.')
 @minLength(3)
 @maxLength(22)
 param resourceGroupName string = 'vaultwarden-dev'
@@ -48,6 +48,7 @@ var namingPrefix = resourceGroupName
 // the 'st' suffix ensures the final storage account name is 5-24 chars (safe within 3-24 limit).
 // Only lowercase letters, numbers, and hyphens are allowed in resourceGroupName, and hyphens are
 // removed, ensuring the final name contains only valid characters (lowercase letters and numbers).
+// toLower() ensures lowercase conversion even if user provides uppercase in resourceGroupName.
 var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
 
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
