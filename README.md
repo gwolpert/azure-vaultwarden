@@ -4,6 +4,34 @@ This repository contains Bicep templates for deploying [Vaultwarden](https://git
 
 **Deployment is managed through GitHub Actions with GitHub Environments** for secure and reproducible deployments across dev, staging, and production environments.
 
+## Quick Deploy
+
+Deploy directly to Azure with one click:
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgwolpert%2Fazure-vaultwarden%2Fmain%2Fmain.json)
+[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fgwolpert%2Fazure-vaultwarden%2Fmain%2Fmain.json)
+
+**Note:** The "Deploy to Azure" button uses the main.json ARM template with direct resource definitions. For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
+
+## Deployment Methods
+
+This repository supports two deployment approaches:
+
+### 1. One-Click Deploy (Quick Start)
+- **File:** `main.json` (ARM template)
+- **Best for:** Quick testing, demos, personal use
+- Uses direct Azure resource definitions
+- Deploy with the button above or via Azure Portal
+- Simpler but less modular
+
+### 2. GitHub Actions with Bicep (Recommended for Production)
+- **Files:** `bicep/main.bicep` (using Azure Verified Modules)
+- **Best for:** Production, team environments, CI/CD
+- Environment-specific configurations
+- Approval workflows for production
+- More maintainable and follows Azure best practices
+- See [GitHub Setup Guide](GITHUB_SETUP.md) for details
+
 ## Documentation
 
 - **[Quick Start & README](README.md)** - This file (deployment overview)

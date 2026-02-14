@@ -35,6 +35,7 @@ param vaultwardenImageTag string = 'latest'
 // Variables
 var uniqueSuffix = uniqueString(subscription().subscriptionId, resourceGroupName, location)
 var namingPrefix = 'vw-${environmentName}'
+var storageAccountName = 'vw${environmentName}st${uniqueSuffix}'
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
@@ -71,7 +72,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
   scope: rg
   name: 'storage-deployment'
   params: {
-    name: '${namingPrefix}st${uniqueSuffix}'
+    name: storageAccountName
     location: location
     kind: 'StorageV2'
     skuName: 'Standard_LRS'
@@ -87,6 +88,15 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
       ]
     }
   }
+}
+
+// Get storage account keys using listKeys function
+resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+  scope: rg
+  name: storageAccountName
+  dependsOn: [
+    storageAccount
+  ]
 }
 
 // Deploy Container App Environment
@@ -170,7 +180,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
         }
         {
           name: 'storage-account-key'
-          value: storageAccount.outputs.primaryKey
+          value: storageAccountResource.listKeys().keys[0].value
         }
       ]
     }
@@ -196,8 +206,8 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
         name: 'vaultwarden-storage'
         azureFile: {
           shareName: 'vaultwarden-data'
-          accountName: storageAccount.outputs.name
-          accountKey: storageAccount.outputs.primaryKey
+          accountName: storageAccountName
+          accountKey: storageAccountResource.listKeys().keys[0].value
           accessMode: 'ReadWrite'
         }
       }
@@ -211,6 +221,6 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
 // Outputs
 output resourceGroupName string = rg.name
 output vaultwardenUrl string = 'https://${containerApp.outputs.fqdn}'
-output storageAccountName string = storageAccount.outputs.name
+output storageAccountName string = storageAccountName
 output containerAppName string = containerApp.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
