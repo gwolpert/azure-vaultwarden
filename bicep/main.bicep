@@ -5,7 +5,7 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group (without -rg suffix). Min 3 characters (the value is used to build the storage account name as {resourceGroupName without dashes}st, which must be 3-24 characters). Must contain at least 1 alphanumeric character. Max 22 characters to ensure storage/keyvault names stay within Azure limits.')
+@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character. The value is used to build the storage account name as {resourceGroupName without dashes}st (e.g., "vaultwarden-dev" becomes "vaultwardendevst"), resulting in a 5-24 character storage account name.')
 @minLength(3)
 @maxLength(22)
 param resourceGroupName string = 'vaultwarden-dev'
@@ -44,8 +44,13 @@ var namingPrefix = resourceGroupName
 // Pattern: {resourceGroupName without dashes}st
 // Example: vaultwarden-dev -> vaultwardendevst (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
-// NOTE: The resourceGroupName must contain at least 1 alphanumeric character to ensure the storage account name is at least 3 chars
+// NOTE: The resourceGroupName parameter constraint (@minLength(3), @maxLength(22)) combined with
+// the 'st' suffix ensures the final storage account name is 5-24 chars (safe within 3-24 limit).
+// Only lowercase letters, numbers, and hyphens are allowed in resourceGroupName, and hyphens are
+// removed, ensuring the final name contains only valid characters (lowercase letters and numbers).
+// toLower() ensures lowercase conversion even if user provides uppercase in resourceGroupName.
 var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
+
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
 // Pattern: {resourceGroupName without dashes}kv (hyphens removed for consistency with storage account)
@@ -117,6 +122,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   scope: rg
+  #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
   name: storageAccountName
   dependsOn: [
     storageAccount
@@ -134,6 +140,13 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
 }
 
 // Deploy Container App Environment
+// NOTE: Azure Container Apps automatically creates a managed infrastructure resource group
+// with the "ME_" prefix (e.g., ME_vaultwarden-dev-cae). This resource group contains
+// infrastructure components like load balancers and public IPs managed by Azure.
+// The infrastructureResourceGroup parameter exists in the API but is currently not
+// supported/functional in the AVM module. This is expected behavior and the managed
+// resource group is required for Container Apps to function.
+// See: https://github.com/Azure/bicep/issues/11221
 module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'

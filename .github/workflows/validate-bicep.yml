@@ -6,13 +6,6 @@ on:
       - 'bicep/**'
       - 'validate.sh'
       - '.github/workflows/validate-bicep.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - 'bicep/**'
-      - 'validate.sh'
-      - '.github/workflows/validate-bicep.yml'
 
 jobs:
   validate:
