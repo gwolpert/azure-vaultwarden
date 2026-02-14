@@ -1,0 +1,41 @@
+# Azure deployment artifacts
+*.zip
+.azure/
+
+# Bicep build artifacts
+*.json.tmp
+*.bicep.tmp
+main.json
+main.parameters.json
+metadata.json
+
+# Backup files
+backup/
+*.backup
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets and sensitive data
+*.secret
+.env
+secrets.json
+
+# Node modules (if any tooling is added)
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

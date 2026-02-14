@@ -1,0 +1,84 @@
+name: Deploy Vaultwarden to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: environment
+        default: 'dev'
+  push:
+    branches:
+      - main
+    paths:
+      - 'bicep/**'
+      - '.github/workflows/deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep template
+        uses: azure/arm-deploy@v2
+        id: deploy
+        with:
+          scope: subscription
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          region: ${{ vars.AZURE_LOCATION }}
+          template: ./bicep/main.bicep
+          parameters: >
+            resourceGroupName=${{ vars.RESOURCE_GROUP_NAME }}
+            location=${{ vars.AZURE_LOCATION }}
+            environmentName=${{ vars.ENVIRONMENT_NAME }}
+            domainName=${{ vars.DOMAIN_NAME }}
+            adminToken=${{ secrets.ADMIN_TOKEN }}
+            signupsAllowed=${{ vars.SIGNUPS_ALLOWED }}
+            vaultwardenImageTag=${{ vars.VAULTWARDEN_IMAGE_TAG }}
+          failOnStdErr: false
+          deploymentName: vaultwarden-deployment-${{ github.run_number }}
+
+      - name: Display deployment outputs
+        run: |
+          echo "### Deployment Successful! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Vaultwarden URL:** ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ steps.deploy.outputs.resourceGroupName }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Container App:** ${{ steps.deploy.outputs.containerAppName }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Storage Account:** ${{ steps.deploy.outputs.storageAccountName }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Access your Vaultwarden instance at: ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify deployment
+        run: |
+          echo "Waiting for application to be ready..."
+          sleep 30
+          
+          APP_URL="${{ steps.deploy.outputs.vaultwardenUrl }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Application is responding (HTTP $HTTP_CODE)"
+            echo "### Verification Passed! ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Application returned HTTP $HTTP_CODE"
+            echo "### Verification Warning ⚠️" >> $GITHUB_STEP_SUMMARY
+            echo "Application returned HTTP $HTTP_CODE - It may take a few minutes to fully start" >> $GITHUB_STEP_SUMMARY
+          fi

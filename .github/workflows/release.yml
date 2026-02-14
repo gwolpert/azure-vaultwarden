@@ -1,0 +1,147 @@
+name: Create Release with ARM Template
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build ARM Template and Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Build ARM template from Bicep
+        run: |
+          echo "Building ARM template from Bicep..."
+          az bicep build --file bicep/main.bicep --outfile main.json
+          
+          echo "ARM template built successfully"
+          ls -lh main.json
+
+      - name: Create main.parameters.json
+        run: |
+          cat > main.parameters.json << 'EOF'
+          {
+            "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentParameters.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+              "resourceGroupName": {
+                "value": "rg-vaultwarden"
+              },
+              "location": {
+                "value": "eastus"
+              },
+              "environmentName": {
+                "value": "dev"
+              },
+              "domainName": {
+                "value": ""
+              },
+              "adminToken": {
+                "value": ""
+              },
+              "signupsAllowed": {
+                "value": false
+              },
+              "vaultwardenImageTag": {
+                "value": "latest"
+              }
+            }
+          }
+          EOF
+
+      - name: Create metadata.json
+        run: |
+          cat > metadata.json << 'EOF'
+          {
+            "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
+            "type": "QuickStart",
+            "itemDisplayName": "Vaultwarden on Azure Container Apps",
+            "description": "Deploy Vaultwarden (Bitwarden-compatible server) on Azure Container Apps with persistent storage, monitoring, and automatic HTTPS.",
+            "summary": "This template deploys Vaultwarden on Azure Container Apps with Virtual Network, Storage Account for data persistence, and Log Analytics for monitoring.",
+            "githubUsername": "gwolpert",
+            "dateUpdated": "$(date +%Y-%m-%d)",
+            "categories": [
+              "Web App",
+              "Container",
+              "Security"
+            ],
+            "products": [
+              "Azure Container Apps",
+              "Azure Storage",
+              "Azure Virtual Network",
+              "Azure Log Analytics"
+            ]
+          }
+          EOF
+
+      - name: Get tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          body: |
+            ## Vaultwarden on Azure Container Apps - Release ${{ steps.tag.outputs.tag }}
+            
+            This release includes the compiled ARM template for deploying Vaultwarden on Azure Container Apps.
+            
+            ### Files
+            - **main.json** - ARM template compiled from Bicep
+            - **main.parameters.json** - Default parameters file
+            - **metadata.json** - Azure Quick Start Templates metadata
+            
+            ### Deploy to Azure
+            
+            Click the button below to deploy directly to Azure:
+            
+            [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2Fgwolpert%2Fazure-vaultwarden%2Freleases%2Fdownload%2F${{ steps.tag.outputs.tag }}%2Fmain.json)
+            
+            ### Deployment Methods
+            
+            1. **One-Click Deploy**: Use the Deploy to Azure button above
+            2. **GitHub Actions**: Configure GitHub Environments (see GITHUB_SETUP.md)
+            3. **Manual Deployment**: Download main.json and deploy via Azure CLI
+            
+            ### What's Deployed
+            
+            - Virtual Network with Container Apps subnet
+            - Storage Account with File Share for data persistence
+            - Log Analytics Workspace for monitoring
+            - Container App Environment
+            - Container App running Vaultwarden
+            
+            ### Documentation
+            
+            See the repository README for complete documentation and setup instructions.
+          files: |
+            main.json
+            main.parameters.json
+            metadata.json
+          draft: false
+          prerelease: false
