@@ -157,6 +157,12 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
     internal: false
     zoneRedundant: false
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
   }
 }
 
