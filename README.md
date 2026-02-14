@@ -10,6 +10,22 @@ This repository contains Bicep templates for deploying [Vaultwarden](https://git
 - **[GitHub Setup Guide](GITHUB_SETUP.md)** - Complete guide for setting up GitHub Environments and Actions
 - **[Architecture Overview](ARCHITECTURE.md)** - Detailed architecture, security, and operational guide
 - **[Testing Guide](TESTING.md)** - Comprehensive testing and verification procedures
+- **[Quick Reference](QUICK_REFERENCE.md)** - Common commands and quick reference
+
+## Validation
+
+Before deploying, run the validation script to check your setup:
+
+```bash
+./validate.sh
+```
+
+This will check:
+- Prerequisites (Azure CLI, Bicep, Git)
+- File structure and Bicep templates
+- GitHub workflow configuration
+- Documentation completeness
+- Azure resource providers (if logged in)
 
 ## Architecture
 
