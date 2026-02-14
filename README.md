@@ -6,23 +6,23 @@ This repository contains Bicep templates for deploying [Vaultwarden](https://git
 
 ## Quick Deploy
 
-Deploy directly to Azure with one click:
+Deploy directly to Azure with one click using the latest release:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fgwolpert%2Fazure-vaultwarden%2Fmain%2Fmain.json)
-[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fgwolpert%2Fazure-vaultwarden%2Fmain%2Fmain.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2Fgwolpert%2Fazure-vaultwarden%2Freleases%2Flatest%2Fdownload%2Fmain.json)
+[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fgithub.com%2Fgwolpert%2Fazure-vaultwarden%2Freleases%2Flatest%2Fdownload%2Fmain.json)
 
-**Note:** The "Deploy to Azure" button uses the main.json ARM template with direct resource definitions. For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
+**Note:** The "Deploy to Azure" button uses the ARM template compiled from Bicep and published in releases. For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
 
 ## Deployment Methods
 
 This repository supports two deployment approaches:
 
 ### 1. One-Click Deploy (Quick Start)
-- **File:** `main.json` (ARM template)
+- **File:** ARM template compiled from Bicep (available in releases)
 - **Best for:** Quick testing, demos, personal use
 - Uses direct Azure resource definitions
 - Deploy with the button above or via Azure Portal
-- Simpler but less modular
+- Template is automatically compiled from `bicep/main.bicep` on each release
 
 ### 2. GitHub Actions with Bicep (Recommended for Production)
 - **Files:** `bicep/main.bicep` (using Azure Verified Modules)
@@ -408,6 +408,33 @@ az group delete --name rg-vaultwarden-dev --yes --no-wait
 ```
 
 **Warning:** This will permanently delete all data. Make sure to backup before destroying.
+
+## Creating Releases
+
+To create a new release with the compiled ARM template:
+
+### Automatic Release (Recommended)
+
+1. Create and push a new tag:
+   ```bash
+   git tag -a v1.0.0 -m "Release v1.0.0"
+   git push origin v1.0.0
+   ```
+
+2. The `release.yml` workflow will automatically:
+   - Compile `bicep/main.bicep` to `main.json`
+   - Generate `main.parameters.json` and `metadata.json`
+   - Create a GitHub release with these files attached
+   - Update the Deploy to Azure button to use the new release
+
+### Manual Release
+
+1. Go to Actions > "Create Release with ARM Template"
+2. Click "Run workflow"
+3. Enter the release tag (e.g., `v1.0.0`)
+4. Click "Run workflow"
+
+The ARM template is compiled from the Bicep source, ensuring consistency between deployment methods.
 
 ## Cost Estimation
 

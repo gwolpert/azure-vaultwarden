@@ -5,6 +5,9 @@
 # Bicep build artifacts
 *.json.tmp
 *.bicep.tmp
+main.json
+main.parameters.json
+metadata.json
 
 # Backup files
 backup/
