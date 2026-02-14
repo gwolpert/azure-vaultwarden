@@ -5,8 +5,9 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group')
-param resourceGroupName string = 'rg-vaultwarden'
+@description('The name of the resource group (without -rg suffix). Max 22 characters to ensure storage/keyvault names stay within Azure limits.')
+@maxLength(22)
+param resourceGroupName string = 'vaultwarden-dev'
 
 @description('The Azure region where resources will be deployed')
 param location string = 'eastus'
@@ -33,13 +34,26 @@ param signupsAllowed bool = false
 param vaultwardenImageTag string = 'latest'
 
 // Variables
-var uniqueSuffix = uniqueString(subscription().subscriptionId, resourceGroupName, location)
-var namingPrefix = 'vw-${environmentName}'
-var storageAccountName = 'vw${environmentName}st${uniqueSuffix}'
+// Using official Microsoft Azure resource abbreviations:
+// https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
+var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
+var namingPrefix = '${resourceGroupName}'
+// Storage account: Must be 3-24 chars, lowercase letters and numbers only
+// Official abbreviation: 'st' (not 'sa')
+// Pattern: {resourceGroupName without dashes}st
+// Example: vaultwarden-dev -> vaultwardendevst (16 chars)
+// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
+var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
+// Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
+// Official abbreviation: 'kv'
+// Pattern: {resourceGroupName without dashes}kv (hyphens removed for consistency with storage account)
+// Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
+// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
+var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
-  name: resourceGroupName
+  name: resourceGroupNameWithSuffix
   location: location
   tags: {
     Application: 'Vaultwarden'
@@ -62,6 +76,14 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
       {
         name: 'container-apps-subnet'
         addressPrefix: '10.0.0.0/23'
+        delegations: [
+          {
+            name: 'MicrosoftAppEnvironments'
+            properties: {
+              serviceName: 'Microsoft.App/environments'
+            }
+          }
+        ]
       }
     ]
   }
@@ -104,7 +126,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   scope: rg
   name: 'log-analytics-deployment'
   params: {
-    name: '${namingPrefix}-logs'
+    name: '${namingPrefix}-log'
     location: location
   }
 }
@@ -114,7 +136,7 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
   params: {
-    name: '${namingPrefix}-env'
+    name: '${namingPrefix}-cae'
     location: location
     infrastructureSubnetId: vnet.outputs.subnetResourceIds[0]
     internal: false
@@ -142,7 +164,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   scope: rg
   name: 'keyvault-deployment'
   params: {
-    name: 'kv${environmentName}${uniqueSuffix}'
+    name: keyVaultName
     location: location
     sku: 'standard'
     enableRbacAuthorization: true
@@ -172,7 +194,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   scope: rg
   name: 'vaultwarden-containerapp-deployment'
   params: {
-    name: '${namingPrefix}-app'
+    name: '${namingPrefix}-ca'
     location: location
     environmentResourceId: containerAppEnv.outputs.resourceId
     containers: [
@@ -186,7 +208,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
         env: concat([
           {
             name: 'DOMAIN'
-            value: domainName != '' ? domainName : 'https://${namingPrefix}-app.${containerAppEnv.outputs.defaultDomain}'
+            value: domainName != '' ? domainName : 'https://${namingPrefix}-ca.${containerAppEnv.outputs.defaultDomain}'
           }
           {
             name: 'SIGNUPS_ALLOWED'

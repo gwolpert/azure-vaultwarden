@@ -131,7 +131,7 @@ az deployment sub create \
   --location eastus \
   --template-file bicep/main.bicep \
   --parameters \
-    resourceGroupName="rg-vaultwarden-dev" \
+    resourceGroupName="vaultwarden-dev" \
     location="eastus" \
     environmentName="dev" \
     domainName="" \
@@ -157,7 +157,7 @@ Parameters are configured through GitHub Environment Variables and Secrets (see 
 
 | Variable Name | Description | Default | Example |
 |--------------|-------------|---------|---------|
-| `RESOURCE_GROUP_NAME` | Name of the resource group | `rg-vaultwarden-dev` | `rg-vaultwarden-prod` |
+| `RESOURCE_GROUP_NAME` | Name of the resource group | `vaultwarden-dev` | `vaultwarden-prod` |
 | `AZURE_LOCATION` | Azure region | `eastus` | `westeurope` |
 | `ENVIRONMENT_NAME` | Environment (dev/staging/prod) | `dev` | `prod` |
 | `DOMAIN_NAME` | Custom domain name | `""` (uses default) | `https://vault.example.com` |
@@ -198,7 +198,7 @@ To use a custom domain:
      --location eastus \
      --template-file bicep/main.bicep \
      --parameters domainName="https://vault.example.com" \
-     --parameters resourceGroupName="rg-vaultwarden-dev" \
+     --parameters resourceGroupName="vaultwarden-dev" \
      --parameters location="eastus" \
      --parameters environmentName="dev"
    ```
@@ -206,8 +206,8 @@ To use a custom domain:
 3. After deployment, get the Container App's FQDN:
    ```bash
    az containerapp show \
-     --name vw-dev-app \
-     --resource-group rg-vaultwarden-dev \
+     --name vaultwarden-dev-ca \
+     --resource-group vaultwarden-dev-rg \
      --query properties.configuration.ingress.fqdn \
      --output tsv
    ```
@@ -218,8 +218,8 @@ To use a custom domain:
    ```bash
    az containerapp hostname add \
      --hostname vault.example.com \
-     --resource-group rg-vaultwarden-dev \
-     --name vw-dev-app
+     --resource-group vaultwarden-dev-rg \
+     --name vaultwarden-dev-ca
    ```
 
 ## Security Considerations
@@ -242,7 +242,7 @@ The admin panel is disabled by default. To enable it:
      --location eastus \
      --template-file bicep/main.bicep \
      --parameters adminToken="<your-secure-token>" \
-     --parameters resourceGroupName="rg-vaultwarden-dev" \
+     --parameters resourceGroupName="vaultwarden-dev" \
      --parameters location="eastus" \
      --parameters environmentName="dev"
    ```
@@ -263,7 +263,7 @@ az deployment sub create \
   --location eastus \
   --template-file bicep/main.bicep \
   --parameters signupsAllowed=true \
-  --parameters resourceGroupName="rg-vaultwarden-dev" \
+  --parameters resourceGroupName="vaultwarden-dev" \
   --parameters location="eastus" \
   --parameters environmentName="dev"
 ```
@@ -289,8 +289,8 @@ The data persists across container restarts and updates.
 
 ```bash
 az containerapp logs show \
-  --name vw-dev-app \
-  --resource-group rg-vaultwarden-dev \
+  --name vaultwarden-dev-ca \
+  --resource-group vaultwarden-dev-rg \
   --follow
 ```
 
@@ -299,8 +299,8 @@ az containerapp logs show \
 ```bash
 # Get Log Analytics Workspace ID
 az monitor log-analytics workspace show \
-  --resource-group rg-vaultwarden-dev \
-  --workspace-name vw-dev-logs \
+  --resource-group vaultwarden-dev-rg \
+  --workspace-name vaultwarden-dev-log \
   --query customerId \
   --output tsv
 ```
@@ -324,7 +324,7 @@ Download the file share content:
 # Get storage account key
 STORAGE_KEY=$(az storage account keys list \
   --account-name <storage-account-name> \
-  --resource-group rg-vaultwarden-dev \
+  --resource-group vaultwarden-dev-rg \
   --query "[0].value" \
   --output tsv)
 
@@ -355,8 +355,8 @@ az storage file upload-batch \
 Check container logs:
 ```bash
 az containerapp logs show \
-  --name vw-dev-app \
-  --resource-group rg-vaultwarden-dev \
+  --name vaultwarden-dev-ca \
+  --resource-group vaultwarden-dev-rg \
   --tail 100
 ```
 
@@ -388,7 +388,7 @@ az deployment sub create \
   --location eastus \
   --template-file bicep/main.bicep \
   --parameters vaultwardenImageTag="1.30.1" \
-  --parameters resourceGroupName="rg-vaultwarden-dev" \
+  --parameters resourceGroupName="vaultwarden-dev" \
   --parameters location="eastus" \
   --parameters environmentName="dev"
 ```
@@ -402,14 +402,14 @@ To remove all deployed resources, you must manually delete them through Azure Po
 ### Manual Cleanup via Azure CLI
 
 ```bash
-az group delete --name rg-vaultwarden-dev --yes --no-wait
+az group delete --name vaultwarden-dev-rg --yes --no-wait
 ```
 
 ### Manual Cleanup via Azure Portal
 
 1. Navigate to the Azure Portal
 2. Go to Resource Groups
-3. Select the Vaultwarden resource group (e.g., `rg-vaultwarden-dev`)
+3. Select the Vaultwarden resource group (e.g., `vaultwarden-dev-rg`)
 4. Click "Delete resource group"
 5. Type the resource group name to confirm
 6. Click "Delete"

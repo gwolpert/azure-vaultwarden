@@ -136,7 +136,7 @@ main() {
         --name "$DEPLOYMENT_NAME" \
         --location "$LOCATION" \
         --template-file bicep/main.bicep \
-        --parameters resourceGroupName="rg-vaultwarden-$ENVIRONMENT" \
+        --parameters resourceGroupName="vaultwarden-$ENVIRONMENT" \
         --parameters location="$LOCATION" \
         --parameters environmentName="$ENVIRONMENT"; then
         
