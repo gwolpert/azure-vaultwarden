@@ -1,4 +1,5 @@
-// Module for creating Key Vault secret at resource group scope
+// Module for creating Key Vault secret within a Key Vault
+// Deployed at resource group scope to match the Key Vault's scope
 targetScope = 'resourceGroup'
 
 @description('The name of the Key Vault')

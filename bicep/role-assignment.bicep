@@ -1,4 +1,5 @@
-// Module for creating role assignment at resource group scope
+// Module for creating role assignment scoped to Key Vault resource
+// Deployed at resource group scope to match the Key Vault's scope
 targetScope = 'resourceGroup'
 
 @description('The name of the Key Vault')
