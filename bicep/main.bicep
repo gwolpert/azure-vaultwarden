@@ -247,9 +247,6 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
       maxReplicas: 3
     }
   }
-  dependsOn: [
-    storageAccount
-  ]
 }
 
 // Grant Container App managed identity access to Key Vault secrets
@@ -260,10 +257,6 @@ module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
     keyVaultName: keyVault.outputs.name
     principalId: containerApp.outputs.systemAssignedMIPrincipalId
   }
-  dependsOn: [
-    keyVault
-    containerApp
-  ]
 }
 
 // Outputs
