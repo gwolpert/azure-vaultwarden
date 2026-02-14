@@ -45,6 +45,7 @@ var namingPrefix = resourceGroupName
 // Example: vaultwarden-dev -> vaultwardendevst (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
 // NOTE: The resourceGroupName must contain at least 1 alphanumeric character to ensure the storage account name is at least 3 chars
+// Split into base + suffix for clarity in validation and debugging
 var storageAccountNameBase = toLower(replace(resourceGroupName, '-', ''))
 var storageAccountName = '${storageAccountNameBase}st'
 
