@@ -99,7 +99,17 @@ resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' e
   ]
 }
 
-// Deploy Container App Environment
+// Deploy Log Analytics Workspace
+module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.3.4' = {
+  scope: rg
+  name: 'log-analytics-deployment'
+  params: {
+    name: '${namingPrefix}-logs'
+    location: location
+  }
+}
+
+// Deploy Container App Environment with Azure Files storage
 module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
@@ -110,17 +120,18 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
     internal: false
     zoneRedundant: false
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    storages: [
+      {
+        kind: 'SMB'
+        shareName: 'vaultwarden-data'
+        storageAccountName: storageAccountName
+        accessMode: 'ReadWrite'
+      }
+    ]
   }
-}
-
-// Deploy Log Analytics Workspace
-module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.3.4' = {
-  scope: rg
-  name: 'log-analytics-deployment'
-  params: {
-    name: '${namingPrefix}-logs'
-    location: location
-  }
+  dependsOn: [
+    storageAccount
+  ]
 }
 
 // Deploy Key Vault for secrets management
@@ -143,18 +154,13 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   }
 }
 
-// Reference to the deployed Key Vault for secret creation
-resource existingKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+// Store admin token in Key Vault (only if provided) using a separate module
+module keyVaultSecret 'keyvault-secret.bicep' = if (adminToken != '') {
   scope: rg
-  name: keyVault.outputs.name
-}
-
-// Store admin token in Key Vault (only if provided)
-resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (adminToken != '') {
-  parent: existingKeyVault
-  name: 'vaultwarden-admin-token'
-  properties: {
-    value: adminToken
+  name: 'keyvault-secret-deployment'
+  params: {
+    keyVaultName: keyVault.outputs.name
+    adminToken: adminToken
   }
 }
 
@@ -165,7 +171,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   params: {
     name: '${namingPrefix}-app'
     location: location
-    environmentId: containerAppEnv.outputs.resourceId
+    environmentResourceId: containerAppEnv.outputs.resourceId
     containers: [
       {
         name: 'vaultwarden'
@@ -229,45 +235,26 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
     managedIdentities: {
       systemAssigned: true
     }
-    ingress: {
-      external: true
-      targetPort: 80
-      transport: 'http'
-      allowInsecure: false
-      traffic: [
-        {
-          latestRevision: true
-          weight: 100
-        }
-      ]
+    ingressExternal: true
+    ingressTargetPort: 80
+    ingressTransport: 'http'
+    ingressAllowInsecure: false
+    trafficWeight: 100
+    trafficLatestRevision: true
+    scaleSettings: {
+      minReplicas: 1
+      maxReplicas: 3
     }
-    scaleMinReplicas: 1
-    scaleMaxReplicas: 3
-    storages: [
-      {
-        name: 'vaultwarden-storage'
-        azureFile: {
-          shareName: 'vaultwarden-data'
-          accountName: storageAccountName
-          accountKey: storageAccountResource.listKeys().keys[0].value
-          accessMode: 'ReadWrite'
-        }
-      }
-    ]
   }
-  dependsOn: [
-    storageAccount
-  ]
 }
 
 // Grant Container App managed identity access to Key Vault secrets
-resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (adminToken != '') {
-  scope: keyVault
-  name: guid(keyVault.outputs.resourceId, containerApp.outputs.systemAssignedMIPrincipalId, 'Key Vault Secrets User')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
+  scope: rg
+  name: 'keyvault-role-assignment-deployment'
+  params: {
+    keyVaultName: keyVault.outputs.name
     principalId: containerApp.outputs.systemAssignedMIPrincipalId
-    principalType: 'ServicePrincipal'
   }
 }
 
