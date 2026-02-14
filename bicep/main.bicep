@@ -250,6 +250,9 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
     scaleMinReplicas: 1
     scaleMaxReplicas: 3
   }
+  dependsOn: [
+    containerAppEnvStorage
+  ]
 }
 
 // Grant Container App managed identity access to Key Vault secrets
