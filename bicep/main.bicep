@@ -5,7 +5,8 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group (without -rg suffix). Max 22 characters to ensure storage/keyvault names stay within Azure limits.')
+@description('The name of the resource group (without -rg suffix). Min 3 characters (to ensure storage account name is at least 3 chars after removing dashes), max 22 characters to ensure storage/keyvault names stay within Azure limits.')
+@minLength(3)
 @maxLength(22)
 param resourceGroupName string = 'vaultwarden-dev'
 
@@ -37,7 +38,7 @@ param vaultwardenImageTag string = 'latest'
 // Using official Microsoft Azure resource abbreviations:
 // https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
-var namingPrefix = '${resourceGroupName}'
+var namingPrefix = resourceGroupName
 // Storage account: Must be 3-24 chars, lowercase letters and numbers only
 // Official abbreviation: 'st' (not 'sa')
 // Pattern: {resourceGroupName without dashes}st
