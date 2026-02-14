@@ -128,7 +128,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   scope: rg
   name: 'keyvault-deployment'
   params: {
-    name: '${namingPrefix}-kv-${uniqueSuffix}'
+    name: 'kv-${namingPrefix}-${uniqueSuffix}'
     location: location
     sku: 'standard'
     enableRbacAuthorization: true
@@ -143,16 +143,19 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   }
 }
 
+// Reference to the Key Vault resource
+resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  scope: rg
+  name: keyVault.outputs.name
+}
+
 // Store admin token in Key Vault (only if provided)
 resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (adminToken != '') {
-  scope: rg
-  name: '${keyVault.outputs.name}/vaultwarden-admin-token'
+  parent: keyVaultResource
+  name: 'vaultwarden-admin-token'
   properties: {
     value: adminToken
   }
-  dependsOn: [
-    keyVault
-  ]
 }
 
 // Deploy Container App for Vaultwarden
@@ -254,7 +257,6 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   }
   dependsOn: [
     storageAccount
-    keyVault
   ]
 }
 
@@ -267,9 +269,6 @@ resource keyVaultRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04
     principalId: containerApp.outputs.systemAssignedMIPrincipalId
     principalType: 'ServicePrincipal'
   }
-  dependsOn: [
-    containerApp
-  ]
 }
 
 // Outputs
