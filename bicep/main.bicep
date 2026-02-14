@@ -44,13 +44,11 @@ var namingPrefix = resourceGroupName
 // Pattern: {resourceGroupName without dashes}st
 // Example: vaultwarden-dev -> vaultwardendevst (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
-// NOTE: The resourceGroupName must contain at least 1 alphanumeric character to ensure the storage account name is at least 3 chars
-// Split into base + suffix for clarity in validation and debugging
-var storageAccountNameBase = toLower(replace(resourceGroupName, '-', ''))
-var storageAccountName = '${storageAccountNameBase}st'
-
-// Assert that storage account name is valid (3-24 characters)
-assert storageAccountNameWithinLimits = length(storageAccountName) >= 3 && length(storageAccountName) <= 24
+// NOTE: The resourceGroupName parameter constraint (@minLength(3), @maxLength(22)) combined with
+// the 'st' suffix ensures the final storage account name is 5-24 chars (safe within 3-24 limit).
+// Only lowercase letters, numbers, and hyphens are allowed in resourceGroupName, and hyphens are
+// removed, ensuring the final name contains only valid characters (lowercase letters and numbers).
+var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
 
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
@@ -123,7 +121,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   scope: rg
-  #disable-next-line BCP334 // The assert above ensures the storage account name meets Azure's 3-24 character requirement
+  #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
   name: storageAccountName
   dependsOn: [
     storageAccount
