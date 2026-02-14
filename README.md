@@ -397,22 +397,24 @@ The update will trigger a new container deployment with zero downtime (rolling u
 
 ## Cleanup
 
-To remove all deployed resources:
+To remove all deployed resources, you must manually delete them through Azure Portal or Azure CLI.
 
-### Using GitHub Actions
-
-1. Go to the "Actions" tab
-2. Select "Destroy Vaultwarden Infrastructure" workflow
-3. Click "Run workflow"
-4. Select the environment to destroy
-5. Type the environment name to confirm deletion
-6. Click "Run workflow"
-
-### Manual Cleanup
+### Manual Cleanup via Azure CLI
 
 ```bash
 az group delete --name rg-vaultwarden-dev --yes --no-wait
 ```
+
+### Manual Cleanup via Azure Portal
+
+1. Navigate to the Azure Portal
+2. Go to Resource Groups
+3. Select the Vaultwarden resource group (e.g., `rg-vaultwarden-dev`)
+4. Click "Delete resource group"
+5. Type the resource group name to confirm
+6. Click "Delete"
+
+**Important:** Always backup your data before deleting resources. Once deleted, all data including passwords stored in Vaultwarden will be permanently lost.
 
 **Warning:** This will permanently delete all data. Make sure to backup before destroying.
 

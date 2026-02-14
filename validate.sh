@@ -146,12 +146,6 @@ check_github_workflows() {
     else
         print_fail "Deploy workflow not found"
     fi
-    
-    if [ -f ".github/workflows/destroy.yml" ]; then
-        print_pass "Destroy workflow exists"
-    else
-        print_warn "Destroy workflow not found (optional)"
-    fi
 }
 
 # Check documentation

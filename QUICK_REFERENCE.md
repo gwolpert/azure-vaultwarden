@@ -15,11 +15,21 @@ Common commands and workflows for managing Vaultwarden on Azure.
 3. Approve deployment (if protection rules enabled)
 4. Wait for completion
 
-### Destroy Environment
-1. Go to Actions > "Destroy Vaultwarden Infrastructure"
-2. Run workflow > Select environment
-3. Type environment name to confirm
-4. Resources will be deleted asynchronously
+### Cleanup Environment
+**Note:** There is no automated destroy workflow. Resources must be manually deleted through Azure Portal or CLI for safety.
+
+```bash
+# Via Azure CLI
+az group delete --name <resource-group-name> --yes
+
+# Or use Azure Portal:
+# 1. Navigate to Resource Groups
+# 2. Select the resource group
+# 3. Click "Delete resource group"
+# 4. Confirm deletion
+```
+
+**Always backup your data before deleting resources!**
 
 ## Azure CLI Quick Commands
 

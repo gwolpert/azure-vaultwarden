@@ -371,13 +371,24 @@ Create environment-specific workflow files:
 
 ## Cleanup
 
-To remove an environment and its resources:
+To remove an environment and its resources, you must manually delete them through Azure Portal or Azure CLI:
 
-1. Run the "Destroy Vaultwarden Infrastructure" workflow
-2. Select the environment to destroy
-3. Type the environment name to confirm
-4. Wait for resource deletion to complete
-5. Remove the GitHub environment from repository settings (optional)
+### Via Azure CLI:
+```bash
+az group delete --name <resource-group-name> --yes
+```
+
+### Via Azure Portal:
+1. Navigate to Resource Groups
+2. Select the Vaultwarden resource group
+3. Click "Delete resource group"
+4. Type the resource group name to confirm
+5. Click "Delete"
+
+**Important:** Always backup your Vaultwarden data before deleting resources. Deletion is permanent and cannot be undone.
+
+Optionally, after deleting Azure resources:
+- Remove the GitHub environment from repository settings if no longer needed
 
 ## Additional Resources
 
