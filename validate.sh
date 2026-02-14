@@ -3,6 +3,9 @@
 # ========================================
 # Vaultwarden Deployment Validation Script
 # ========================================
+# 
+# This script uses bash-specific features like (( )) arithmetic expansion
+# and requires bash (not sh) to run properly.
 
 # Don't exit on errors - we want to show all validation results
 # set -e
