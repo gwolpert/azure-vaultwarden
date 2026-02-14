@@ -23,6 +23,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
       - name: Build ARM template from Bicep
         run: |
           echo "Building ARM template from Bicep..."
