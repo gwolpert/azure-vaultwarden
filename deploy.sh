@@ -51,15 +51,32 @@ check_prerequisites() {
     print_info "Checking Azure permissions..."
     SUBSCRIPTION_ID=$(az account show --query id -o tsv 2>/dev/null)
     
+    # Get the current identity (works for both user accounts and service principals)
+    # For user: returns user object ID
+    # For service principal: returns service principal object ID
+    CURRENT_USER_TYPE=$(az account show --query user.type -o tsv 2>/dev/null)
+    if [[ "$CURRENT_USER_TYPE" == "user" ]]; then
+        ASSIGNEE_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null)
+    else
+        # For service principal, extract the object ID from the user.name field
+        ASSIGNEE_ID=$(az account show --query user.name -o tsv 2>/dev/null)
+    fi
+    
     # Try to check role assignments (this will fail gracefully if not authorized)
-    HAS_CONTRIBUTOR=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "Contributor" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Contributor" && echo "yes" || echo "no")
-    HAS_UAA=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "User Access Administrator" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "User Access Administrator" && echo "yes" || echo "no")
-    HAS_OWNER=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "Owner" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Owner" && echo "yes" || echo "no")
+    if [[ -n "$ASSIGNEE_ID" ]]; then
+        HAS_CONTRIBUTOR=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "Contributor" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Contributor" && echo "yes" || echo "no")
+        HAS_UAA=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "User Access Administrator" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "User Access Administrator" && echo "yes" || echo "no")
+        HAS_OWNER=$(az role assignment list --assignee "$ASSIGNEE_ID" --role "Owner" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Owner" && echo "yes" || echo "no")
+    else
+        HAS_CONTRIBUTOR="no"
+        HAS_UAA="no"
+        HAS_OWNER="no"
+    fi
     
     if [[ "$HAS_OWNER" == "yes" ]]; then
-        print_info "✓ User has Owner role (includes all required permissions)"
+        print_info "✓ Current identity has Owner role (includes all required permissions)"
     elif [[ "$HAS_CONTRIBUTOR" == "yes" && "$HAS_UAA" == "yes" ]]; then
-        print_info "✓ User has Contributor and User Access Administrator roles"
+        print_info "✓ Current identity has Contributor and User Access Administrator roles"
     else
         print_warning "WARNING: Could not verify all required Azure permissions"
         print_warning "Required roles: Contributor AND User Access Administrator (or Owner)"
@@ -68,8 +85,15 @@ check_prerequisites() {
         print_warning "If you don't have User Access Administrator role, the deployment will fail."
         print_warning ""
         print_warning "To grant the required role, an administrator can run:"
+        echo -e "${YELLOW}  # For user account:${NC}"
         echo -e "${YELLOW}  az role assignment create \\${NC}"
         echo -e "${YELLOW}    --assignee \"\$(az ad signed-in-user show --query id -o tsv)\" \\${NC}"
+        echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
+        echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
+        echo ""
+        echo -e "${YELLOW}  # For service principal:${NC}"
+        echo -e "${YELLOW}  az role assignment create \\${NC}"
+        echo -e "${YELLOW}    --assignee \"<service-principal-object-id>\" \\${NC}"
         echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
         echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
         echo ""
