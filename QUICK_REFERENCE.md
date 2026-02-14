@@ -140,6 +140,42 @@ az monitor log-analytics query \
 
 ## Troubleshooting
 
+### Deployment Failed: Role Assignment Permission Error
+
+**Symptom:**
+```
+Authorization failed for template resource of type 'Microsoft.Authorization/roleAssignments'. 
+The client does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'
+```
+
+**Cause:** The service principal or user account doesn't have permission to create role assignments. This deployment creates role assignments for the Container App's managed identity to access Key Vault secrets.
+
+**Solution:**
+```bash
+# Get your subscription ID
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+# For a service principal (e.g., GitHub Actions)
+az role assignment create \
+  --assignee "<service-principal-object-id>" \
+  --role "User Access Administrator" \
+  --scope /subscriptions/$SUBSCRIPTION_ID
+
+# For your user account
+az role assignment create \
+  --assignee "$(az ad signed-in-user show --query id -o tsv)" \
+  --role "User Access Administrator" \
+  --scope /subscriptions/$SUBSCRIPTION_ID
+```
+
+After assigning the role, redeploy the template.
+
+**Alternative:** If your organization's policy doesn't allow User Access Administrator role, you can:
+1. Pre-create the role assignment manually before deployment
+2. Ask an administrator with Owner role to run the deployment
+
+See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal configuration.
+
 ### Container Won't Start
 ```bash
 # Check recent logs

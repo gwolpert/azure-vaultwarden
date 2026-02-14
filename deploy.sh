@@ -47,6 +47,40 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Check if current user/service principal has required permissions
+    print_info "Checking Azure permissions..."
+    SUBSCRIPTION_ID=$(az account show --query id -o tsv 2>/dev/null)
+    
+    # Try to check role assignments (this will fail gracefully if not authorized)
+    HAS_CONTRIBUTOR=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "Contributor" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Contributor" && echo "yes" || echo "no")
+    HAS_UAA=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "User Access Administrator" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "User Access Administrator" && echo "yes" || echo "no")
+    HAS_OWNER=$(az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv 2>/dev/null || echo '')" --role "Owner" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null | grep -q "Owner" && echo "yes" || echo "no")
+    
+    if [[ "$HAS_OWNER" == "yes" ]]; then
+        print_info "✓ User has Owner role (includes all required permissions)"
+    elif [[ "$HAS_CONTRIBUTOR" == "yes" && "$HAS_UAA" == "yes" ]]; then
+        print_info "✓ User has Contributor and User Access Administrator roles"
+    else
+        print_warning "WARNING: Could not verify all required Azure permissions"
+        print_warning "Required roles: Contributor AND User Access Administrator (or Owner)"
+        print_warning ""
+        print_warning "The deployment creates role assignments for the Container App's managed identity."
+        print_warning "If you don't have User Access Administrator role, the deployment will fail."
+        print_warning ""
+        print_warning "To grant the required role, an administrator can run:"
+        echo -e "${YELLOW}  az role assignment create \\${NC}"
+        echo -e "${YELLOW}    --assignee \"\$(az ad signed-in-user show --query id -o tsv)\" \\${NC}"
+        echo -e "${YELLOW}    --role \"User Access Administrator\" \\${NC}"
+        echo -e "${YELLOW}    --scope \"/subscriptions/$SUBSCRIPTION_ID\"${NC}"
+        echo ""
+        read -p "Do you want to continue anyway? (y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_warning "Deployment cancelled."
+            exit 0
+        fi
+    fi
+    
     print_info "Prerequisites check passed!"
 }
 

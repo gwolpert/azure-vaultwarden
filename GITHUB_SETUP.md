@@ -16,18 +16,33 @@ This deployment uses GitHub Environments to manage configuration for different d
 
 You need to create a service principal for GitHub Actions to authenticate with Azure.
 
+**Required Roles:**
+- **Contributor**: For creating and managing Azure resources
+- **User Access Administrator**: For creating role assignments (required because the deployment grants the Container App's managed identity access to Key Vault secrets)
+
+> **Important:** Both roles are necessary for successful deployment. The User Access Administrator role is required because the Bicep template creates role assignments for the Container App's managed identity to access Key Vault secrets.
+
 ### Option A: Using Azure CLI (Recommended)
 
 ```bash
 # Set your subscription
 az account set --subscription "<your-subscription-id>"
 
-# Create a service principal with Contributor role
+# Create a service principal with Contributor and User Access Administrator roles
+# Both roles are required: Contributor for resource management, User Access Administrator for role assignments
 az ad sp create-for-rbac \
   --name "github-vaultwarden-deployer" \
   --role contributor \
   --scopes /subscriptions/<your-subscription-id> \
   --sdk-auth
+
+# Also assign User Access Administrator role (required for creating role assignments)
+# Get the service principal's Object ID from the output above
+SP_OBJECT_ID="<service-principal-object-id>"
+az role assignment create \
+  --assignee $SP_OBJECT_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/<your-subscription-id>
 ```
 
 **Note:** For newer Azure CLI versions (2.37.0+), use federated credentials instead:
@@ -46,9 +61,16 @@ APP_ID=$(az ad app create \
 # Create service principal
 az ad sp create --id $APP_ID
 
-# Assign contributor role
+# Assign Contributor role for resource management
 az role assignment create \
   --role contributor \
+  --assignee $APP_ID \
+  --scope /subscriptions/$SUBSCRIPTION_ID
+
+# Assign User Access Administrator role for creating role assignments
+# This is required because the deployment creates role assignments for the Container App's managed identity
+az role assignment create \
+  --role "User Access Administrator" \
   --assignee $APP_ID \
   --scope /subscriptions/$SUBSCRIPTION_ID
 
@@ -81,7 +103,11 @@ Save these values - you'll need them in the next step.
 4. After creation, note the "Application (client) ID" and "Directory (tenant) ID"
 5. Go to "Certificates & secrets" > "Federated credentials"
 6. Add credentials for each environment
-7. Assign "Contributor" role at subscription level
+7. Assign both "Contributor" and "User Access Administrator" roles at subscription level:
+   - Go to Subscriptions > Select your subscription > Access control (IAM)
+   - Click "Add" > "Add role assignment"
+   - Select "Contributor" role, then select your app registration
+   - Repeat for "User Access Administrator" role
 
 ## Step 2: Create GitHub Environments
 
@@ -298,6 +324,38 @@ VAULTWARDEN_IMAGE_TAG: 1.30.1
 - Deployment branches: main only
 
 ## Troubleshooting
+
+### Error: "Authorization failed for template resource"
+
+**Error Message:**
+```
+Authorization failed for template resource of type 'Microsoft.Authorization/roleAssignments'. 
+The client does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'
+```
+
+**Cause:** The service principal used for deployment doesn't have permission to create role assignments. The deployment creates a role assignment to grant the Container App's managed identity access to Key Vault secrets.
+
+**Solution:** Assign the "User Access Administrator" role to the service principal:
+```bash
+# Get your service principal's Object ID
+az ad sp list --display-name "github-vaultwarden-deployer" --query [0].id -o tsv
+
+# Assign User Access Administrator role
+az role assignment create \
+  --assignee "<service-principal-object-id>" \
+  --role "User Access Administrator" \
+  --scope /subscriptions/<your-subscription-id>
+```
+
+Alternatively, you can assign the "Owner" role which includes both Contributor and User Access Administrator permissions:
+```bash
+az role assignment create \
+  --assignee "<service-principal-object-id>" \
+  --role "Owner" \
+  --scope /subscriptions/<your-subscription-id>
+```
+
+**Note:** The User Access Administrator role is specifically required because the Bicep template creates role assignments for the Container App's managed identity to access Key Vault secrets. This is a common requirement when deploying resources that need to create their own role assignments.
 
 ### Error: "Resource 'Microsoft.Web/sites' could not be found"
 
