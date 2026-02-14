@@ -128,7 +128,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   scope: rg
   name: 'keyvault-deployment'
   params: {
-    name: 'kv-${namingPrefix}-${uniqueSuffix}'
+    name: 'kv${environmentName}${uniqueSuffix}'
     location: location
     sku: 'standard'
     enableRbacAuthorization: true
@@ -143,15 +143,15 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
   }
 }
 
-// Reference to the Key Vault resource
-resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+// Reference to the deployed Key Vault for secret creation
+resource existingKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   scope: rg
   name: keyVault.outputs.name
 }
 
 // Store admin token in Key Vault (only if provided)
 resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (adminToken != '') {
-  parent: keyVaultResource
+  parent: existingKeyVault
   name: 'vaultwarden-admin-token'
   properties: {
     value: adminToken
