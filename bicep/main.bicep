@@ -122,7 +122,6 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     storages: [
       {
-        name: 'vaultwarden-storage'
         kind: 'SMB'
         shareName: 'vaultwarden-data'
         storageAccountName: storageAccountName
