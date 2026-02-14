@@ -234,9 +234,9 @@ az containerapp hostname bind \
 
 Based on GitHub Environment configuration:
 
-- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-app`
-- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-app`
-- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-app`
+- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-ca`
+- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-ca`
+- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-ca`
 
 Replace `<app-name>` and `<rg-name>` with your actual values in commands above.
 
@@ -246,10 +246,10 @@ Add to your `.bashrc` or `.zshrc`:
 
 ```bash
 # Vaultwarden aliases
-alias vw-dev-logs="az containerapp logs show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --follow"
-alias vw-dev-status="az containerapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
-alias vw-prod-logs="az containerapp logs show --name vaultwarden-prod-app --resource-group vaultwarden-prod-rg --follow"
-alias vw-prod-status="az containerapp show --name vaultwarden-prod-app --resource-group vaultwarden-prod-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
+alias vw-dev-logs="az containerapp logs show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --follow"
+alias vw-dev-status="az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
+alias vw-prod-logs="az containerapp logs show --name vaultwarden-prod-ca --resource-group vaultwarden-prod-rg --follow"
+alias vw-prod-status="az containerapp show --name vaultwarden-prod-ca --resource-group vaultwarden-prod-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
 ```
 
 ## Getting Help
@@ -265,7 +265,7 @@ Run this script to check if your deployment is healthy:
 ```bash
 #!/bin/bash
 RG_NAME="vaultwarden-dev-rg"
-APP_NAME="vaultwarden-dev-app"
+APP_NAME="vaultwarden-dev-ca"
 
 echo "🔍 Health Check for $APP_NAME in $RG_NAME"
 echo ""

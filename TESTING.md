@@ -123,7 +123,7 @@ Expected: File share named "vaultwarden-data" exists
 #### Check Container App Status
 ```bash
 az containerapp show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --query "{name:name, provisioningState:properties.provisioningState, runningStatus:properties.runningStatus, fqdn:properties.configuration.ingress.fqdn}"
 ```
@@ -136,7 +136,7 @@ Expected:
 #### Check Container Configuration
 ```bash
 az containerapp show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --query "properties.template.containers[0].{image:image, cpu:resources.cpu, memory:resources.memory, volumeMounts:volumeMounts}"
 ```
@@ -150,7 +150,7 @@ Verify:
 #### Check Ingress Configuration
 ```bash
 az containerapp ingress show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg
 ```
 
@@ -162,7 +162,7 @@ Expected:
 #### Check Scaling Configuration
 ```bash
 az containerapp show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --query "properties.template.scale.{minReplicas:minReplicas, maxReplicas:maxReplicas}"
 ```
@@ -176,7 +176,7 @@ Expected:
 #### Get Application URL
 ```bash
 VAULTWARDEN_URL=$(az containerapp show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --query "properties.configuration.ingress.fqdn" -o tsv)
 
@@ -209,7 +209,7 @@ Expected: JSON response with Vaultwarden configuration
 #### View Recent Logs
 ```bash
 az containerapp logs show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --tail 50
 ```
@@ -222,7 +222,7 @@ Check for:
 #### Check for Errors
 ```bash
 az containerapp logs show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --tail 200 | grep -i error
 ```
@@ -235,7 +235,7 @@ Expected: No critical errors (some warnings may be normal)
 ```bash
 az monitor log-analytics workspace show \
   --resource-group vaultwarden-dev-rg \
-  --workspace-name vaultwarden-dev-logs \
+  --workspace-name vaultwarden-dev-log \
   --query "{name:name, provisioningState:provisioningState}"
 ```
 
@@ -245,7 +245,7 @@ Expected: Provisioning state Succeeded
 ```bash
 WORKSPACE_ID=$(az monitor log-analytics workspace show \
   --resource-group vaultwarden-dev-rg \
-  --workspace-name vaultwarden-dev-logs \
+  --workspace-name vaultwarden-dev-log \
   --query customerId -o tsv)
 
 # Note: Logs may take 5-10 minutes to appear
@@ -272,7 +272,7 @@ Expected:
 #### Verify Container App Secrets
 ```bash
 az containerapp secret list \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --query "[].name"
 ```
@@ -282,7 +282,7 @@ Expected: Secrets exist (values should not be displayed)
 #### Check Managed Identity
 ```bash
 az containerapp identity show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg
 ```
 
@@ -321,10 +321,10 @@ If signups are allowed:
 #### Restart Container
 ```bash
 az containerapp revision restart \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --revision $(az containerapp revision list \
-    --name vaultwarden-dev-app \
+    --name vaultwarden-dev-ca \
     --resource-group vaultwarden-dev-rg \
     --query "[0].name" -o tsv)
 ```
@@ -406,7 +406,7 @@ az storage file delete \
 ```bash
 # CPU usage
 az monitor metrics list \
-  --resource $(az containerapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --resource $(az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query id -o tsv) \
   --metric "UsageNanoCores" \
   --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
   --interval PT1M \
@@ -421,7 +421,7 @@ Create an alert for container restarts:
 az monitor metrics alert create \
   --name vaultwarden-restart-alert \
   --resource-group vaultwarden-dev-rg \
-  --scopes $(az containerapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --scopes $(az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query id -o tsv) \
   --condition "count Restarts > 3" \
   --description "Alert when container restarts more than 3 times"
 ```
@@ -452,7 +452,7 @@ Expected: Database files and attachments downloaded
 ```bash
 # Stop container (scale to 0)
 az containerapp update \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --min-replicas 0 \
   --max-replicas 0
@@ -469,7 +469,7 @@ az storage file upload-batch \
 
 # Scale back up
 az containerapp update \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --min-replicas 1 \
   --max-replicas 3
@@ -489,16 +489,16 @@ rm -rf backup-test
 ```bash
 # Force a restart
 az containerapp revision restart \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --revision $(az containerapp revision list \
-    --name vaultwarden-dev-app \
+    --name vaultwarden-dev-ca \
     --resource-group vaultwarden-dev-rg \
     --query "[0].name" -o tsv)
 
 # Monitor restart
 watch "az containerapp replica list \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --output table"
 ```

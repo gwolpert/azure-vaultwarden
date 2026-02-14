@@ -206,7 +206,7 @@ To use a custom domain:
 3. After deployment, get the Container App's FQDN:
    ```bash
    az containerapp show \
-     --name vaultwarden-dev-app \
+     --name vaultwarden-dev-ca \
      --resource-group vaultwarden-dev-rg \
      --query properties.configuration.ingress.fqdn \
      --output tsv
@@ -219,7 +219,7 @@ To use a custom domain:
    az containerapp hostname add \
      --hostname vault.example.com \
      --resource-group vaultwarden-dev-rg \
-     --name vaultwarden-dev-app
+     --name vaultwarden-dev-ca
    ```
 
 ## Security Considerations
@@ -289,7 +289,7 @@ The data persists across container restarts and updates.
 
 ```bash
 az containerapp logs show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --follow
 ```
@@ -300,7 +300,7 @@ az containerapp logs show \
 # Get Log Analytics Workspace ID
 az monitor log-analytics workspace show \
   --resource-group vaultwarden-dev-rg \
-  --workspace-name vaultwarden-dev-logs \
+  --workspace-name vaultwarden-dev-log \
   --query customerId \
   --output tsv
 ```
@@ -355,7 +355,7 @@ az storage file upload-batch \
 Check container logs:
 ```bash
 az containerapp logs show \
-  --name vaultwarden-dev-app \
+  --name vaultwarden-dev-ca \
   --resource-group vaultwarden-dev-rg \
   --tail 100
 ```
