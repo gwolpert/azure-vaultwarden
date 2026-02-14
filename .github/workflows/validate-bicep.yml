@@ -43,8 +43,10 @@ jobs:
           az bicep build --file bicep/main.bicep 2>&1 | tee bicep-output.txt
           
           # Check if there are any warnings (excluding network errors which are expected in CI)
-          if grep -i "warning" bicep-output.txt | grep -v "BCP192" | grep -v "Unable to restore"; then
-            echo "⚠️ Linter warnings found (see above)"
+          WARNINGS=$(grep -i "warning" bicep-output.txt | grep -v "BCP192" | grep -v "Unable to restore" || true)
+          if [ -n "$WARNINGS" ]; then
+            echo "⚠️ Linter warnings found:"
+            echo "$WARNINGS"
             exit 1
           else
             echo "✅ No linter warnings found!"

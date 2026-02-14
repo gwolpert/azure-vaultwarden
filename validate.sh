@@ -115,7 +115,7 @@ check_bicep_template() {
             fi
             
             # Check for linter warnings
-            if [ ! -z "$WARNINGS" ]; then
+            if [ -n "$WARNINGS" ]; then
                 print_warn "Bicep linter warnings found:"
                 echo "$WARNINGS"
             else
