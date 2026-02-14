@@ -72,6 +72,7 @@ The deployment creates the following Azure resources:
 - Azure CLI installed ([Install guide](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
 - Bicep CLI installed (comes with Azure CLI 2.20.0+)
 - Appropriate permissions to create resources in your Azure subscription
+- Service principal with **Contributor** and **User Access Administrator** roles (for GitHub Actions deployment) or **Owner** role (which includes both)
 
 ## Quick Start
 
@@ -349,6 +350,45 @@ az storage file upload-batch \
 ```
 
 ## Troubleshooting
+
+### Deployment Failed: Role Assignment Permission Error
+
+**Error:**
+```
+Authorization failed for template resource of type 'Microsoft.Authorization/roleAssignments'. 
+The client does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'
+```
+
+**Cause:** The service principal used for deployment doesn't have permission to create role assignments.
+
+**Solution:** Grant the "User Access Administrator" role to your service principal:
+
+```bash
+# Get your service principal's Object ID
+SP_OBJECT_ID=$(az ad sp list --display-name "github-vaultwarden-deployer" --query [0].id -o tsv)
+
+# Verify the service principal was found
+if [ -z "$SP_OBJECT_ID" ]; then
+  echo "Error: Service principal 'github-vaultwarden-deployer' not found"
+  echo "Please verify the name or create it first"
+  exit 1
+fi
+
+echo "Found service principal with Object ID: $SP_OBJECT_ID"
+
+# Get your subscription ID
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+# Assign User Access Administrator role
+az role assignment create \
+  --assignee $SP_OBJECT_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/$SUBSCRIPTION_ID
+```
+
+After assigning the role, redeploy via GitHub Actions or run the deployment again.
+
+See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal setup instructions.
 
 ### Container Not Starting
 
