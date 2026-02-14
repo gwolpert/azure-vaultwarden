@@ -45,7 +45,10 @@ SP_APP_ID=$(echo "$SP_OUTPUT" | jq -r '.clientId')
 # SP_APP_ID="<client-id-from-output>"
 
 if [ -z "$SP_APP_ID" ]; then
-  echo "Error: Could not extract client ID. Please install jq or manually set SP_APP_ID"
+  echo "Error: Could not extract client ID."
+  echo "Please install jq or manually extract clientId from the output above:"
+  echo "  SP_APP_ID=\"<your-client-id-from-output>\""
+  echo "  SP_OBJECT_ID=\$(az ad sp show --id \$SP_APP_ID --query id -o tsv)"
   exit 1
 fi
 
@@ -357,7 +360,8 @@ SP_OBJECT_ID=$(az ad sp list --display-name "github-vaultwarden-deployer" --quer
 
 # Verify the service principal was found
 if [ -z "$SP_OBJECT_ID" ]; then
-  echo "Error: Service principal 'github-vaultwarden-deployer' not found"
+  echo "Error: Service principal not found with the name 'github-vaultwarden-deployer'"
+  echo "Please replace the display name with your actual service principal name"
   exit 1
 fi
 

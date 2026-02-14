@@ -57,6 +57,8 @@ check_prerequisites() {
     CURRENT_USER_TYPE=$(az account show --query user.type -o tsv 2>/dev/null)
     if [[ -z "$CURRENT_USER_TYPE" ]]; then
         # Unable to determine user type, skip permission check
+        print_warning "Unable to determine Azure identity type. Skipping permission validation."
+        print_warning "If deployment fails with role assignment errors, ensure you have the required roles."
         ASSIGNEE_ID=""
     elif [[ "$CURRENT_USER_TYPE" == "user" ]]; then
         ASSIGNEE_ID=$(az ad signed-in-user show --query id -o tsv 2>/dev/null)
