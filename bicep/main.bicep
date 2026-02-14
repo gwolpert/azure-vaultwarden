@@ -124,20 +124,17 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
 }
 
 // Deploy storage for Container App Environment
-resource containerAppEnvStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+module containerAppEnvStorage 'managed-environment-storage.bicep' = {
   scope: rg
-  name: '${containerAppEnv.outputs.name}/vaultwarden-storage'
-  properties: {
-    azureFile: {
-      accountName: storageAccountName
-      accountKey: storageAccountResource.listKeys().keys[0].value
-      shareName: 'vaultwarden-data'
-      accessMode: 'ReadWrite'
-    }
+  name: 'containerapp-env-storage-deployment'
+  params: {
+    managedEnvironmentName: containerAppEnv.outputs.name
+    storageName: 'vaultwarden-storage'
+    storageAccountName: storageAccountName
+    storageAccountKey: storageAccountResource.listKeys().keys[0].value
+    shareName: 'vaultwarden-data'
+    accessMode: 'ReadWrite'
   }
-  dependsOn: [
-    storageAccount
-  ]
 }
 
 // Deploy Key Vault for secrets management
