@@ -367,6 +367,15 @@ The client does not have permission to perform action 'Microsoft.Authorization/r
 # Get your service principal's Object ID
 SP_OBJECT_ID=$(az ad sp list --display-name "github-vaultwarden-deployer" --query [0].id -o tsv)
 
+# Verify the service principal was found
+if [ -z "$SP_OBJECT_ID" ]; then
+  echo "Error: Service principal 'github-vaultwarden-deployer' not found"
+  echo "Please verify the name or create it first"
+  exit 1
+fi
+
+echo "Found service principal with Object ID: $SP_OBJECT_ID"
+
 # Get your subscription ID
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 

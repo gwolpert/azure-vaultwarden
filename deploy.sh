@@ -63,6 +63,9 @@ check_prerequisites() {
     fi
     
     # Try to check role assignments (this will fail gracefully if not authorized)
+    # NOTE: This checks role assignments at the subscription scope only.
+    # Role assignments inherited from management groups won't be detected.
+    # If you have roles assigned at parent scopes and get a warning, you can safely continue.
     if [[ -n "$ASSIGNEE_ID" ]]; then
         # Fetch all role assignments once and check for required roles
         ALL_ROLES=$(az role assignment list --assignee "$ASSIGNEE_ID" --scope "/subscriptions/$SUBSCRIPTION_ID" --query "[].roleDefinitionName" -o tsv 2>/dev/null)

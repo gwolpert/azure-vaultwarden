@@ -39,7 +39,11 @@ SP_OUTPUT=$(az ad sp create-for-rbac \
 echo "$SP_OUTPUT"
 
 # Extract the Object ID from the service principal
+# If you have jq installed:
 SP_APP_ID=$(echo "$SP_OUTPUT" | jq -r '.clientId')
+# OR manually copy the clientId from the output above and use it here:
+# SP_APP_ID="<client-id-from-output>"
+
 SP_OBJECT_ID=$(az ad sp show --id $SP_APP_ID --query id -o tsv)
 
 # Also assign User Access Administrator role (required for creating role assignments)
