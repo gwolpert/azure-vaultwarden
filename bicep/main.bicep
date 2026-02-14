@@ -257,7 +257,7 @@ module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
   scope: rg
   name: 'keyvault-role-assignment-deployment'
   params: {
-    keyVaultName: 'kv${environmentName}${uniqueSuffix}'
+    keyVaultName: keyVault.outputs.name
     principalId: containerApp.outputs.systemAssignedMIPrincipalId
   }
   dependsOn: [
