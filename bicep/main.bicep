@@ -125,6 +125,7 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
 
 // Deploy storage for Container App Environment
 resource containerAppEnvStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+  scope: rg
   name: '${containerAppEnv.outputs.name}/vaultwarden-storage'
   properties: {
     azureFile: {
