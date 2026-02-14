@@ -34,14 +34,18 @@ param signupsAllowed bool = false
 param vaultwardenImageTag string = 'latest'
 
 // Variables
+// Using official Microsoft Azure resource abbreviations:
+// https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 var namingPrefix = '${resourceGroupName}'
 // Storage account: Must be 3-24 chars, lowercase letters and numbers only
-// Pattern: {resourceGroupName without dashes}sa
-// Example: vaultwarden-dev -> vaultwardendevsa (16 chars)
-// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionsa = 23 chars)
-var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}sa')
+// Official abbreviation: 'st' (not 'sa')
+// Pattern: {resourceGroupName without dashes}st
+// Example: vaultwarden-dev -> vaultwardendevst (16 chars)
+// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
+var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens
+// Official abbreviation: 'kv'
 // Pattern: {resourceGroupName without dashes}kv
 // Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
@@ -122,7 +126,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   scope: rg
   name: 'log-analytics-deployment'
   params: {
-    name: '${namingPrefix}-logs'
+    name: '${namingPrefix}-log'
     location: location
   }
 }
@@ -132,7 +136,7 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
   scope: rg
   name: 'containerapp-env-deployment'
   params: {
-    name: '${namingPrefix}-env'
+    name: '${namingPrefix}-cae'
     location: location
     infrastructureSubnetId: vnet.outputs.subnetResourceIds[0]
     internal: false
@@ -190,7 +194,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
   scope: rg
   name: 'vaultwarden-containerapp-deployment'
   params: {
-    name: '${namingPrefix}-app'
+    name: '${namingPrefix}-ca'
     location: location
     environmentResourceId: containerAppEnv.outputs.resourceId
     containers: [
@@ -204,7 +208,7 @@ module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
         env: concat([
           {
             name: 'DOMAIN'
-            value: domainName != '' ? domainName : 'https://${namingPrefix}-app.${containerAppEnv.outputs.defaultDomain}'
+            value: domainName != '' ? domainName : 'https://${namingPrefix}-ca.${containerAppEnv.outputs.defaultDomain}'
           }
           {
             name: 'SIGNUPS_ALLOWED'
