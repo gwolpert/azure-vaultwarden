@@ -637,7 +637,7 @@ curl -s -o /dev/null -w "%{http_code}" "https://$URL" | grep -q "200" && echo "�
 
 # Test 4: App Service Logs
 echo "Test 4: App Service Logs"
-az webapp log show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
+az webapp log tail --name $APP_NAME --resource-group $RG_NAME --only-show-errors &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
 echo "Automated verification complete!"
 ```

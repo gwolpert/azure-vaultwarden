@@ -229,14 +229,14 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
           value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token/)'
         }
       ] : [])
-      azureStorageAccounts: {
-        'vaultwarden-data': {
-          type: 'AzureFiles'
-          accountName: storageAccountName
-          shareName: 'vaultwarden-data'
-          mountPath: '/data'
-          accessKey: storageAccountResource.listKeys().keys[0].value
-        }
+    }
+    azureStorageAccounts: {
+      'vaultwarden-data': {
+        type: 'AzureFiles'
+        accountName: storageAccountName
+        shareName: 'vaultwarden-data'
+        mountPath: '/data'
+        accessKey: storageAccountResource.listKeys().keys[0].value
       }
     }
     httpsOnly: true
@@ -256,6 +256,7 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
       }
     ]
   }
+  dependsOn: adminToken != '' ? [keyVaultSecret] : []
 }
 
 // Grant App Service managed identity access to Key Vault secrets

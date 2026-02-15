@@ -63,7 +63,7 @@ az resource list \
   --output table
 ```
 
-### Scale Container App
+### Scale App Service Plan
 ```bash
 az appservice plan update \
   --name <asp-name> \
