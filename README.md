@@ -1,6 +1,6 @@
 # Azure Vaultwarden Deployment
 
-This repository contains Bicep templates for deploying [Vaultwarden](https://github.com/dani-garcia/vaultwarden) (an unofficial Bitwarden-compatible server) on Azure Container Apps with all necessary supporting infrastructure.
+This repository contains Bicep templates for deploying [Vaultwarden](https://github.com/dani-garcia/vaultwarden) (an unofficial Bitwarden-compatible server) on Azure App Service with all necessary supporting infrastructure.
 
 **Deployment is managed through GitHub Actions with GitHub Environments** for secure and reproducible deployments across dev, staging, and production environments.
 
@@ -60,11 +60,12 @@ This will check:
 The deployment creates the following Azure resources:
 
 - **Resource Group**: Container for all resources
-- **Virtual Network**: Isolated network with dedicated subnet for Container Apps
+- **Virtual Network**: Isolated network with dedicated subnet for App Service VNet integration
 - **Storage Account**: Azure Files storage for persistent Vaultwarden data
 - **Log Analytics Workspace**: Monitoring and logging
-- **Container App Environment**: Managed environment for container apps
-- **Container App**: Vaultwarden application container
+- **App Service Plan**: S1 (Standard) Linux plan with VNet integration, auto-scaling, and deployment slots
+- **App Service**: Web App for Containers running Vaultwarden
+- **Key Vault**: Secure storage for secrets (admin token)
 
 ## Prerequisites
 
@@ -204,23 +205,23 @@ To use a custom domain:
      --parameters environmentName="dev"
    ```
 
-3. After deployment, get the Container App's FQDN:
+3. After deployment, get the App Service's URL:
    ```bash
-   az containerapp show \
-     --name vaultwarden-dev-ca \
+   az webapp show \
+     --name vaultwarden-dev-app \
      --resource-group vaultwarden-dev-rg \
-     --query properties.configuration.ingress.fqdn \
+     --query defaultHostName \
      --output tsv
    ```
 
-4. Create a CNAME record in your DNS pointing to this FQDN
+4. Create a CNAME record in your DNS pointing to this hostname
 
-5. Add custom domain to Container App:
+5. Add custom domain to App Service:
    ```bash
-   az containerapp hostname add \
+   az webapp config hostname add \
      --hostname vault.example.com \
      --resource-group vaultwarden-dev-rg \
-     --name vaultwarden-dev-ca
+     --webapp-name vaultwarden-dev-app
    ```
 
 ## Security Considerations
@@ -271,7 +272,7 @@ az deployment sub create \
 
 ### HTTPS
 
-The Container App automatically provides HTTPS with Azure-managed certificates. For custom domains, you can:
+The App Service automatically provides HTTPS with Azure-managed certificates. For custom domains, you can:
 - Let Azure manage the certificate (free)
 - Upload your own certificate
 
@@ -286,13 +287,12 @@ The data persists across container restarts and updates.
 
 ## Monitoring and Logs
 
-### View Container Logs
+### View App Service Logs
 
 ```bash
-az containerapp logs show \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --follow
+az webapp log tail \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 ```
 
 ### View in Log Analytics
@@ -310,10 +310,28 @@ Query logs in Azure Portal or using KQL.
 
 ## Scaling
 
-The Container App is configured to scale between 1-3 replicas based on load. To adjust:
+The App Service can be scaled manually or automatically (auto-scaling available on Standard tier). To scale the App Service Plan:
 
-1. Update the `scaleMinReplicas` and `scaleMaxReplicas` parameters in `main.bicep`
-2. Redeploy the template
+1. Update the SKU in `main.bicep` (e.g., from S1 to S2 or P1v2)
+2. Or scale manually:
+   ```bash
+   az appservice plan update \
+     --name vaultwarden-dev-asp \
+     --resource-group vaultwarden-dev-rg \
+     --sku S2
+   ```
+
+3. Configure auto-scaling rules:
+   ```bash
+   az monitor autoscale create \
+     --resource-group vaultwarden-dev-rg \
+     --resource vaultwarden-dev-asp \
+     --resource-type Microsoft.Web/serverFarms \
+     --name autoscale-vaultwarden \
+     --min-count 1 \
+     --max-count 3 \
+     --count 1
+   ```
 
 ## Backup and Recovery
 
@@ -392,12 +410,11 @@ See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal setup i
 
 ### Container Not Starting
 
-Check container logs:
+Check App Service logs:
 ```bash
-az containerapp logs show \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --tail 100
+az webapp log tail \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 ```
 
 ### Database Issues
@@ -408,7 +425,7 @@ Ensure `ENABLE_DB_WAL` is set to `true` - this is required for SQLite on network
 
 1. Verify admin token is set
 2. Ensure you're accessing `/admin` endpoint
-3. Check container logs for authentication errors
+3. Check App Service logs for authentication errors
 
 ## Updating Vaultwarden
 
@@ -433,7 +450,7 @@ az deployment sub create \
   --parameters environmentName="dev"
 ```
 
-The update will trigger a new container deployment with zero downtime (rolling update).
+The update will trigger a new container deployment with minimal downtime.
 
 ## Cleanup
 
@@ -488,12 +505,23 @@ The ARM template is compiled from the Bicep source, ensuring consistency between
 ## Cost Estimation
 
 Approximate monthly costs (East US region):
-- Container App: ~$10-30 (depending on usage)
+- App Service Plan (S1): ~$70-75
 - Storage Account: ~$2-5 (depending on data size)
 - Log Analytics: ~$2-10 (depending on log volume)
 - Virtual Network: Free
+- Key Vault: < $1
 
-Total: ~$14-45/month
+Total: ~$74-91/month
+
+**Benefits of S1 over B1**:
+- Full VNet integration support
+- Auto-scaling capabilities
+- Deployment slots for zero-downtime updates
+- Better performance (1 core, 1.75 GB RAM)
+- Custom domains with SSL
+- Suitable for production workloads
+
+**Still more cost-effective than Container Apps** for similar features and performance.
 
 Actual costs may vary based on usage, region, and resource configuration.
 
@@ -511,5 +539,5 @@ This deployment template is provided as-is. Vaultwarden is licensed under the GP
 ## Additional Resources
 
 - [Vaultwarden Wiki](https://github.com/dani-garcia/vaultwarden/wiki)
-- [Azure Container Apps Documentation](https://docs.microsoft.com/azure/container-apps/)
+- [Azure App Service Documentation](https://docs.microsoft.com/azure/app-service/)
 - [Azure Verified Modules](https://azure.github.io/Azure-Verified-Modules/)

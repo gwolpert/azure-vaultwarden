@@ -147,14 +147,14 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Deploy App Service Plan (B1 SKU for cost efficiency)
+// Deploy App Service Plan (S1 SKU for VNet integration and production features)
 module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
   scope: rg
   name: 'app-service-plan-deployment'
   params: {
     name: appServicePlanName
     location: location
-    skuName: 'B1'
+    skuName: 'S1'
     kind: 'linux'
     reserved: true  // Required for Linux
   }

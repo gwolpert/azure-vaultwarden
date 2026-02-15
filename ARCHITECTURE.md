@@ -13,17 +13,19 @@
 │  │  │              Virtual Network (10.0.0.0/16)           │  │ │
 │  │  │                                                        │  │ │
 │  │  │  ┌──────────────────────────────────────────────┐   │  │ │
-│  │  │  │  Container Apps Subnet (10.0.0.0/23)        │   │  │ │
+│  │  │  │  App Service Subnet (10.0.0.0/24)           │   │  │ │
 │  │  │  │                                               │   │  │ │
 │  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
-│  │  │  │  │  Container App Environment        │     │   │  │ │
+│  │  │  │  │  App Service Plan (S1 Standard)   │     │   │  │ │
+│  │  │  │  │  - 1 core, 1.75 GB RAM            │     │   │  │ │
 │  │  │  │  │                                    │     │   │  │ │
 │  │  │  │  │  ┌──────────────────────────┐    │     │   │  │ │
-│  │  │  │  │  │  Vaultwarden Container   │    │     │   │  │ │
-│  │  │  │  │  │  - Image: vaultwarden    │◄───┼─────┼───┼──┼─┐
+│  │  │  │  │  │  App Service (Web App)   │    │     │   │  │ │
+│  │  │  │  │  │  - Container: vaultwarden│◄───┼─────┼───┼──┼─┐
 │  │  │  │  │  │  - Port: 80              │    │     │   │  │ │
-│  │  │  │  │  │  - Volume: /data         │    │     │   │  │ │
+│  │  │  │  │  │  - Storage Mount: /data  │    │     │   │  │ │
 │  │  │  │  │  │  - Managed Identity      │    │     │   │  │ │
+│  │  │  │  │  │  - VNet Integration      │    │     │   │  │ │
 │  │  │  │  │  └──────────┬───────────────┘    │     │   │  │ │
 │  │  │  │  │             │                     │     │   │  │ │
 │  │  │  │  │             │ Mounts              │     │   │  │ │
@@ -55,7 +57,7 @@
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
 │  │  │        Log Analytics Workspace                     │    │ │
-│  │  │        - Container logs                            │    │ │
+│  │  │        - App Service logs                          │    │ │
 │  │  │        - Metrics                                   │    │ │
 │  │  │        - Performance data                          │    │ │
 │  │  └────────────────────────────────────────────────────┘    │ │
@@ -73,20 +75,20 @@
 
 ## Resource Flow
 
-1. **User Access**: Users access Vaultwarden via HTTPS through the Container App's public endpoint
-2. **Container App**: Runs the Vaultwarden container with automatic HTTPS termination
-3. **Secrets Management**: Container App uses its system-assigned managed identity to retrieve admin token from Key Vault
-4. **Data Storage**: Container mounts Azure File Share for persistent data storage
+1. **User Access**: Users access Vaultwarden via HTTPS through the App Service's public endpoint
+2. **App Service**: Runs the Vaultwarden container with automatic HTTPS termination
+3. **Secrets Management**: App Service uses its system-assigned managed identity to retrieve admin token from Key Vault
+4. **Data Storage**: App Service mounts Azure File Share for persistent data storage
 5. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
-6. **Networking**: Container App runs in a dedicated subnet within the Virtual Network
+6. **Networking**: App Service is integrated with Virtual Network for enhanced security
 
 ## Security Features
 
 ### Network Security
-- Virtual Network isolation
-- Container Apps subnet with network policies
+- Virtual Network isolation with VNet integration
+- App Service subnet with service delegation
 - HTTPS-only access with Azure-managed certificates
-- Optional internal-only deployment (set `internal: true`)
+- Private endpoint support available on S1+
 
 ### Data Security
 - Storage Account with:
@@ -101,27 +103,31 @@
 - Admin panel disabled by default
 - User signups disabled by default
 - Secrets stored in Azure Key Vault (not in configuration)
-- Container App uses managed identity for Key Vault access
+- App Service uses managed identity for Key Vault access
 - System-assigned managed identity for Azure resource access
 - RBAC-based access control for Key Vault
 
 ## Scaling and High Availability
 
 ### Scaling Configuration
-- **Min Replicas**: 1 (always at least one instance running)
-- **Max Replicas**: 3 (can scale up based on load)
-- **Auto-scaling**: Based on HTTP traffic and CPU/Memory metrics
+- **App Service Plan**: S1 (1 core, 1.75 GB RAM)
+- **Manual Scaling**: Scale up to higher SKUs (S2, S3, P1v2, P1v3, etc.) for more resources
+- **Auto-scaling**: Available on Standard tier - configure based on CPU, memory, or HTTP queue metrics
+- **Scale Out**: Scale to multiple instances (up to 10 on S1)
 
 ### High Availability
-- Zone redundancy available (set `zoneRedundant: true` in production)
+- Deployment slots for zero-downtime deployments (staging, production)
 - Automatic health checks and container restart
-- Data persistence ensures no data loss during scaling events
+- Data persistence ensures no data loss during restarts
+- Zone redundancy available with Premium SKUs (P1v2+)
+- Traffic manager integration for multi-region deployments
 
 ### Performance Optimizations
 - SQLite WAL mode enabled for better performance on network storage
-- Dedicated subnet for optimal network performance
-- CPU: 0.5 cores per replica
-- Memory: 1 GB per replica
+- VNet integration for optimal network performance
+- S1 SKU: 1 core, 1.75 GB RAM (suitable for production deployments)
+- Always On enabled to prevent cold starts
+- Supports deployment slots for testing before production rollout
 
 ## Cost Breakdown
 
@@ -129,18 +135,30 @@
 
 | Resource | Configuration | Estimated Cost |
 |----------|--------------|----------------|
-| Container App | 0.5 vCPU, 1GB RAM, 1-3 replicas | $10-30 |
+| App Service Plan (S1) | 1 core, 1.75GB RAM, Linux | $70-75 |
 | Storage Account | Standard LRS, ~5GB data | $2-5 |
 | Log Analytics | ~10GB/month logs | $2-10 |
 | Virtual Network | Subnet, no additional charges | Free |
-| **Total** | | **$14-45/month** |
+| Key Vault | Operations-based pricing | < $1 |
+| **Total** | | **$74-91/month** |
+
+**S1 Features vs B1**:
+- ✅ Full VNet integration support
+- ✅ Auto-scaling capabilities  
+- ✅ Deployment slots (zero-downtime updates)
+- ✅ Better performance and reliability
+- ✅ Production-ready with SLA
+- ✅ Custom domain with SSL included
+
+**Note**: While more expensive than B1 (~$13/month), S1 provides enterprise-grade features essential for production workloads and is still competitive with Container Apps pricing.
 
 ### Cost Optimization Tips
-1. Use smaller instance sizes for low-traffic deployments
-2. Set min replicas to 0 for dev/test environments (with cold start trade-off)
-3. Implement log filtering to reduce Log Analytics costs
+1. S1 tier is ideal for production with full feature set
+2. Use deployment slots to test updates before production
+3. Configure auto-scaling to scale down during low-traffic periods
 4. Use lifecycle policies for storage account to clean old logs
-5. Consider reserved instances for production workloads
+5. Use shared Log Analytics workspace across multiple projects
+6. Reserved instances available for 1-3 year commitments (30-55% savings)
 
 ## Deployment Process
 
@@ -151,14 +169,15 @@
 
 ### Deployment Steps
 1. **Resource Group Creation**: Subscription-scoped deployment creates resource group
-2. **Network Setup**: Virtual Network and subnet provisioned
+2. **Network Setup**: Virtual Network and subnet provisioned with App Service delegation
 3. **Storage Provisioning**: Storage account and file share created
 4. **Monitoring Setup**: Log Analytics Workspace deployed
-5. **Container Environment**: Container App Environment created in subnet
-6. **Application Deployment**: Vaultwarden container deployed with configuration
+5. **App Service Plan**: S1 Standard Linux plan created with auto-scaling support
+6. **Key Vault**: Deployed for secrets management
+7. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration
 
 ### Post-Deployment
-1. Verify container health status
+1. Verify App Service health status
 2. Test application access via provided URL
 3. Configure custom domain (if required)
 4. Set up backup procedures
@@ -167,35 +186,35 @@
 ## Monitoring and Operations
 
 ### Key Metrics to Monitor
-- Container CPU and memory usage
+- App Service CPU and memory usage
 - HTTP request count and response times
 - Storage usage and IOPS
-- Container restart count
+- App Service restart count
 - Failed authentication attempts
 
 ### Log Queries (KQL)
 
-#### Recent Container Logs
+#### Recent App Service Logs
 ```kql
-ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "vaultwarden-dev-ca"
+AppServiceConsoleLogs
+| where ResourceId contains "vaultwarden-dev-app"
 | order by TimeGenerated desc
 | take 100
 ```
 
 #### Error Logs
 ```kql
-ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "vaultwarden-dev-ca"
-| where Log_s contains "ERROR" or Log_s contains "error"
+AppServiceConsoleLogs
+| where ResourceId contains "vaultwarden-dev-app"
+| where ResultDescription contains "ERROR" or ResultDescription contains "error"
 | order by TimeGenerated desc
 ```
 
 #### HTTP Request Stats
 ```kql
-ContainerAppSystemLogs_CL
-| where ContainerAppName_s == "vaultwarden-dev-ca"
-| summarize count() by ResultCode_s
+AppServiceHTTPLogs
+| where ResourceId contains "vaultwarden-dev-app"
+| summarize count() by ScStatus
 ```
 
 ## Backup and Disaster Recovery
@@ -207,9 +226,9 @@ ContainerAppSystemLogs_CL
 4. **Retention**: 30 days minimum
 
 ### Recovery Procedures
-1. Stop the container app to prevent new writes
+1. Stop the App Service to prevent new writes
 2. Restore file share from backup
-3. Restart the container app
+3. Restart the App Service
 4. Verify data integrity
 
 ### Business Continuity
@@ -230,11 +249,11 @@ ContainerAppSystemLogs_CL
 
 **Resolution**:
 ```bash
-# Check container logs
-az containerapp logs show --name <app-name> --resource-group <rg-name> --tail 50
+# Check App Service logs
+az webapp log tail --name <app-name> --resource-group <rg-name>
 
-# Check container app status
-az containerapp show --name <app-name> --resource-group <rg-name>
+# Check App Service status
+az webapp show --name <app-name> --resource-group <rg-name>
 ```
 
 #### Cannot Access Application
@@ -272,15 +291,17 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 - [ ] Enable admin token with strong password
 - [ ] Disable signups or use invite-only mode
 - [ ] Configure custom domain with valid SSL certificate
-- [ ] Enable zone redundancy for high availability
 - [ ] Set up Azure Monitor alerts
 - [ ] Configure backup automation
 - [ ] Review and restrict network access
-- [ ] Enable Azure Defender for Container Apps
+- [ ] Enable deployment slots for zero-downtime updates
+- [ ] Configure auto-scaling rules based on load
+- [ ] Set up Application Insights for detailed monitoring
 - [ ] Implement IP restrictions if needed
 - [ ] Set up log retention policies
 - [ ] Configure SMTP for email notifications
 - [ ] Review and update Vaultwarden regularly
+- [ ] Consider zone redundancy (upgrade to Premium if needed)
 
 ### Compliance Considerations
 - Data residency: Resources deployed in specified Azure region
@@ -302,7 +323,7 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 ### Maintenance Windows
 - Recommended: Off-peak hours
 - Duration: 5-10 minutes typical
-- Zero-downtime updates possible with blue-green deployment pattern
+- Zero-downtime updates possible with deployment slots (staging → production swap)
 
 ## Additional Resources
 

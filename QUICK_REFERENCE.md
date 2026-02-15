@@ -35,26 +35,25 @@ az group delete --name <resource-group-name> --yes
 
 ### Get Application URL
 ```bash
-az containerapp show \
+az webapp show \
   --name <app-name> \
   --resource-group <rg-name> \
-  --query "properties.configuration.ingress.fqdn" -o tsv
+  --query "defaultHostName" -o tsv
 ```
 
-### View Container Logs
+### View App Service Logs
 ```bash
-az containerapp logs show \
+az webapp log tail \
   --name <app-name> \
-  --resource-group <rg-name> \
-  --follow
+  --resource-group <rg-name>
 ```
 
-### Check Container Status
+### Check App Service Status
 ```bash
-az containerapp show \
+az webapp show \
   --name <app-name> \
   --resource-group <rg-name> \
-  --query "{state:properties.provisioningState, running:properties.runningStatus}"
+  --query "{state:state, availabilityState:availabilityState}"
 ```
 
 ### List All Resources
@@ -66,19 +65,17 @@ az resource list \
 
 ### Scale Container App
 ```bash
-az containerapp update \
-  --name <app-name> \
+az appservice plan update \
+  --name <asp-name> \
   --resource-group <rg-name> \
-  --min-replicas 1 \
-  --max-replicas 5
+  --sku S2
 ```
 
-### Restart Container
+### Restart App Service
 ```bash
-az containerapp revision restart \
+az webapp restart \
   --name <app-name> \
-  --resource-group <rg-name> \
-  --revision <revision-name>
+  --resource-group <rg-name>
 ```
 
 ## Backup and Restore
@@ -117,8 +114,8 @@ az storage file upload-batch \
 ### View Metrics
 ```bash
 az monitor metrics list \
-  --resource <container-app-id> \
-  --metric "UsageNanoCores" \
+  --resource <app-service-id> \
+  --metric "CpuPercentage,MemoryPercentage" \
   --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
   --interval PT1M
 ```
@@ -134,7 +131,7 @@ WORKSPACE_ID=$(az monitor log-analytics workspace show \
 # Query logs
 az monitor log-analytics query \
   --workspace $WORKSPACE_ID \
-  --analytics-query "ContainerAppConsoleLogs_CL | take 100" \
+  --analytics-query "AppServiceConsoleLogs | take 100" \
   --output table
 ```
 
@@ -179,41 +176,39 @@ See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal configu
 ### Container Won't Start
 ```bash
 # Check recent logs
-az containerapp logs show --name <app-name> --resource-group <rg-name> --tail 50
+az webapp log tail --name <app-name> --resource-group <rg-name>
 
-# Check container app status
-az containerapp show --name <app-name> --resource-group <rg-name>
+# Check App Service status
+az webapp show --name <app-name> --resource-group <rg-name>
 
-# List revisions
-az containerapp revision list --name <app-name> --resource-group <rg-name>
+# List deployment logs
+az webapp log deployment list --name <app-name> --resource-group <rg-name>
 ```
 
 ### Performance Issues
 ```bash
 # Check resource usage
 az monitor metrics list \
-  --resource <container-app-id> \
-  --metric "UsageNanoCores,WorkingSetBytes" \
+  --resource <app-service-id> \
+  --metric "CpuPercentage,MemoryPercentage" \
   --output table
 
 # Scale up if needed
-az containerapp update \
-  --name <app-name> \
+az appservice plan update \
+  --name <asp-name> \
   --resource-group <rg-name> \
-  --cpu 1.0 \
-  --memory 2Gi
+  --sku S2
 ```
 
 ### Database Issues
 ```bash
-# Check if WAL mode is enabled (in container logs)
-az containerapp logs show --name <app-name> --resource-group <rg-name> | grep WAL
+# Check if WAL mode is enabled (in App Service logs)
+az webapp log tail --name <app-name> --resource-group <rg-name> | grep WAL
 
-# Access container (if needed for debugging)
-az containerapp exec \
+# SSH into container (if needed for debugging)
+az webapp ssh \
   --name <app-name> \
-  --resource-group <rg-name> \
-  --command /bin/sh
+  --resource-group <rg-name>
 ```
 
 ## Security
@@ -230,51 +225,51 @@ openssl rand -base64 32
 
 ### Check Security Settings
 ```bash
-# Storage account security
-az storage account show \
-  --name $STORAGE_NAME \
-  --query "{httpsOnly:enableHttpsTrafficOnly, minTls:minimumTlsVersion}"
+# App Service security
+az webapp show \
+  --name <app-name> \
+  --query "{httpsOnly:httpsOnly, minTlsVersion:siteConfig.minTlsVersion}"
 
-# Container App ingress
-az containerapp ingress show \
+# App Service config
+az webapp config show \
   --name <app-name> \
   --resource-group <rg-name> \
-  --query "{external:external, allowInsecure:allowInsecure}"
+  --query "{alwaysOn:alwaysOn, linuxFxVersion:linuxFxVersion}"
 ```
 
 ## Custom Domain
 
 ### Add Custom Domain
 ```bash
-# Get current FQDN
-az containerapp show \
+# Get current hostname
+az webapp show \
   --name <app-name> \
   --resource-group <rg-name> \
-  --query "properties.configuration.ingress.fqdn"
+  --query "defaultHostName"
 
 # Add custom hostname
-az containerapp hostname add \
+az webapp config hostname add \
   --hostname vault.example.com \
   --resource-group <rg-name> \
-  --name <app-name>
+  --webapp-name <app-name>
 
-# Bind certificate (optional - Azure can manage)
-az containerapp hostname bind \
-  --hostname vault.example.com \
-  --resource-group <rg-name> \
+# Bind SSL certificate (Azure-managed)
+az webapp config ssl bind \
+  --certificate-thumbprint auto \
+  --ssl-type SNI \
   --name <app-name> \
-  --environment <env-name>
+  --resource-group <rg-name>
 ```
 
 ## Environment Names by Default
 
 Based on GitHub Environment configuration:
 
-- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-ca`
-- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-ca`
-- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-ca`
+- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-app` / `vaultwarden-dev-asp`
+- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-app` / `vaultwarden-staging-asp`
+- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-app` / `vaultwarden-prod-asp`
 
-Replace `<app-name>` and `<rg-name>` with your actual values in commands above.
+Replace `<app-name>`, `<asp-name>`, and `<rg-name>` with your actual values in commands above.
 
 ## Useful Aliases
 
@@ -282,16 +277,16 @@ Add to your `.bashrc` or `.zshrc`:
 
 ```bash
 # Vaultwarden aliases
-alias vw-dev-logs="az containerapp logs show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --follow"
-alias vw-dev-status="az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
-alias vw-prod-logs="az containerapp logs show --name vaultwarden-prod-ca --resource-group vaultwarden-prod-rg --follow"
-alias vw-prod-status="az containerapp show --name vaultwarden-prod-ca --resource-group vaultwarden-prod-rg --query '{state:properties.provisioningState, running:properties.runningStatus}'"
+alias vw-dev-logs="az webapp log tail --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg"
+alias vw-dev-status="az webapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query '{state:state, availabilityState:availabilityState}'"
+alias vw-prod-logs="az webapp log tail --name vaultwarden-prod-app --resource-group vaultwarden-prod-rg"
+alias vw-prod-status="az webapp show --name vaultwarden-prod-app --resource-group vaultwarden-prod-rg --query '{state:state, availabilityState:availabilityState}'"
 ```
 
 ## Getting Help
 
 - **Vaultwarden Issues**: https://github.com/dani-garcia/vaultwarden/discussions
-- **Azure Container Apps**: https://docs.microsoft.com/azure/container-apps/
+- **Azure App Service**: https://docs.microsoft.com/azure/app-service/
 - **This Repository**: Open an issue
 
 ## Quick Health Check
@@ -301,7 +296,7 @@ Run this script to check if your deployment is healthy:
 ```bash
 #!/bin/bash
 RG_NAME="vaultwarden-dev-rg"
-APP_NAME="vaultwarden-dev-ca"
+APP_NAME="vaultwarden-dev-app"
 
 echo "🔍 Health Check for $APP_NAME in $RG_NAME"
 echo ""
@@ -310,18 +305,18 @@ echo ""
 echo -n "Resource Group: "
 az group show --name $RG_NAME &> /dev/null && echo "✅" || echo "❌"
 
-# Check if container app exists
-echo -n "Container App: "
-az containerapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✅" || echo "❌"
+# Check if App Service exists
+echo -n "App Service: "
+az webapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✅" || echo "❌"
 
 # Check running status
 echo -n "Running Status: "
-STATUS=$(az containerapp show --name $APP_NAME --resource-group $RG_NAME --query "properties.runningStatus" -o tsv 2>/dev/null)
+STATUS=$(az webapp show --name $APP_NAME --resource-group $RG_NAME --query "state" -o tsv 2>/dev/null)
 [[ "$STATUS" == "Running" ]] && echo "✅ $STATUS" || echo "⚠️ $STATUS"
 
 # Check HTTP endpoint
 echo -n "HTTP Endpoint: "
-URL=$(az containerapp show --name $APP_NAME --resource-group $RG_NAME --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null)
+URL=$(az webapp show --name $APP_NAME --resource-group $RG_NAME --query "defaultHostName" -o tsv 2>/dev/null)
 if [ ! -z "$URL" ]; then
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://$URL" || echo "000")
     [[ "$HTTP_CODE" == "200" ]] && echo "✅ ($HTTP_CODE)" || echo "⚠️ ($HTTP_CODE)"
