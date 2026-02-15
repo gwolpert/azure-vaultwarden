@@ -226,7 +226,7 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
       ], adminToken != '' ? [
         {
           name: 'ADMIN_TOKEN'
-          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token)'
+          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token/)'
         }
       ] : [])
       azureStorageAccounts: {
