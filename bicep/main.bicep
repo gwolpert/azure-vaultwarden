@@ -203,6 +203,16 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
       systemAssigned: true
     }
     virtualNetworkSubnetResourceId: vnet.outputs.subnetResourceIds[0]
+    storageMounts: [
+      {
+        name: 'vaultwarden-data'
+        type: 'AzureFiles'
+        accountName: storageAccountName
+        shareName: 'vaultwarden-data'
+        mountPath: '/data'
+        accessKey: storageAccountResource.listKeys().keys[0].value
+      }
+    ]
     siteConfig: {
       linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
       alwaysOn: true
@@ -229,15 +239,6 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
           value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token/)'
         }
       ] : [])
-    }
-    azureStorageAccounts: {
-      'vaultwarden-data': {
-        type: 'AzureFiles'
-        accountName: storageAccountName
-        shareName: 'vaultwarden-data'
-        mountPath: '/data'
-        accessKey: storageAccountResource.listKeys().keys[0].value
-      }
     }
     httpsOnly: true
     diagnosticSettings: [
