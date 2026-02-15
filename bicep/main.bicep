@@ -203,14 +203,18 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
       systemAssigned: true
     }
     virtualNetworkSubnetResourceId: vnet.outputs.subnetResourceIds[0]
-    storageMounts: [
+    configs: [
       {
-        name: 'vaultwarden-data'
-        type: 'AzureFiles'
-        accountName: storageAccountName
-        shareName: 'vaultwarden-data'
-        mountPath: '/data'
-        accessKey: storageAccountResource.listKeys().keys[0].value
+        name: 'azurestorageaccounts'
+        properties: {
+          'vaultwarden-data': {
+            type: 'AzureFiles'
+            accountName: storageAccountName
+            shareName: 'vaultwarden-data'
+            mountPath: '/data'
+            accessKey: storageAccountResource.listKeys().keys[0].value
+          }
+        }
       }
     ]
     siteConfig: {
