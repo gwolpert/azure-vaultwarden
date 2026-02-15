@@ -57,8 +57,8 @@ Expected resources:
 - [ ] Storage Account
 - [ ] File Share
 - [ ] Log Analytics Workspace
-- [ ] Container App Environment
-- [ ] Container App
+- [ ] App Service Plan
+- [ ] App Service (Web App)
 
 ### 2. Network Configuration Verification
 
@@ -118,67 +118,64 @@ az storage share list \
 
 Expected: File share named "vaultwarden-data" exists
 
-### 4. Container App Verification
+### 4. App Service Verification
 
-#### Check Container App Status
+#### Check App Service Status
 ```bash
-az containerapp show \
-  --name vaultwarden-dev-ca \
+az webapp show \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg \
-  --query "{name:name, provisioningState:properties.provisioningState, runningStatus:properties.runningStatus, fqdn:properties.configuration.ingress.fqdn}"
+  --query "{name:name, state:state, availabilityState:availabilityState, defaultHostName:defaultHostName}"
 ```
 
 Expected:
-- Provisioning state: Succeeded
-- Running status: Running
-- FQDN: Should be populated
+- State: Running
+- Availability state: Normal
+- Default hostname: Should be populated
 
-#### Check Container Configuration
+#### Check App Service Configuration
 ```bash
-az containerapp show \
-  --name vaultwarden-dev-ca \
+az webapp config show \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg \
-  --query "properties.template.containers[0].{image:image, cpu:resources.cpu, memory:resources.memory, volumeMounts:volumeMounts}"
+  --query "{linuxFxVersion:linuxFxVersion, alwaysOn:alwaysOn, httpsOnly:httpsOnly}"
 ```
 
 Verify:
-- [ ] Image: vaultwarden/server:latest
-- [ ] CPU: 0.5
-- [ ] Memory: 1Gi
-- [ ] Volume mounted at /data
+- [ ] linuxFxVersion: DOCKER|vaultwarden/server:latest
+- [ ] alwaysOn: true
+- [ ] httpsOnly: true
 
-#### Check Ingress Configuration
+#### Check VNet Integration
 ```bash
-az containerapp ingress show \
-  --name vaultwarden-dev-ca \
+az webapp vnet-integration list \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg
 ```
 
 Expected:
-- External: true
-- Target port: 80
-- Transport: http (Container Apps handles HTTPS termination)
+- VNet integration configured with app-service-subnet
 
-#### Check Scaling Configuration
+#### Check App Service Plan
 ```bash
-az containerapp show \
-  --name vaultwarden-dev-ca \
+az appservice plan show \
+  --name vaultwarden-dev-asp \
   --resource-group vaultwarden-dev-rg \
-  --query "properties.template.scale.{minReplicas:minReplicas, maxReplicas:maxReplicas}"
+  --query "{name:name, sku:sku.name, kind:kind}"
 ```
 
 Expected:
-- Min replicas: 1
-- Max replicas: 3
+- SKU: S1
+- Kind: linux
 
 ### 5. Application Health Check
 
 #### Get Application URL
 ```bash
-VAULTWARDEN_URL=$(az containerapp show \
-  --name vaultwarden-dev-ca \
+VAULTWARDEN_URL=$(az webapp show \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg \
-  --query "properties.configuration.ingress.fqdn" -o tsv)
+  --query "defaultHostName" -o tsv)
 
 echo "Vaultwarden URL: https://$VAULTWARDEN_URL"
 ```
@@ -204,14 +201,13 @@ curl -s "https://$VAULTWARDEN_URL/api/config" | jq '.'
 
 Expected: JSON response with Vaultwarden configuration
 
-### 6. Container Logs Verification
+### 6. App Service Logs Verification
 
 #### View Recent Logs
 ```bash
-az containerapp logs show \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --tail 50
+az webapp log tail \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 ```
 
 Check for:
@@ -221,10 +217,12 @@ Check for:
 
 #### Check for Errors
 ```bash
-az containerapp logs show \
-  --name vaultwarden-dev-ca \
+az webapp log download \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg \
-  --tail 200 | grep -i error
+  --log-file vaultwarden-logs.zip
+
+unzip -p vaultwarden-logs.zip | grep -i error | tail -50
 ```
 
 Expected: No critical errors (some warnings may be normal)
@@ -251,7 +249,7 @@ WORKSPACE_ID=$(az monitor log-analytics workspace show \
 # Note: Logs may take 5-10 minutes to appear
 az monitor log-analytics query \
   --workspace $WORKSPACE_ID \
-  --analytics-query "ContainerAppConsoleLogs_CL | take 10" \
+  --analytics-query "AppServiceConsoleLogs | take 10" \
   --output table
 ```
 
@@ -269,20 +267,20 @@ Expected:
 - TLS version: TLS1_2
 - Blob public access: false
 
-#### Verify Container App Secrets
+#### Verify App Service Secrets
 ```bash
-az containerapp secret list \
-  --name vaultwarden-dev-ca \
+az webapp config appsettings list \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg \
-  --query "[].name"
+  --query "[?name=='ADMIN_TOKEN'].{name:name, slotSetting:slotSetting}"
 ```
 
-Expected: Secrets exist (values should not be displayed)
+Expected: Settings exist (values should not be displayed for secrets)
 
 #### Check Managed Identity
 ```bash
-az containerapp identity show \
-  --name vaultwarden-dev-ca \
+az webapp identity show \
+  --name vaultwarden-dev-app \
   --resource-group vaultwarden-dev-rg
 ```
 
@@ -320,17 +318,13 @@ If signups are allowed:
 
 #### Restart Container
 ```bash
-az containerapp revision restart \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --revision $(az containerapp revision list \
-    --name vaultwarden-dev-ca \
-    --resource-group vaultwarden-dev-rg \
-    --query "[0].name" -o tsv)
+az webapp restart \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 ```
 
 #### Verify Data
-1. Wait for container to restart (check logs)
+1. Wait for App Service to restart (check logs)
 2. Login again
 3. Verify test item still exists
 
@@ -406,8 +400,8 @@ az storage file delete \
 ```bash
 # CPU usage
 az monitor metrics list \
-  --resource $(az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query id -o tsv) \
-  --metric "UsageNanoCores" \
+  --resource $(az webapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --metric "CpuPercentage" \
   --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
   --interval PT1M \
   --output table
@@ -415,15 +409,15 @@ az monitor metrics list \
 
 ### 2. Alert Configuration (Optional)
 
-Create an alert for container restarts:
+Create an alert for high CPU usage:
 
 ```bash
 az monitor metrics alert create \
-  --name vaultwarden-restart-alert \
+  --name vaultwarden-cpu-alert \
   --resource-group vaultwarden-dev-rg \
-  --scopes $(az containerapp show --name vaultwarden-dev-ca --resource-group vaultwarden-dev-rg --query id -o tsv) \
-  --condition "count Restarts > 3" \
-  --description "Alert when container restarts more than 3 times"
+  --scopes $(az webapp show --name vaultwarden-dev-app --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --condition "avg CpuPercentage > 80" \
+  --description "Alert when CPU usage exceeds 80%"
 ```
 
 ## Backup and Recovery Testing
@@ -450,15 +444,13 @@ Expected: Database files and attachments downloaded
 ### 2. Recovery Test
 
 ```bash
-# Stop container (scale to 0)
-az containerapp update \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --min-replicas 0 \
-  --max-replicas 0
+# Stop App Service
+az webapp stop \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 
-# Wait for scale down
-sleep 30
+# Wait for stop
+sleep 10
 
 # Upload backup
 az storage file upload-batch \
@@ -467,12 +459,10 @@ az storage file upload-batch \
   --account-name $STORAGE_NAME \
   --account-key $STORAGE_KEY
 
-# Scale back up
-az containerapp update \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --min-replicas 1 \
-  --max-replicas 3
+# Start App Service
+az webapp start \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 
 # Verify application is accessible
 sleep 60
@@ -484,32 +474,27 @@ rm -rf backup-test
 
 ## Troubleshooting Tests
 
-### 1. Container Restart Test
+### 1. App Service Restart Test
 
 ```bash
 # Force a restart
-az containerapp revision restart \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --revision $(az containerapp revision list \
-    --name vaultwarden-dev-ca \
-    --resource-group vaultwarden-dev-rg \
-    --query "[0].name" -o tsv)
+az webapp restart \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 
-# Monitor restart
-watch "az containerapp replica list \
-  --name vaultwarden-dev-ca \
-  --resource-group vaultwarden-dev-rg \
-  --output table"
+# Monitor restart - check logs
+az webapp log tail \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg
 ```
 
-Expected: Container restarts successfully within 2-3 minutes
+Expected: App Service restarts successfully within 1-2 minutes
 
 ### 2. Network Connectivity Test
 
 ```bash
 # From within Azure (if you have a VM in the same region)
-# Test internal connectivity to the container app
+# Test internal connectivity to the App Service
 nslookup $VAULTWARDEN_URL
 telnet $VAULTWARDEN_URL 443
 ```
@@ -527,12 +512,12 @@ Use this checklist to verify your deployment:
 - [ ] Log Analytics workspace deployed
 
 ### Application
-- [ ] Container app running
-- [ ] Correct image deployed
+- [ ] App Service running
+- [ ] Correct container image deployed
 - [ ] Environment variables set
-- [ ] Volumes mounted correctly
-- [ ] Ingress configured for HTTPS
-- [ ] Scaling configured (1-3 replicas)
+- [ ] Storage mounted correctly
+- [ ] HTTPS configured
+- [ ] VNet integration configured
 
 ### Security
 - [ ] HTTPS enforced
@@ -553,7 +538,7 @@ Use this checklist to verify your deployment:
 
 ### Monitoring
 - [ ] Logs visible in Log Analytics
-- [ ] Container logs accessible
+- [ ] App Service logs accessible
 - [ ] Metrics available
 - [ ] No critical errors in logs
 
@@ -584,7 +569,8 @@ Resource Deployment
 [ ] Resource group: PASS/FAIL
 [ ] Virtual network: PASS/FAIL
 [ ] Storage account: PASS/FAIL
-[ ] Container app: PASS/FAIL
+[ ] App Service Plan: PASS/FAIL
+[ ] App Service: PASS/FAIL
 [ ] Log Analytics: PASS/FAIL
 
 Security
@@ -633,25 +619,25 @@ A simple automated test script:
 
 echo "Starting automated verification..."
 
-RG_NAME="rg-vaultwarden-dev"
-APP_NAME="vw-dev-app"
+RG_NAME="vaultwarden-dev-rg"
+APP_NAME="vaultwarden-dev-app"
 
 # Test 1: Resource Group
 echo "Test 1: Resource Group"
 az group show --name $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
-# Test 2: Container App
-echo "Test 2: Container App"
-az containerapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
+# Test 2: App Service
+echo "Test 2: App Service"
+az webapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
 # Test 3: Application Access
 echo "Test 3: Application Access"
-URL=$(az containerapp show --name $APP_NAME --resource-group $RG_NAME --query "properties.configuration.ingress.fqdn" -o tsv)
+URL=$(az webapp show --name $APP_NAME --resource-group $RG_NAME --query "defaultHostName" -o tsv)
 curl -s -o /dev/null -w "%{http_code}" "https://$URL" | grep -q "200" && echo "✓ PASS" || echo "✗ FAIL"
 
-# Test 4: Container Logs
-echo "Test 4: Container Logs"
-az containerapp logs show --name $APP_NAME --resource-group $RG_NAME --tail 10 &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
+# Test 4: App Service Logs
+echo "Test 4: App Service Logs"
+az webapp log tail --name $APP_NAME --resource-group $RG_NAME --only-show-errors &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
 echo "Automated verification complete!"
 ```

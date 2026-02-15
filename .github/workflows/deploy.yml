@@ -61,7 +61,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Vaultwarden URL:** ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
           echo "**Resource Group:** ${{ steps.deploy.outputs.resourceGroupName }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Container App:** ${{ steps.deploy.outputs.containerAppName }}" >> $GITHUB_STEP_SUMMARY
+          echo "**App Service:** ${{ steps.deploy.outputs.appServiceName }}" >> $GITHUB_STEP_SUMMARY
+          echo "**App Service Plan:** ${{ steps.deploy.outputs.appServicePlanName }}" >> $GITHUB_STEP_SUMMARY
           echo "**Storage Account:** ${{ steps.deploy.outputs.storageAccountName }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Access your Vaultwarden instance at: ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
