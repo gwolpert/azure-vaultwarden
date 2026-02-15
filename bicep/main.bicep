@@ -1,5 +1,5 @@
 // ========================================
-// Main Bicep Template for Vaultwarden on Azure Container Apps
+// Main Bicep Template for Vaultwarden on Azure App Service
 // ========================================
 
 targetScope = 'subscription'
@@ -58,6 +58,14 @@ var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
 var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'
 
+// App Service Plan name
+// Official abbreviation: 'asp'
+var appServicePlanName = '${namingPrefix}-asp'
+
+// App Service name
+// Official abbreviation: 'app'
+var appServiceName = '${namingPrefix}-app'
+
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupNameWithSuffix
@@ -69,7 +77,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   }
 }
 
-// Deploy Virtual Network
+// Deploy Virtual Network with subnet for App Service VNet Integration
 module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
   scope: rg
   name: 'vnet-deployment'
@@ -81,13 +89,13 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
     ]
     subnets: [
       {
-        name: 'container-apps-subnet'
-        addressPrefix: '10.0.0.0/23'
+        name: 'app-service-subnet'
+        addressPrefix: '10.0.0.0/24'
         delegations: [
           {
-            name: 'MicrosoftAppEnvironments'
+            name: 'MicrosoftWebServerFarms'
             properties: {
-              serviceName: 'Microsoft.App/environments'
+              serviceName: 'Microsoft.Web/serverFarms'
             }
           }
         ]
@@ -139,44 +147,16 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Deploy Container App Environment
-// NOTE: Azure Container Apps automatically creates a managed infrastructure resource group
-// with the "ME_" prefix (e.g., ME_vaultwarden-dev-cae). This resource group contains
-// infrastructure components like load balancers and public IPs managed by Azure.
-// The infrastructureResourceGroup parameter exists in the API but is currently not
-// supported/functional in the AVM module. This is expected behavior and the managed
-// resource group is required for Container Apps to function.
-// See: https://github.com/Azure/bicep/issues/11221
-module containerAppEnv 'br/public:avm/res/app/managed-environment:0.5.2' = {
+// Deploy App Service Plan (B1 SKU for cost efficiency)
+module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
   scope: rg
-  name: 'containerapp-env-deployment'
+  name: 'app-service-plan-deployment'
   params: {
-    name: '${namingPrefix}-cae'
+    name: appServicePlanName
     location: location
-    infrastructureSubnetId: vnet.outputs.subnetResourceIds[0]
-    internal: false
-    zoneRedundant: false
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    workloadProfiles: [
-      {
-        name: 'Consumption'
-        workloadProfileType: 'Consumption'
-      }
-    ]
-  }
-}
-
-// Deploy storage for Container App Environment
-module containerAppEnvStorage 'managed-environment-storage.bicep' = {
-  scope: rg
-  name: 'containerapp-env-storage-deployment'
-  params: {
-    managedEnvironmentName: containerAppEnv.outputs.name
-    storageName: 'vaultwarden-storage'
-    storageAccountName: storageAccountName
-    storageAccountKey: storageAccountResource.listKeys().keys[0].value
-    shareName: 'vaultwarden-data'
-    accessMode: 'ReadWrite'
+    skuName: 'B1'
+    kind: 'linux'
+    reserved: true  // Required for Linux
   }
 }
 
@@ -210,105 +190,89 @@ module keyVaultSecret 'keyvault-secret.bicep' = if (adminToken != '') {
   }
 }
 
-// Deploy Container App for Vaultwarden
-module containerApp 'br/public:avm/res/app/container-app:0.8.0' = {
+// Deploy App Service (Web App for Containers)
+module appService 'br/public:avm/res/web/site:0.21.0' = {
   scope: rg
-  name: 'vaultwarden-containerapp-deployment'
+  name: 'app-service-deployment'
   params: {
-    name: '${namingPrefix}-ca'
+    name: appServiceName
     location: location
-    environmentResourceId: containerAppEnv.outputs.resourceId
-    containers: [
-      {
-        name: 'vaultwarden'
-        image: 'vaultwarden/server:${vaultwardenImageTag}'
-        resources: {
-          cpu: json('0.5')
-          memory: '1Gi'
+    kind: 'app,linux,container'
+    serverFarmResourceId: appServicePlan.outputs.resourceId
+    managedIdentities: {
+      systemAssigned: true
+    }
+    virtualNetworkSubnetId: vnet.outputs.subnetResourceIds[0]
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
+      alwaysOn: true
+      appSettings: concat([
+        {
+          name: 'DOMAIN'
+          value: domainName != '' ? domainName : 'https://${appServiceName}.azurewebsites.net'
         }
-        env: concat([
+        {
+          name: 'SIGNUPS_ALLOWED'
+          value: string(signupsAllowed)
+        }
+        {
+          name: 'ENABLE_DB_WAL'
+          value: 'true'
+        }
+        {
+          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
+          value: 'false'
+        }
+      ], adminToken != '' ? [
+        {
+          name: 'ADMIN_TOKEN'
+          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token)'
+        }
+      ] : [])
+      azureStorageAccounts: {
+        'vaultwarden-data': {
+          type: 'AzureFiles'
+          accountName: storageAccountName
+          shareName: 'vaultwarden-data'
+          mountPath: '/data'
+          accessKey: storageAccountResource.listKeys().keys[0].value
+        }
+      }
+    }
+    httpsOnly: true
+    diagnosticSettings: [
+      {
+        workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+        logCategoriesAndGroups: [
           {
-            name: 'DOMAIN'
-            value: domainName != '' ? domainName : 'https://${namingPrefix}-ca.${containerAppEnv.outputs.defaultDomain}'
+            categoryGroup: 'allLogs'
           }
+        ]
+        metricCategories: [
           {
-            name: 'SIGNUPS_ALLOWED'
-            value: string(signupsAllowed)
-          }
-          {
-            name: 'ENABLE_DB_WAL'
-            value: 'true'
-          }
-        ], adminToken != '' ? [
-          {
-            name: 'ADMIN_TOKEN'
-            secretRef: 'admin-token'
-          }
-        ] : [])
-        volumeMounts: [
-          {
-            volumeName: 'vaultwarden-data'
-            mountPath: '/data'
+            category: 'AllMetrics'
           }
         ]
       }
     ]
-    volumes: [
-      {
-        name: 'vaultwarden-data'
-        storageType: 'AzureFile'
-        storageName: 'vaultwarden-storage'
-      }
-    ]
-    secrets: {
-      secureList: adminToken != '' ? [
-        {
-          name: 'admin-token'
-          keyVaultUrl: '${keyVault.outputs.uri}secrets/vaultwarden-admin-token'
-          identity: 'system'
-        }
-        {
-          name: 'storage-account-key'
-          value: storageAccountResource.listKeys().keys[0].value
-        }
-      ] : [
-        {
-          name: 'storage-account-key'
-          value: storageAccountResource.listKeys().keys[0].value
-        }
-      ]
-    }
-    managedIdentities: {
-      systemAssigned: true
-    }
-    ingressExternal: true
-    ingressTargetPort: 80
-    ingressTransport: 'http'
-    ingressAllowInsecure: false
-    trafficWeight: 100
-    trafficLatestRevision: true
-    scaleMinReplicas: 1
-    scaleMaxReplicas: 3
   }
-  dependsOn: [
-    containerAppEnvStorage
-  ]
 }
 
-// Grant Container App managed identity access to Key Vault secrets
+// Grant App Service managed identity access to Key Vault secrets
 module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
   scope: rg
   name: 'keyvault-role-assignment-deployment'
   params: {
     keyVaultName: keyVault.outputs.name
-    principalId: containerApp.outputs.systemAssignedMIPrincipalId
+    principalId: appService.outputs.systemAssignedMIPrincipalId
   }
 }
 
 // Outputs
 output resourceGroupName string = rg.name
-output vaultwardenUrl string = 'https://${containerApp.outputs.fqdn}'
+output vaultwardenUrl string = 'https://${appService.outputs.defaultHostname}'
 output storageAccountName string = storageAccountName
-output containerAppName string = containerApp.outputs.name
+output appServiceName string = appService.outputs.name
+output appServicePlanName string = appServicePlan.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
 output keyVaultName string = keyVault.outputs.name
