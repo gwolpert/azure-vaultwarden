@@ -202,7 +202,7 @@ module appService 'br/public:avm/res/web/site:0.21.0' = {
     managedIdentities: {
       systemAssigned: true
     }
-    virtualNetworkSubnetId: vnet.outputs.subnetResourceIds[0]
+    virtualNetworkSubnetResourceId: vnet.outputs.subnetResourceIds[0]
     siteConfig: {
       linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
       alwaysOn: true
@@ -264,7 +264,7 @@ module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
   name: 'keyvault-role-assignment-deployment'
   params: {
     keyVaultName: keyVault.outputs.name
-    principalId: appService.outputs.systemAssignedMIPrincipalId
+    principalId: appService.outputs.systemAssignedMIPrincipalId!
   }
 }
 
