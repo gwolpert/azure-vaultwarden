@@ -18,9 +18,9 @@ You need to create a service principal for GitHub Actions to authenticate with A
 
 **Required Roles:**
 - **Contributor**: For creating and managing Azure resources
-- **User Access Administrator**: For creating role assignments (required because the deployment grants the Container App's managed identity access to Key Vault secrets)
+- **User Access Administrator**: For creating role assignments (required because the deployment grants the App Service's managed identity access to Key Vault secrets)
 
-> **Important:** Both roles are necessary for successful deployment. The User Access Administrator role is required because the Bicep template creates role assignments for the Container App's managed identity to access Key Vault secrets.
+> **Important:** Both roles are necessary for successful deployment. The User Access Administrator role is required because the Bicep template creates role assignments for the App Service's managed identity to access Key Vault secrets.
 
 ### Option A: Using Azure CLI (Recommended)
 
@@ -86,7 +86,7 @@ az role assignment create \
   --scope /subscriptions/$SUBSCRIPTION_ID
 
 # Assign User Access Administrator role for creating role assignments
-# This is required because the deployment creates role assignments for the Container App's managed identity
+# This is required because the deployment creates role assignments for the App Service's managed identity
 az role assignment create \
   --role "User Access Administrator" \
   --assignee $APP_ID \
@@ -356,7 +356,7 @@ Authorization failed for template resource of type 'Microsoft.Authorization/role
 The client does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'
 ```
 
-**Cause:** The service principal used for deployment doesn't have permission to create role assignments. The deployment creates a role assignment to grant the Container App's managed identity access to Key Vault secrets.
+**Cause:** The service principal used for deployment doesn't have permission to create role assignments. The deployment creates a role assignment to grant the App Service's managed identity access to Key Vault secrets.
 
 **Solution:** Assign the "User Access Administrator" role to the service principal:
 ```bash
@@ -385,7 +385,7 @@ az role assignment create \
   --scope /subscriptions/<your-subscription-id>
 ```
 
-**Note:** The User Access Administrator role is specifically required because the Bicep template creates role assignments for the Container App's managed identity to access Key Vault secrets. This is a common requirement when deploying resources that need to create their own role assignments.
+**Note:** The User Access Administrator role is specifically required because the Bicep template creates role assignments for the App Service's managed identity to access Key Vault secrets. This is a common requirement when deploying resources that need to create their own role assignments.
 
 ### Error: "Resource 'Microsoft.Web/sites' could not be found"
 

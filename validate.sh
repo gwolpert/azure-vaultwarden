@@ -219,7 +219,6 @@ check_file_structure() {
     done
     
     local optional_files=(
-        "deploy.sh"
         ".gitignore"
     )
     

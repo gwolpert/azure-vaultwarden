@@ -145,7 +145,7 @@ Authorization failed for template resource of type 'Microsoft.Authorization/role
 The client does not have permission to perform action 'Microsoft.Authorization/roleAssignments/write'
 ```
 
-**Cause:** The service principal or user account doesn't have permission to create role assignments. This deployment creates role assignments for the Container App's managed identity to access Key Vault secrets.
+**Cause:** The service principal or user account doesn't have permission to create role assignments. This deployment creates role assignments for the App Service's managed identity to access Key Vault secrets.
 
 **Solution:**
 ```bash
