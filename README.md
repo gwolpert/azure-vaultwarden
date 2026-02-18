@@ -61,7 +61,9 @@ The deployment creates the following Azure resources:
 
 - **Resource Group**: Container for all resources
 - **Virtual Network**: Isolated network with dedicated subnet for App Service VNet integration
-- **Storage Account**: Azure Files storage for persistent Vaultwarden data
+- **Storage Account**: Azure Files storage for persistent Vaultwarden data (with CanNotDelete lock)
+- **Recovery Services Vault**: Backup vault for automated daily backups of Vaultwarden data
+- **Backup Policy**: Daily backup schedule with 30-day retention for file share protection
 - **Log Analytics Workspace**: Monitoring and logging
 - **App Service Plan**: S1 (Standard) Linux plan with VNet integration, auto-scaling, and deployment slots
 - **App Service**: Web App for Containers running Vaultwarden
@@ -335,9 +337,98 @@ The App Service can be scaled manually or automatically (auto-scaling available 
 
 ## Backup and Recovery
 
-### Backup Data
+### Automated Daily Backups
 
-Download the file share content:
+The deployment creates a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. After the initial deployment, you need to enable backup protection:
+
+#### Step 1: Enable Backup Protection (One-Time Setup)
+
+After deploying the infrastructure, run these commands to enable backup protection for the file share:
+
+```bash
+# Get the storage account resource ID
+STORAGE_ACCOUNT_ID=$(az storage account show \
+  --name <storage-account-name> \
+  --resource-group vaultwarden-dev-rg \
+  --query id -o tsv)
+
+# Register the storage account with the Recovery Services Vault
+az backup container register \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --backup-management-type AzureStorage \
+  --workload-type AzureFileShare \
+  --storage-account $STORAGE_ACCOUNT_ID
+
+# Enable backup protection for the file share
+az backup protection enable-for-azurefileshare \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --policy-name vaultwarden-daily-backup-policy \
+  --storage-account <storage-account-name> \
+  --azure-file-share vaultwarden-data
+```
+
+#### Backup Configuration
+
+Once enabled, the backup operates with the following settings:
+
+- **Backup Schedule**: Daily at 2:00 AM UTC
+- **Retention**: 30 days
+- **Backup Location**: Recovery Services Vault in the same resource group
+- **Protection**: Storage account has a CanNotDelete lock to prevent accidental deletion
+
+The backup runs automatically and requires no manual intervention after the initial setup. Backups are stored in the Recovery Services Vault and can be restored through the Azure Portal or Azure CLI.
+
+### View Backup Status
+
+Check backup status and history:
+
+```bash
+# List backup jobs
+az backup job list \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --output table
+
+# Get backup item details
+az backup item show \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --backup-management-type AzureStorage \
+  --workload-type AzureFileShare \
+  --name vaultwarden-data \
+  --container-name <storage-container-name>
+```
+
+### Restore from Backup
+
+Restore the file share from a backup recovery point:
+
+```bash
+# List recovery points
+az backup recoverypoint list \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --backup-management-type AzureStorage \
+  --workload-type AzureFileShare \
+  --container-name <storage-container-name> \
+  --item-name vaultwarden-data \
+  --output table
+
+# Restore to original location
+az backup restore restore-azurefileshare \
+  --resource-group vaultwarden-dev-rg \
+  --vault-name vaultwarden-dev-rsv \
+  --rp-name <recovery-point-name> \
+  --container-name <storage-container-name> \
+  --item-name vaultwarden-data \
+  --resolve-conflict Overwrite
+```
+
+### Manual Backup (Alternative)
+
+You can also manually download the file share content:
 
 ```bash
 # Get storage account key
@@ -355,7 +446,7 @@ az storage file download-batch \
   --account-key $STORAGE_KEY
 ```
 
-### Restore Data
+### Manual Restore (Alternative)
 
 Upload files back to the file share:
 
@@ -365,6 +456,25 @@ az storage file upload-batch \
   --source ./backup \
   --account-name <storage-account-name> \
   --account-key $STORAGE_KEY
+```
+
+### Storage Account Protection
+
+The storage account is protected with a **CanNotDelete** resource lock, which prevents accidental deletion of the storage account and its data. To delete the storage account, you must first remove the lock:
+
+```bash
+# List locks on the storage account
+az lock list \
+  --resource-group vaultwarden-dev-rg \
+  --resource-name <storage-account-name> \
+  --resource-type Microsoft.Storage/storageAccounts
+
+# Remove the lock (if needed)
+az lock delete \
+  --name storage-lock \
+  --resource-group vaultwarden-dev-rg \
+  --resource-name <storage-account-name> \
+  --resource-type Microsoft.Storage/storageAccounts
 ```
 
 ## Troubleshooting
@@ -507,11 +617,12 @@ The ARM template is compiled from the Bicep source, ensuring consistency between
 Approximate monthly costs (East US region):
 - App Service Plan (S1): ~$70-75
 - Storage Account: ~$2-5 (depending on data size)
+- Recovery Services Vault + Backup: ~$5-10 (depending on backup size and retention)
 - Log Analytics: ~$2-10 (depending on log volume)
 - Virtual Network: Free
 - Key Vault: < $1
 
-Total: ~$74-91/month
+Total: ~$79-101/month
 
 **Benefits of S1 over B1**:
 - Full VNet integration support
@@ -520,6 +631,11 @@ Total: ~$74-91/month
 - Better performance (1 core, 1.75 GB RAM)
 - Custom domains with SSL
 - Suitable for production workloads
+
+**Backup Protection**:
+- Automated daily backups with 30-day retention
+- Storage account protected with CanNotDelete lock
+- Point-in-time recovery capabilities
 
 **Still more cost-effective than Container Apps** for similar features and performance.
 

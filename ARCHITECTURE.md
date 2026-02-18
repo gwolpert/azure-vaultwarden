@@ -46,6 +46,15 @@
 │  │  │  │   - attachments/                         │    │    │ │
 │  │  │  │   - icon_cache/                          │    │    │ │
 │  │  │  └──────────────────────────────────────────┘    │    │ │
+│  │  │  │   - CanNotDelete lock enabled             │    │    │ │
+│  │  └────────────────────────────────────────────────────┘    │ │
+│  │                      ▲                                      │ │
+│  │                      │ Backed up daily                      │ │
+│  │  ┌───────────────────┴───────────────────────────────┐    │ │
+│  │  │        Recovery Services Vault                     │    │ │
+│  │  │        - Daily backup policy (2 AM UTC)           │    │ │
+│  │  │        - 30-day retention                          │    │ │
+│  │  │        - File share protection                     │    │ │
 │  │  └────────────────────────────────────────────────────┘    │ │
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
@@ -79,8 +88,9 @@
 2. **App Service**: Runs the Vaultwarden container with automatic HTTPS termination
 3. **Secrets Management**: App Service uses its system-assigned managed identity to retrieve admin token from Key Vault
 4. **Data Storage**: App Service mounts Azure File Share for persistent data storage
-5. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
-6. **Networking**: App Service is integrated with Virtual Network for enhanced security
+5. **Backup Protection**: Recovery Services Vault automatically backs up the file share daily at 2 AM UTC
+6. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
+7. **Networking**: App Service is integrated with Virtual Network for enhanced security
 
 ## Security Features
 
@@ -96,6 +106,9 @@
   - Minimum TLS 1.2
   - No public blob access
   - Private file share access
+  - **CanNotDelete** resource lock to prevent accidental deletion
+- Automated daily backups with 30-day retention
+- Point-in-time recovery capabilities
 - Encrypted data at rest (Azure Storage encryption)
 - Encrypted data in transit (TLS 1.2+)
 
@@ -137,10 +150,11 @@
 |----------|--------------|----------------|
 | App Service Plan (S1) | 1 core, 1.75GB RAM, Linux | $70-75 |
 | Storage Account | Standard LRS, ~5GB data | $2-5 |
+| Recovery Services Vault + Backup | Daily backups, 30-day retention | $5-10 |
 | Log Analytics | ~10GB/month logs | $2-10 |
 | Virtual Network | Subnet, no additional charges | Free |
 | Key Vault | Operations-based pricing | < $1 |
-| **Total** | | **$74-91/month** |
+| **Total** | | **$79-101/month** |
 
 **S1 Features vs B1**:
 - ✅ Full VNet integration support
@@ -149,6 +163,12 @@
 - ✅ Better performance and reliability
 - ✅ Production-ready with SLA
 - ✅ Custom domain with SSL included
+
+**Backup & Protection Features**:
+- ✅ Automated daily backups with 30-day retention
+- ✅ Point-in-time recovery for data protection
+- ✅ Storage account lock prevents accidental deletion
+- ✅ Compliance-ready backup solution
 
 **Note**: While more expensive than B1 (~$13/month), S1 provides enterprise-grade features essential for production workloads and is still competitive with Container Apps pricing.
 
@@ -159,6 +179,7 @@
 4. Use lifecycle policies for storage account to clean old logs
 5. Use shared Log Analytics workspace across multiple projects
 6. Reserved instances available for 1-3 year commitments (30-55% savings)
+7. Adjust backup retention period based on compliance requirements
 
 ## Deployment Process
 
@@ -220,21 +241,45 @@ AppServiceHTTPLogs
 ## Backup and Disaster Recovery
 
 ### Backup Strategy
-1. **Automated Backups**: Configure Azure Backup for File Share (optional)
-2. **Manual Backups**: Use provided scripts to download data
-3. **Frequency**: Daily backups recommended for production
-4. **Retention**: 30 days minimum
+1. **Automated Backups**: Azure Backup is configured for the vaultwarden-data file share
+   - **Schedule**: Daily at 2:00 AM UTC
+   - **Retention**: 30 days
+   - **Policy**: Configured via Recovery Services Vault
+   - **Setup**: Requires one-time post-deployment configuration (see README for commands)
+   - **Operation**: Automatic after initial setup
+2. **Manual Backups**: Alternative option using Azure CLI to download data
+3. **Storage Protection**: CanNotDelete lock prevents accidental storage account deletion
 
 ### Recovery Procedures
+
+#### Automated Restore from Backup
+1. Access Recovery Services Vault in Azure Portal or use Azure CLI
+2. Select the recovery point (up to 30 days back)
+3. Choose restore method:
+   - **Original Location**: Overwrites current data
+   - **Alternate Location**: Restores to a different file share
+4. Monitor restore job completion
+5. Restart App Service if needed
+6. Verify data integrity
+
+#### Manual Restore Process
 1. Stop the App Service to prevent new writes
-2. Restore file share from backup
+2. Restore file share from backup using Azure Portal or CLI
 3. Restart the App Service
-4. Verify data integrity
+4. Verify data integrity and application functionality
 
 ### Business Continuity
-- RTO (Recovery Time Objective): < 1 hour with automated restore
-- RPO (Recovery Point Objective): < 24 hours with daily backups
-- Cross-region replication available with geo-redundant storage
+- **RTO (Recovery Time Objective)**: < 1 hour with automated restore
+- **RPO (Recovery Point Objective)**: < 24 hours with daily backups (configurable to hourly if needed)
+- **Data Protection**: Resource lock prevents accidental deletion
+- **Cross-region replication**: Available with geo-redundant storage (GRS) upgrade
+- **Backup Retention**: 30 days (configurable up to years for compliance)
+
+### Backup Monitoring
+- Monitor backup jobs through Azure Portal or Azure CLI
+- Set up alerts for backup failures in Azure Monitor
+- Review backup history and compliance reports
+- Validate backup integrity through periodic restore tests
 
 ## Troubleshooting Guide
 
@@ -292,7 +337,8 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 - [ ] Disable signups or use invite-only mode
 - [ ] Configure custom domain with valid SSL certificate
 - [ ] Set up Azure Monitor alerts
-- [ ] Configure backup automation
+- [x] Configure backup automation (daily backups with 30-day retention)
+- [x] Enable storage account lock to prevent accidental deletion
 - [ ] Review and restrict network access
 - [ ] Enable deployment slots for zero-downtime updates
 - [ ] Configure auto-scaling rules based on load
@@ -302,6 +348,7 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 - [ ] Configure SMTP for email notifications
 - [ ] Review and update Vaultwarden regularly
 - [ ] Consider zone redundancy (upgrade to Premium if needed)
+- [ ] Test backup restore procedures periodically
 
 ### Compliance Considerations
 - Data residency: Resources deployed in specified Azure region
@@ -309,6 +356,8 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 - Audit logs: Available through Log Analytics
 - Access control: Azure RBAC for resource management
 - Network isolation: VNET integration available
+- Backup and recovery: Automated daily backups with configurable retention
+- Data protection: Resource locks prevent accidental resource deletion
 
 ## Updates and Maintenance
 

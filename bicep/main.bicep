@@ -109,7 +109,7 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
   }
 }
 
-// Deploy Storage Account for persistent data
+// Deploy Storage Account with lock to prevent accidental deletion
 module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
   scope: rg
   name: 'storage-deployment'
@@ -139,8 +139,79 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
         }
       ]
     }
+    lock: {
+      kind: 'CanNotDelete'
+      name: 'storage-lock'
+    }
   }
 }
+
+// Deploy Recovery Services Vault for backup
+// Recovery Services Vault name must be 2-50 characters, alphanumeric and hyphens
+// Pattern: {resourceGroupName}-rsv
+var recoveryServicesVaultName = '${namingPrefix}-rsv'
+
+module recoveryServicesVault 'br/public:avm/res/recovery-services/vault:0.8.0' = {
+  scope: rg
+  name: 'recovery-vault-deployment'
+  params: {
+    name: recoveryServicesVaultName
+    location: location
+    backupPolicies: [
+      {
+        name: 'vaultwarden-daily-backup-policy'
+        properties: {
+          backupManagementType: 'AzureStorage'
+          workloadType: 'AzureFileShare'
+          schedulePolicy: {
+            schedulePolicyType: 'SimpleSchedulePolicy'
+            scheduleRunFrequency: 'Daily'
+            scheduleRunTimes: [
+              '2024-01-01T02:00:00Z'  // Daily backup at 2 AM UTC
+            ]
+          }
+          retentionPolicy: {
+            retentionPolicyType: 'LongTermRetentionPolicy'
+            dailySchedule: {
+              retentionTimes: [
+                '2024-01-01T02:00:00Z'
+              ]
+              retentionDuration: {
+                count: 30
+                durationType: 'Days'
+              }
+            }
+          }
+          timeZone: 'UTC'
+        }
+      }
+    ]
+  }
+  dependsOn: [
+    storageAccount
+  ]
+}
+
+// Note: File share backup protection must be configured post-deployment using Azure CLI or Portal
+// This is because the backup protection container registration requires the storage account to be
+// fully provisioned and accessible, which is better handled as a post-deployment step.
+// Use the following commands after deployment:
+//
+// 1. Register the storage account with the Recovery Services Vault:
+//    az backup container register \
+//      --resource-group <resource-group> \
+//      --vault-name <vault-name> \
+//      --backup-management-type AzureStorage \
+//      --workload-type AzureFileShare \
+//      --storage-account <storage-account-resource-id>
+//
+// 2. Enable backup protection for the file share:
+//    az backup protection enable-for-azurefileshare \
+//      --resource-group <resource-group> \
+//      --vault-name <vault-name> \
+//      --policy-name vaultwarden-daily-backup-policy \
+//      --storage-account <storage-account-name> \
+//      --azure-file-share vaultwarden-data
 
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
@@ -298,3 +369,5 @@ output appServiceName string = appService.outputs.name
 output appServicePlanName string = appServicePlan.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
 output keyVaultName string = keyVault.outputs.name
+output recoveryServicesVaultName string = recoveryServicesVault.outputs.name
+output backupPolicyName string = 'vaultwarden-daily-backup-policy'
