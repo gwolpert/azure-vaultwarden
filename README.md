@@ -339,46 +339,19 @@ The App Service can be scaled manually or automatically (auto-scaling available 
 
 ### Automated Daily Backups
 
-The deployment creates a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. After the initial deployment, you need to enable backup protection:
-
-#### Step 1: Enable Backup Protection (One-Time Setup)
-
-After deploying the infrastructure, run these commands to enable backup protection for the file share:
-
-```bash
-# Get the storage account resource ID
-STORAGE_ACCOUNT_ID=$(az storage account show \
-  --name <storage-account-name> \
-  --resource-group vaultwarden-dev-rg \
-  --query id -o tsv)
-
-# Register the storage account with the Recovery Services Vault
-az backup container register \
-  --resource-group vaultwarden-dev-rg \
-  --vault-name vaultwarden-dev-rsv \
-  --backup-management-type AzureStorage \
-  --workload-type AzureFileShare \
-  --storage-account $STORAGE_ACCOUNT_ID
-
-# Enable backup protection for the file share
-az backup protection enable-for-azurefileshare \
-  --resource-group vaultwarden-dev-rg \
-  --vault-name vaultwarden-dev-rsv \
-  --policy-name vaultwarden-daily-backup-policy \
-  --storage-account <storage-account-name> \
-  --azure-file-share vaultwarden-data
-```
+The deployment automatically creates and configures a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. The file share backup protection is enabled automatically during deployment.
 
 #### Backup Configuration
 
-Once enabled, the backup operates with the following settings:
+The backup operates with the following settings:
 
 - **Backup Schedule**: Daily at 2:00 AM UTC
 - **Retention**: 30 days
 - **Backup Location**: Recovery Services Vault in the same resource group
 - **Protection**: Storage account has a CanNotDelete lock to prevent accidental deletion
+- **Automatic Setup**: File share is automatically registered and protected during deployment
 
-The backup runs automatically and requires no manual intervention after the initial setup. Backups are stored in the Recovery Services Vault and can be restored through the Azure Portal or Azure CLI.
+The backup runs automatically and requires no manual intervention. Backups are stored in the Recovery Services Vault and can be restored through the Azure Portal or Azure CLI.
 
 ### View Backup Status
 
