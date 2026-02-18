@@ -109,7 +109,7 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
   }
 }
 
-// Deploy Storage Account for persistent data
+// Deploy Storage Account with lock to prevent accidental deletion
 module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
   scope: rg
   name: 'storage-deployment'
@@ -139,7 +139,86 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
         }
       ]
     }
+    lock: {
+      kind: 'CanNotDelete'
+      name: 'storage-lock'
+    }
   }
+}
+
+// Deploy Recovery Services Vault for backup
+// Recovery Services Vault name must be 2-50 characters, alphanumeric and hyphens
+// Pattern: {resourceGroupName}-rsv
+var recoveryServicesVaultName = '${namingPrefix}-rsv'
+
+module recoveryServicesVault 'br/public:avm/res/recovery-services/vault:0.8.0' = {
+  scope: rg
+  name: 'recovery-vault-deployment'
+  params: {
+    name: recoveryServicesVaultName
+    location: location
+    backupPolicies: [
+      {
+        name: 'vaultwarden-daily-backup-policy'
+        properties: {
+          backupManagementType: 'AzureStorage'
+          workloadType: 'AzureFileShare'
+          schedulePolicy: {
+            schedulePolicyType: 'SimpleSchedulePolicy'
+            scheduleRunFrequency: 'Daily'
+            scheduleRunTimes: [
+              '2024-01-01T02:00:00Z'  // Daily backup at 2 AM UTC
+            ]
+          }
+          retentionPolicy: {
+            retentionPolicyType: 'LongTermRetentionPolicy'
+            dailySchedule: {
+              retentionTimes: [
+                '2024-01-01T02:00:00Z'
+              ]
+              retentionDuration: {
+                count: 30
+                durationType: 'Days'
+              }
+            }
+          }
+          timeZone: 'UTC'
+        }
+      }
+    ]
+  }
+  dependsOn: [
+    storageAccount
+  ]
+}
+
+// Register storage account and protect file share using native Bicep resource
+// This registers the storage container in the Recovery Services Vault
+resource storageProtectionContainer 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers@2024-04-01' = {
+  name: '${recoveryServicesVaultName}/Azure/storagecontainer;Storage;${rg.name};${storageAccountName}'
+  properties: {
+    backupManagementType: 'AzureStorage'
+    containerType: 'StorageContainer'
+    sourceResourceId: storageAccount.outputs.resourceId
+    friendlyName: storageAccountName
+  }
+  dependsOn: [
+    recoveryServicesVault
+  ]
+}
+
+// Protect the file share with backup
+resource fileShareProtectedItem 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems@2024-04-01' = {
+  name: '${recoveryServicesVaultName}/Azure/storagecontainer;Storage;${rg.name};${storageAccountName}/AzureFileShare;vaultwarden-data'
+  properties: {
+    protectedItemType: 'AzureFileShareProtectedItem'
+    policyId: '${recoveryServicesVault.outputs.resourceId}/backupPolicies/vaultwarden-daily-backup-policy'
+    sourceResourceId: storageAccount.outputs.resourceId
+    isInlineInquiry: true
+  }
+  dependsOn: [
+    storageProtectionContainer
+  ]
 }
 
 // Get storage account keys using listKeys function
@@ -298,3 +377,5 @@ output appServiceName string = appService.outputs.name
 output appServicePlanName string = appServicePlan.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
 output keyVaultName string = keyVault.outputs.name
+output recoveryServicesVaultName string = recoveryServicesVault.outputs.name
+output backupPolicyName string = 'vaultwarden-daily-backup-policy'
