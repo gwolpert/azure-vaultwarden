@@ -34,7 +34,7 @@ param signupsAllowed bool = false
 @description('Vaultwarden container image tag')
 param vaultwardenImageTag string = 'latest'
 
-@description('App Service Plan SKU (default: B1 for cost-effectiveness with VNet support. Options: B1, B2, B3, S1, S2, S3, P1V3, P2V3, P3V3)')
+@description('App Service Plan SKU (default: B1 for cost-effectiveness with VNet support. Options: B1, B2, B3, S1, S2, S3, P1v3, P2v3, P3v3)')
 @allowed([
   'B1'
   'B2'
@@ -42,9 +42,9 @@ param vaultwardenImageTag string = 'latest'
   'S1'
   'S2'
   'S3'
-  'P1V3'
-  'P2V3'
-  'P3V3'
+  'P1v3'
+  'P2v3'
+  'P3v3'
 ])
 param appServicePlanSkuName string = 'B1'
 
@@ -255,7 +255,7 @@ module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
     name: appServicePlanName
     location: location
     skuName: appServicePlanSkuName
-    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is controlled by separate autoscale rules; do not configure autoscale rules on this plan if you want to avoid automatic scaling for cost control. Manual scaling remains possible.
+    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is only available on Standard (S1+) and Premium tiers; the default B1 (Basic) plan does not support auto-scaling. Manual scaling of instance count is possible on all tiers.
     kind: 'linux'
     reserved: true  // Required for Linux
   }

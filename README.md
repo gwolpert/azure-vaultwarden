@@ -314,7 +314,7 @@ Query logs in Azure Portal or using KQL.
 
 The App Service can be scaled manually or automatically (auto-scaling available on Standard S1+ and Premium tiers). To scale the App Service Plan:
 
-1. Update the SKU in `main.bicep` (e.g., from B1 to S1, S2, or P1V3) or set the `APP_SERVICE_PLAN_SKU_NAME` environment variable
+1. Set the App Service Plan SKU using the `appServicePlanSkuName` parameter (e.g., B1, S1, S2, P1v3) or via the `APP_SERVICE_PLAN_SKU_NAME` environment variable
 2. Or scale manually:
    ```bash
    az appservice plan update \
@@ -633,7 +633,7 @@ Total: ~$22-41/month
 
 **Upgrade Options**:
 - **Standard (S1, S2, S3)**: Adds auto-scaling, deployment slots, up to 10 instances (~$70-140/month for S1-S3)
-- **Premium (P1V3, P2V3, P3V3)**: Enhanced performance, up to 30 instances (~$100-400/month)
+- **Premium (P1v3, P2v3, P3v3)**: Enhanced performance, up to 30 instances (~$100-400/month)
 
 **Backup Protection**:
 - Automated daily backups with 30-day retention

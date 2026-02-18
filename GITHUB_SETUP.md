@@ -208,7 +208,7 @@ For each environment, add the following **Variables**:
 | `DOMAIN_NAME` | `https://vault.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
 | `VAULTWARDEN_IMAGE_TAG` | `1.30.1` |
-| `APP_SERVICE_PLAN_SKU_NAME` | `S1` (or `P1V3` for enhanced performance) |
+| `APP_SERVICE_PLAN_SKU_NAME` | `S1` (or `P1v3` for enhanced performance) |
 
 ### Adding Variables
 

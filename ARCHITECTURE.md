@@ -124,12 +124,12 @@
 
 ### Scaling Configuration
 - **App Service Plan**: B1 (1 core, 1.75 GB RAM) - Default for cost-effectiveness with VNet integration support
-- **Manual Scaling**: Scale up to higher SKUs (B2, B3, S1, S2, S3, P1V3, P2V3, P3V3) for more resources
+- **Manual Scaling**: Scale up to higher SKUs (B2, B3, S1, S2, S3, P1v3, P2v3, P3v3) for more resources
 - **Auto-scaling**: Available on Standard (S1+) and Premium tiers - configure based on CPU, memory, or HTTP queue metrics
 - **Scale Out**: B1 supports up to 3 instances; Standard tier supports up to 10 instances
 
 ### High Availability
-- Deployment slots for zero-downtime deployments (staging, production)
+- Deployment slots for zero-downtime deployments (staging, production) *(Standard/Premium tiers only)*
 - Automatic health checks and container restart
 - Data persistence ensures no data loss during restarts
 - Zone redundancy available with Premium SKUs (P1v2+)
@@ -168,7 +168,7 @@
 
 **Upgrade Options**:
 - **Standard (S1, S2, S3)**: Adds auto-scaling, deployment slots, up to 10 instances (~$70-140/month for S1-S3)
-- **Premium (P1V3, P2V3, P3V3)**: Enhanced performance, up to 30 instances, more cores and memory (~$100-400/month)
+- **Premium (P1v3, P2v3, P3v3)**: Enhanced performance, up to 30 instances, more cores and memory (~$100-400/month)
 
 **Backup & Protection Features**:
 - ✅ Automated daily backups with 30-day retention
