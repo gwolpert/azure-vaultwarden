@@ -245,7 +245,8 @@ AppServiceHTTPLogs
    - **Schedule**: Daily at 2:00 AM UTC
    - **Retention**: 30 days
    - **Policy**: Configured via Recovery Services Vault
-   - **Protection**: Automatic and no manual intervention required
+   - **Setup**: Requires one-time post-deployment configuration (see README for commands)
+   - **Operation**: Automatic after initial setup
 2. **Manual Backups**: Alternative option using Azure CLI to download data
 3. **Storage Protection**: CanNotDelete lock prevents accidental storage account deletion
 

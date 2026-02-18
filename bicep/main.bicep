@@ -192,34 +192,26 @@ module recoveryServicesVault 'br/public:avm/res/recovery-services/vault:0.8.0' =
   ]
 }
 
-// Register storage account and protect file share using native Bicep resource
-// This registers the storage container in the Recovery Services Vault
-resource storageProtectionContainer 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers@2024-04-01' = {
-  name: '${recoveryServicesVaultName}/Azure/storagecontainer;Storage;${rg.name};${storageAccountName}'
-  properties: {
-    backupManagementType: 'AzureStorage'
-    containerType: 'StorageContainer'
-    sourceResourceId: storageAccount.outputs.resourceId
-    friendlyName: storageAccountName
-  }
-  dependsOn: [
-    recoveryServicesVault
-  ]
-}
-
-// Protect the file share with backup
-resource fileShareProtectedItem 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems@2024-04-01' = {
-  name: '${recoveryServicesVaultName}/Azure/storagecontainer;Storage;${rg.name};${storageAccountName}/AzureFileShare;vaultwarden-data'
-  properties: {
-    protectedItemType: 'AzureFileShareProtectedItem'
-    policyId: '${recoveryServicesVault.outputs.resourceId}/backupPolicies/vaultwarden-daily-backup-policy'
-    sourceResourceId: storageAccount.outputs.resourceId
-    isInlineInquiry: true
-  }
-  dependsOn: [
-    storageProtectionContainer
-  ]
-}
+// Note: File share backup protection must be configured post-deployment using Azure CLI or Portal
+// This is because the backup protection container registration requires the storage account to be
+// fully provisioned and accessible, which is better handled as a post-deployment step.
+// Use the following commands after deployment:
+//
+// 1. Register the storage account with the Recovery Services Vault:
+//    az backup container register \
+//      --resource-group <resource-group> \
+//      --vault-name <vault-name> \
+//      --backup-management-type AzureStorage \
+//      --workload-type AzureFileShare \
+//      --storage-account <storage-account-resource-id>
+//
+// 2. Enable backup protection for the file share:
+//    az backup protection enable-for-azurefileshare \
+//      --resource-group <resource-group> \
+//      --vault-name <vault-name> \
+//      --policy-name vaultwarden-daily-backup-policy \
+//      --storage-account <storage-account-name> \
+//      --azure-file-share vaultwarden-data
 
 // Get storage account keys using listKeys function
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {

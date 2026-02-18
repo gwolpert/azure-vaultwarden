@@ -36,10 +36,45 @@ az deployment sub create \
   --parameters location="eastus" \
   --parameters environmentName="dev" \
   --parameters signupsAllowed=false \
-  --parameters vaultwardenImageTag="latest"
+  --parameters vaultwardenImageTag="1.32.5"
 ```
 
-## 3. Verify Backup Configuration
+## 3. Enable Backup Protection
+
+After deployment, enable backup protection for the file share:
+
+```bash
+# Get storage account name and resource ID
+STORAGE_ACCOUNT=$(az storage account list \
+  --resource-group vaultwarden-test-rg \
+  --query "[0].name" -o tsv)
+
+STORAGE_ACCOUNT_ID=$(az storage account show \
+  --name $STORAGE_ACCOUNT \
+  --resource-group vaultwarden-test-rg \
+  --query id -o tsv)
+
+# Register the storage account with the Recovery Services Vault
+az backup container register \
+  --resource-group vaultwarden-test-rg \
+  --vault-name vaultwarden-test-rsv \
+  --backup-management-type AzureStorage \
+  --workload-type AzureFileShare \
+  --storage-account $STORAGE_ACCOUNT_ID
+
+# Wait a few seconds for registration to complete
+sleep 10
+
+# Enable backup protection for the file share
+az backup protection enable-for-azurefileshare \
+  --resource-group vaultwarden-test-rg \
+  --vault-name vaultwarden-test-rsv \
+  --policy-name vaultwarden-daily-backup-policy \
+  --storage-account $STORAGE_ACCOUNT \
+  --azure-file-share vaultwarden-data
+```
+
+## 4. Verify Backup Configuration
 
 ### Check Recovery Services Vault
 
@@ -83,7 +118,7 @@ az backup item list \
   --output table
 ```
 
-## 4. Verify Storage Lock
+## 5. Verify Storage Lock
 
 ```bash
 # Get storage account name from deployment output
@@ -106,7 +141,7 @@ az storage account delete \
 # Expected: Error message about CanNotDelete lock
 ```
 
-## 5. Test Backup Functionality
+## 6. Test Backup Functionality
 
 ### Trigger On-Demand Backup
 
@@ -152,7 +187,7 @@ az backup recoverypoint list \
   --output table
 ```
 
-## 6. Test Restore (Optional)
+## 7. Test Restore (Optional)
 
 ```bash
 # Create test data in the file share first
@@ -175,7 +210,7 @@ az backup job list \
   --output table
 ```
 
-## 7. Cleanup
+## 8. Cleanup
 
 ```bash
 # First, remove the storage lock
