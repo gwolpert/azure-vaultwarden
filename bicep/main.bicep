@@ -216,10 +216,6 @@ module backupProtection 'backup-protection.bicep' = {
     storageAccountName: storageAccountName
     storageAccountResourceId: storageAccount.outputs.resourceId
   }
-  dependsOn: [
-    recoveryServicesVault
-    storageAccount
-  ]
 }
 
 // Get storage account keys using listKeys function
