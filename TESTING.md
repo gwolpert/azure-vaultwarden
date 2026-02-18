@@ -506,7 +506,7 @@ Use this checklist to verify your deployment:
 ### Infrastructure
 - [ ] Resource group created
 - [ ] Virtual network deployed with correct address space
-- [ ] Subnet configured for Container Apps
+- [ ] Subnet configured for App Service VNet Integration
 - [ ] Storage account created with security settings
 - [ ] File share created and accessible
 - [ ] Log Analytics workspace deployed

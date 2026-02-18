@@ -637,7 +637,7 @@ Total: ~$79-101/month
 - Storage account protected with CanNotDelete lock
 - Point-in-time recovery capabilities
 
-**Still more cost-effective than Container Apps** for similar features and performance.
+**Cost-effective solution** with enterprise-grade features and predictable pricing.
 
 Actual costs may vary based on usage, region, and resource configuration.
 
