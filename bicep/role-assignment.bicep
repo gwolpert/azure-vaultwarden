@@ -5,7 +5,7 @@ targetScope = 'resourceGroup'
 @description('The name of the Key Vault')
 param keyVaultName string
 
-@description('The principal ID of the container app managed identity')
+@description('The principal ID of the app service managed identity')
 param principalId string
 
 // Reference the existing Key Vault

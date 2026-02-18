@@ -170,7 +170,7 @@
 - ✅ Storage account lock prevents accidental deletion
 - ✅ Compliance-ready backup solution
 
-**Note**: While more expensive than B1 (~$13/month), S1 provides enterprise-grade features essential for production workloads and is still competitive with Container Apps pricing.
+**Note**: While more expensive than B1 (~$13/month), S1 provides enterprise-grade features essential for production workloads including VNet integration, deployment slots, and auto-scaling capabilities.
 
 ### Cost Optimization Tips
 1. S1 tier is ideal for production with full feature set
@@ -311,10 +311,10 @@ az webapp show --name <app-name> --resource-group <rg-name>
 **Resolution**:
 ```bash
 # Check ingress configuration
-az containerapp ingress show --name <app-name> --resource-group <rg-name>
+az webapp show --name <app-name> --resource-group <rg-name> --query "httpsOnly,hostNames"
 
 # Verify container is running
-az containerapp revision list --name <app-name> --resource-group <rg-name>
+az webapp log tail --name <app-name> --resource-group <rg-name>
 ```
 
 #### Database Corruption
@@ -378,13 +378,13 @@ az containerapp revision list --name <app-name> --resource-group <rg-name>
 
 ### Official Documentation
 - [Vaultwarden Documentation](https://github.com/dani-garcia/vaultwarden/wiki)
-- [Azure Container Apps](https://docs.microsoft.com/azure/container-apps/)
+- [Azure App Service](https://docs.microsoft.com/azure/app-service/)
 - [Azure Bicep](https://docs.microsoft.com/azure/azure-resource-manager/bicep/)
 - [Azure Verified Modules](https://azure.github.io/Azure-Verified-Modules/)
 
 ### Community Resources
 - [Vaultwarden Discussions](https://github.com/dani-garcia/vaultwarden/discussions)
-- [Azure Container Apps Samples](https://github.com/Azure-Samples/container-apps-samples)
+- [Azure App Service Samples](https://github.com/Azure-Samples/app-service-samples)
 
 ### Support Channels
 - Vaultwarden Issues: GitHub Issues
