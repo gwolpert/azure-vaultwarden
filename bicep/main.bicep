@@ -34,6 +34,20 @@ param signupsAllowed bool = false
 @description('Vaultwarden container image tag')
 param vaultwardenImageTag string = 'latest'
 
+@description('App Service Plan SKU (default: B1 for cost-effectiveness with VNet support. Options: B1, B2, B3, S1, S2, S3, P1v3, P2v3, P3v3)')
+@allowed([
+  'B1'
+  'B2'
+  'B3'
+  'S1'
+  'S2'
+  'S3'
+  'P1v3'
+  'P2v3'
+  'P3v3'
+])
+param appServicePlanSkuName string = 'B1'
+
 // Variables
 // Using official Microsoft Azure resource abbreviations:
 // https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
@@ -233,15 +247,15 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
   }
 }
 
-// Deploy App Service Plan (S1 SKU for VNet integration and production features)
+// Deploy App Service Plan (Default: B1 SKU for cost-effectiveness with VNet integration support)
 module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
   scope: rg
   name: 'app-service-plan-deployment'
   params: {
     name: appServicePlanName
     location: location
-    skuName: 'S1'
-    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is controlled by separate autoscale rules; do not configure autoscale rules on this plan if you want to avoid automatic scaling for cost control. Manual scaling remains possible.
+    skuName: appServicePlanSkuName
+    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is only available on Standard (S1+) and Premium tiers; the default B1 (Basic) plan does not support auto-scaling. Manual scaling of instance count is possible on all tiers.
     kind: 'linux'
     reserved: true  // Required for Linux
   }

@@ -16,7 +16,7 @@
 │  │  │  │  App Service Subnet (10.0.0.0/24)           │   │  │ │
 │  │  │  │                                               │   │  │ │
 │  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
-│  │  │  │  │  App Service Plan (S1 Standard)   │     │   │  │ │
+│  │  │  │  │  App Service Plan (B1 Basic)      │     │   │  │ │
 │  │  │  │  │  - 1 core, 1.75 GB RAM            │     │   │  │ │
 │  │  │  │  │                                    │     │   │  │ │
 │  │  │  │  │  ┌──────────────────────────┐    │     │   │  │ │
@@ -98,7 +98,7 @@
 - Virtual Network isolation with VNet integration
 - App Service subnet with service delegation
 - HTTPS-only access with Azure-managed certificates
-- Private endpoint support available on S1+
+- Private endpoint support available on Standard (S1+) and Premium tiers
 
 ### Data Security
 - Storage Account with:
@@ -123,13 +123,13 @@
 ## Scaling and High Availability
 
 ### Scaling Configuration
-- **App Service Plan**: S1 (1 core, 1.75 GB RAM)
-- **Manual Scaling**: Scale up to higher SKUs (S2, S3, P1v2, P1v3, etc.) for more resources
-- **Auto-scaling**: Available on Standard tier - configure based on CPU, memory, or HTTP queue metrics
-- **Scale Out**: Scale to multiple instances (up to 10 on S1)
+- **App Service Plan**: B1 (1 core, 1.75 GB RAM) - Default for cost-effectiveness with VNet integration support
+- **Manual Scaling**: Scale up to higher SKUs (B2, B3, S1, S2, S3, P1v3, P2v3, P3v3) for more resources
+- **Auto-scaling**: Available on Standard (S1+) and Premium tiers - configure based on CPU, memory, or HTTP queue metrics
+- **Scale Out**: B1 supports up to 3 instances; Standard tier supports up to 10 instances
 
 ### High Availability
-- Deployment slots for zero-downtime deployments (staging, production)
+- Deployment slots for zero-downtime deployments (staging, production) *(Standard/Premium tiers only)*
 - Automatic health checks and container restart
 - Data persistence ensures no data loss during restarts
 - Zone redundancy available with Premium SKUs (P1v2+)
@@ -138,9 +138,10 @@
 ### Performance Optimizations
 - SQLite WAL mode enabled for better performance on network storage
 - VNet integration for optimal network performance
-- S1 SKU: 1 core, 1.75 GB RAM (suitable for production deployments)
+- B1 SKU: 1 core, 1.75 GB RAM (suitable for small to medium deployments, 5-50 users)
+- Upgrade to Standard (S1+) or Premium tiers for auto-scaling and higher capacity
 - Always On enabled to prevent cold starts
-- Supports deployment slots for testing before production rollout
+- Supports deployment slots for testing before production rollout (Standard and Premium tiers)
 
 ## Cost Breakdown
 
@@ -148,21 +149,26 @@
 
 | Resource | Configuration | Estimated Cost |
 |----------|--------------|----------------|
-| App Service Plan (S1) | 1 core, 1.75GB RAM, Linux | $70-75 |
+| App Service Plan (B1) | 1 core, 1.75GB RAM, Linux | $13-15 |
 | Storage Account | Standard LRS, ~5GB data | $2-5 |
 | Recovery Services Vault + Backup | Daily backups, 30-day retention | $5-10 |
 | Log Analytics | ~10GB/month logs | $2-10 |
 | Virtual Network | Subnet, no additional charges | Free |
 | Key Vault | Operations-based pricing | < $1 |
-| **Total** | | **$79-101/month** |
+| **Total** | | **$22-41/month** |
 
-**S1 Features vs B1**:
+**B1 Features (Default)**:
 - ✅ Full VNet integration support
-- ✅ Auto-scaling capabilities  
-- ✅ Deployment slots (zero-downtime updates)
-- ✅ Better performance and reliability
-- ✅ Production-ready with SLA
 - ✅ Custom domain with SSL included
+- ✅ 1 core, 1.75 GB RAM (sufficient for 5-50 users)
+- ✅ Manual scaling up to 3 instances
+- ✅ Production-ready with SLA
+- ❌ No auto-scaling (available on S1+)
+- ❌ No deployment slots (available on S1+)
+
+**Upgrade Options**:
+- **Standard (S1, S2, S3)**: Adds auto-scaling, deployment slots, up to 10 instances (~$70-140/month for S1-S3)
+- **Premium (P1v3, P2v3, P3v3)**: Enhanced performance, up to 30 instances, more cores and memory (~$100-400/month)
 
 **Backup & Protection Features**:
 - ✅ Automated daily backups with 30-day retention
@@ -170,12 +176,12 @@
 - ✅ Storage account lock prevents accidental deletion
 - ✅ Compliance-ready backup solution
 
-**Note**: While more expensive than B1 (~$13/month), S1 provides enterprise-grade features essential for production workloads including VNet integration, deployment slots, and auto-scaling capabilities.
+**Note**: B1 provides excellent value for small to medium deployments (5-50 users). For larger deployments or auto-scaling needs, upgrade to Standard (S1+) or Premium tiers.
 
 ### Cost Optimization Tips
-1. S1 tier is ideal for production with full feature set
-2. Use deployment slots to test updates before production
-3. Configure auto-scaling to scale down during low-traffic periods
+1. B1 tier is ideal for small to medium deployments (5-50 users) with excellent cost savings
+2. Upgrade to Standard (S1+) tier for auto-scaling and deployment slots if needed
+3. Configure auto-scaling (on S1+) to scale down during low-traffic periods
 4. Use lifecycle policies for storage account to clean old logs
 5. Use shared Log Analytics workspace across multiple projects
 6. Reserved instances available for 1-3 year commitments (30-55% savings)
@@ -193,7 +199,7 @@
 2. **Network Setup**: Virtual Network and subnet provisioned with App Service delegation
 3. **Storage Provisioning**: Storage account and file share created
 4. **Monitoring Setup**: Log Analytics Workspace deployed
-5. **App Service Plan**: S1 Standard Linux plan created with auto-scaling support
+5. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
 6. **Key Vault**: Deployed for secrets management
 7. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration
 

@@ -65,7 +65,7 @@ The deployment creates the following Azure resources:
 - **Recovery Services Vault**: Backup vault for automated daily backups of Vaultwarden data
 - **Backup Policy**: Daily backup schedule with 30-day retention for file share protection
 - **Log Analytics Workspace**: Monitoring and logging
-- **App Service Plan**: S1 (Standard) Linux plan with VNet integration, auto-scaling, and deployment slots
+- **App Service Plan**: B1 (Basic) Linux plan with VNet integration (upgradable to Standard/Premium for auto-scaling and deployment slots)
 - **App Service**: Web App for Containers running Vaultwarden
 - **Key Vault**: Secure storage for secrets (admin token)
 
@@ -312,18 +312,18 @@ Query logs in Azure Portal or using KQL.
 
 ## Scaling
 
-The App Service can be scaled manually or automatically (auto-scaling available on Standard tier). To scale the App Service Plan:
+The App Service can be scaled manually or automatically (auto-scaling available on Standard S1+ and Premium tiers). To scale the App Service Plan:
 
-1. Update the SKU in `main.bicep` (e.g., from S1 to S2 or P1v2)
+1. Set the App Service Plan SKU using the `appServicePlanSkuName` parameter (e.g., B1, S1, S2, P1v3) or via the `APP_SERVICE_PLAN_SKU_NAME` environment variable
 2. Or scale manually:
    ```bash
    az appservice plan update \
      --name vaultwarden-dev-asp \
      --resource-group vaultwarden-dev-rg \
-     --sku S2
+     --sku S1
    ```
 
-3. Configure auto-scaling rules:
+3. Configure auto-scaling rules (requires Standard S1+ or Premium tier):
    ```bash
    az monitor autoscale create \
      --resource-group vaultwarden-dev-rg \
@@ -615,29 +615,32 @@ The ARM template is compiled from the Bicep source, ensuring consistency between
 ## Cost Estimation
 
 Approximate monthly costs (East US region):
-- App Service Plan (S1): ~$70-75
+- App Service Plan (B1): ~$13-15
 - Storage Account: ~$2-5 (depending on data size)
 - Recovery Services Vault + Backup: ~$5-10 (depending on backup size and retention)
 - Log Analytics: ~$2-10 (depending on log volume)
 - Virtual Network: Free
 - Key Vault: < $1
 
-Total: ~$79-101/month
+Total: ~$22-41/month
 
-**Benefits of S1 over B1**:
+**B1 Features (Default)**:
 - Full VNet integration support
-- Auto-scaling capabilities
-- Deployment slots for zero-downtime updates
-- Better performance (1 core, 1.75 GB RAM)
 - Custom domains with SSL
-- Suitable for production workloads
+- 1 core, 1.75 GB RAM (sufficient for 5-50 users)
+- Manual scaling up to 3 instances
+- Production-ready with SLA
+
+**Upgrade Options**:
+- **Standard (S1, S2, S3)**: Adds auto-scaling, deployment slots, up to 10 instances (~$70-140/month for S1-S3)
+- **Premium (P1v3, P2v3, P3v3)**: Enhanced performance, up to 30 instances (~$100-400/month)
 
 **Backup Protection**:
 - Automated daily backups with 30-day retention
 - Storage account protected with CanNotDelete lock
 - Point-in-time recovery capabilities
 
-**Cost-effective solution** with enterprise-grade features and predictable pricing.
+**Highly cost-effective** compared to Container Apps or other managed Kubernetes solutions.
 
 Actual costs may vary based on usage, region, and resource configuration.
 
