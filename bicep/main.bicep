@@ -123,6 +123,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
     supportsHttpsTrafficOnly: true
     networkAcls: {
       defaultAction: 'Deny'
+      bypass: 'AzureServices'
       virtualNetworkRules: [
         {
           id: vnet.outputs.subnetResourceIds[0]
@@ -169,7 +170,7 @@ module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
     name: appServicePlanName
     location: location
     skuName: 'S1'
-    skuCapacity: 1  // Hardcoded to 1 to prevent auto-scaling for cost savings
+    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is controlled by separate autoscale rules; do not configure autoscale rules on this plan if you want to avoid automatic scaling for cost control. Manual scaling remains possible.
     kind: 'linux'
     reserved: true  // Required for Linux
   }
