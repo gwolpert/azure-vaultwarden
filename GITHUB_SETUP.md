@@ -184,6 +184,7 @@ For each environment, add the following **Variables**:
 | `DOMAIN_NAME` | Custom domain (optional) | `` (empty for auto-generated) |
 | `SIGNUPS_ALLOWED` | Allow user signups | `true` |
 | `VAULTWARDEN_IMAGE_TAG` | Docker image tag | `latest` |
+| `APP_SERVICE_PLAN_SKU_NAME` | App Service Plan SKU (optional) | `B1` (default if not set) |
 
 ### Staging Environment (staging)
 
@@ -195,6 +196,7 @@ For each environment, add the following **Variables**:
 | `DOMAIN_NAME` | `https://vault-staging.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
 | `VAULTWARDEN_IMAGE_TAG` | `1.30.1` |
+| `APP_SERVICE_PLAN_SKU_NAME` | `B1` (or `S1` for auto-scaling) |
 
 ### Production Environment (prod)
 
@@ -206,6 +208,7 @@ For each environment, add the following **Variables**:
 | `DOMAIN_NAME` | `https://vault.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
 | `VAULTWARDEN_IMAGE_TAG` | `1.30.1` |
+| `APP_SERVICE_PLAN_SKU_NAME` | `S1` (or `P1V3` for enhanced performance) |
 
 ### Adding Variables
 
@@ -315,6 +318,7 @@ ENVIRONMENT_NAME: dev
 DOMAIN_NAME: (empty)
 SIGNUPS_ALLOWED: true
 VAULTWARDEN_IMAGE_TAG: latest
+APP_SERVICE_PLAN_SKU_NAME: B1
 ```
 
 ### Example: Complete Prod Environment Setup
@@ -335,6 +339,7 @@ ENVIRONMENT_NAME: prod
 DOMAIN_NAME: https://vault.example.com
 SIGNUPS_ALLOWED: false
 VAULTWARDEN_IMAGE_TAG: 1.30.1
+APP_SERVICE_PLAN_SKU_NAME: S1
 ```
 
 **Protection Rules:**

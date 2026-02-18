@@ -52,6 +52,7 @@ jobs:
             adminToken=${{ secrets.ADMIN_TOKEN }}
             signupsAllowed=${{ vars.SIGNUPS_ALLOWED }}
             vaultwardenImageTag=${{ vars.VAULTWARDEN_IMAGE_TAG }}
+            appServicePlanSkuName=${{ vars.APP_SERVICE_PLAN_SKU_NAME || 'B1' }}
           failOnStdErr: false
           deploymentName: vaultwarden-deployment-${{ github.run_number }}
 

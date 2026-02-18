@@ -165,7 +165,7 @@ az appservice plan show \
 ```
 
 Expected:
-- SKU: S1
+- SKU: B1 (or S1, S2, S3, P1V3, P2V3, P3V3 if upgraded)
 - Kind: linux
 
 ### 5. Application Health Check
