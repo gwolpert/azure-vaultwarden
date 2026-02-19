@@ -231,9 +231,11 @@ For issues with:
 - **Azure Resources**: See [Azure Documentation](https://docs.microsoft.com/azure/)
 - **This Deployment**: Open an issue in this repository
 
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## License
 
-This deployment template is provided as-is. Vaultwarden is licensed under the [GNU Affero General Public License v3.0](https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt).
+This project is licensed under the [MIT License](LICENSE). Vaultwarden itself is licensed under the [GNU Affero General Public License v3.0](https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt).
 
 ## Additional Resources
 
