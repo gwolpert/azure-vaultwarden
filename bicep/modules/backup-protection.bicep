@@ -39,6 +39,6 @@ resource protectedItem 'Microsoft.RecoveryServices/vaults/backupFabrics/protecti
   properties: {
     protectedItemType: 'AzureFileShareProtectedItem'
     sourceResourceId: fileShareResourceId
-    policyId: resourceId('Microsoft.RecoveryServices/vaults/backupPolicies', vaultName, 'vaultwarden-daily-backup-policy')
+    policyId: resourceId(subscription().subscriptionId, resourceGroup().name, 'Microsoft.RecoveryServices/vaults/backupPolicies', vaultName, 'vaultwarden-daily-backup-policy')
   }
 }
