@@ -49,36 +49,7 @@ param vaultwardenImageTag string = 'latest'
 param appServicePlanSkuName string = 'B1'
 
 // Variables
-// Using official Microsoft Azure resource abbreviations:
-// https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
-var namingPrefix = resourceGroupName
-// Storage account: Must be 3-24 chars, lowercase letters and numbers only
-// Official abbreviation: 'st' (not 'sa')
-// Pattern: {resourceGroupName without dashes}st
-// Example: vaultwarden-dev -> vaultwardendevst (16 chars)
-// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionst = 23 chars)
-// NOTE: The resourceGroupName parameter constraint (@minLength(3), @maxLength(22)) combined with
-// the 'st' suffix ensures the final storage account name is 5-24 chars (safe within 3-24 limit).
-// Only lowercase letters, numbers, and hyphens are allowed in resourceGroupName, and hyphens are
-// removed, ensuring the final name contains only valid characters (lowercase letters and numbers).
-// toLower() ensures lowercase conversion even if user provides uppercase in resourceGroupName.
-var storageAccountName = toLower('${replace(resourceGroupName, '-', '')}st')
-
-// Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
-// Official abbreviation: 'kv'
-// Pattern: {resourceGroupName without dashes}kv (hyphens removed for consistency with storage account)
-// Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
-// Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
-var keyVaultName = '${replace(resourceGroupName, '-', '')}kv'
-
-// App Service Plan name
-// Official abbreviation: 'asp'
-var appServicePlanName = '${namingPrefix}-asp'
-
-// App Service name
-// Official abbreviation: 'app'
-var appServiceName = '${namingPrefix}-app'
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
@@ -92,114 +63,33 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
 }
 
 // Deploy Virtual Network with subnet for App Service VNet Integration
-module vnet 'br/public:avm/res/network/virtual-network:0.1.8' = {
+module vnet 'modules/vnet.bicep' = {
   scope: rg
   name: 'vnet-deployment'
   params: {
-    name: '${namingPrefix}-vnet'
+    baseName: resourceGroupName
     location: location
-    addressPrefixes: [
-      '10.0.0.0/16'
-    ]
-    subnets: [
-      {
-        name: 'app-service-subnet'
-        addressPrefix: '10.0.0.0/24'
-        delegations: [
-          {
-            name: 'MicrosoftWebServerFarms'
-            properties: {
-              serviceName: 'Microsoft.Web/serverFarms'
-            }
-          }
-        ]
-        serviceEndpoints: [
-          {
-            service: 'Microsoft.Storage'
-          }
-        ]
-      }
-    ]
   }
 }
 
 // Deploy Storage Account with lock to prevent accidental deletion
-module storageAccount 'br/public:avm/res/storage/storage-account:0.9.1' = {
+module storageAccount 'modules/storage-account.bicep' = {
   scope: rg
   name: 'storage-deployment'
   params: {
-    name: storageAccountName
+    baseName: resourceGroupName
     location: location
-    kind: 'StorageV2'
-    skuName: 'Standard_LRS'
-    allowBlobPublicAccess: false
-    minimumTlsVersion: 'TLS1_2'
-    supportsHttpsTrafficOnly: true
-    networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
-      virtualNetworkRules: [
-        {
-          id: vnet.outputs.subnetResourceIds[0]
-          action: 'Allow'
-        }
-      ]
-    }
-    fileServices: {
-      shares: [
-        {
-          name: 'vaultwarden-data'
-          accessTier: 'TransactionOptimized'
-        }
-      ]
-    }
-    lock: {
-      kind: 'CanNotDelete'
-      name: 'storage-lock'
-    }
+    subnetResourceId: vnet.outputs.subnetResourceIds[0]
   }
 }
 
 // Deploy Recovery Services Vault for backup
-// Recovery Services Vault name must be 2-50 characters, alphanumeric and hyphens
-// Pattern: {resourceGroupName}-rsv
-var recoveryServicesVaultName = '${namingPrefix}-rsv'
-
-module recoveryServicesVault 'br/public:avm/res/recovery-services/vault:0.8.0' = {
+module recoveryServicesVault 'modules/recovery-vault.bicep' = {
   scope: rg
   name: 'recovery-vault-deployment'
   params: {
-    name: recoveryServicesVaultName
+    baseName: resourceGroupName
     location: location
-    backupPolicies: [
-      {
-        name: 'vaultwarden-daily-backup-policy'
-        properties: {
-          backupManagementType: 'AzureStorage'
-          workloadType: 'AzureFileShare'
-          schedulePolicy: {
-            schedulePolicyType: 'SimpleSchedulePolicy'
-            scheduleRunFrequency: 'Daily'
-            scheduleRunTimes: [
-              '2024-01-01T02:00:00Z'  // Daily backup at 2 AM UTC
-            ]
-          }
-          retentionPolicy: {
-            retentionPolicyType: 'LongTermRetentionPolicy'
-            dailySchedule: {
-              retentionTimes: [
-                '2024-01-01T02:00:00Z'
-              ]
-              retentionDuration: {
-                count: 30
-                durationType: 'Days'
-              }
-            }
-          }
-          timeZone: 'UTC'
-        }
-      }
-    ]
   }
   dependsOn: [
     storageAccount
@@ -207,13 +97,13 @@ module recoveryServicesVault 'br/public:avm/res/recovery-services/vault:0.8.0' =
 }
 
 // Enable automatic backup protection for the file share
-module backupProtection 'backup-protection.bicep' = {
+module backupProtection 'modules/backup-protection.bicep' = {
   scope: rg
   name: 'backup-protection-deployment'
   params: {
     vaultName: recoveryServicesVault.outputs.name
     resourceGroupName: resourceGroupNameWithSuffix
-    storageAccountName: storageAccountName
+    storageAccountName: storageAccount.outputs.name
     storageAccountResourceId: storageAccount.outputs.resourceId
     fileShareName: 'vaultwarden-data'
   }
@@ -223,58 +113,45 @@ module backupProtection 'backup-protection.bicep' = {
 resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   scope: rg
   #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
-  name: storageAccountName
+  name: storageAccount.outputs.name
   dependsOn: [
     storageAccount
   ]
 }
 
 // Deploy Log Analytics Workspace
-module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.3.4' = {
+module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {
   scope: rg
   name: 'log-analytics-deployment'
   params: {
-    name: '${namingPrefix}-log'
+    baseName: resourceGroupName
     location: location
   }
 }
 
 // Deploy App Service Plan (Default: B1 SKU for cost-effectiveness with VNet integration support)
-module appServicePlan 'br/public:avm/res/web/serverfarm:0.6.0' = {
+module appServicePlan 'modules/app-service-plan.bicep' = {
   scope: rg
   name: 'app-service-plan-deployment'
   params: {
-    name: appServicePlanName
+    baseName: resourceGroupName
     location: location
     skuName: appServicePlanSkuName
-    skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is only available on Standard (S1+) and Premium tiers; the default B1 (Basic) plan does not support auto-scaling. Manual scaling of instance count is possible on all tiers.
-    kind: 'linux'
-    reserved: true  // Required for Linux
   }
 }
 
 // Deploy Key Vault for secrets management
-module keyVault 'br/public:avm/res/key-vault/vault:0.6.2' = {
+module keyVault 'modules/key-vault.bicep' = {
   scope: rg
   name: 'keyvault-deployment'
   params: {
-    name: keyVaultName
+    baseName: resourceGroupName
     location: location
-    sku: 'standard'
-    enableRbacAuthorization: true
-    enableVaultForDeployment: false
-    enableVaultForDiskEncryption: false
-    enableVaultForTemplateDeployment: true
-    publicNetworkAccess: 'Enabled'
-    networkAcls: {
-      defaultAction: 'Allow'
-      bypass: 'AzureServices'
-    }
   }
 }
 
 // Store admin token in Key Vault (only if provided) using a separate module
-module keyVaultSecret 'keyvault-secret.bicep' = if (adminToken != '') {
+module keyVaultSecret 'modules/keyvault-secret.bicep' = if (adminToken != '') {
   scope: rg
   name: 'keyvault-secret-deployment'
   params: {
@@ -284,81 +161,27 @@ module keyVaultSecret 'keyvault-secret.bicep' = if (adminToken != '') {
 }
 
 // Deploy App Service (Web App for Containers)
-module appService 'br/public:avm/res/web/site:0.21.0' = {
+module appService 'modules/app-service.bicep' = {
   scope: rg
   name: 'app-service-deployment'
   params: {
-    name: appServiceName
+    baseName: resourceGroupName
     location: location
-    kind: 'app,linux,container'
-    serverFarmResourceId: appServicePlan.outputs.resourceId
-    managedIdentities: {
-      systemAssigned: true
-    }
-    virtualNetworkSubnetResourceId: vnet.outputs.subnetResourceIds[0]
-    configs: [
-      {
-        name: 'azurestorageaccounts'
-        properties: {
-          'vaultwarden-data': {
-            type: 'AzureFiles'
-            accountName: storageAccountName
-            shareName: 'vaultwarden-data'
-            mountPath: '/data'
-            accessKey: storageAccountResource.listKeys().keys[0].value
-          }
-        }
-      }
-    ]
-    siteConfig: {
-      linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
-      alwaysOn: true
-      appSettings: concat([
-        {
-          name: 'DOMAIN'
-          value: domainName != '' ? domainName : 'https://${appServiceName}.azurewebsites.net'
-        }
-        {
-          name: 'SIGNUPS_ALLOWED'
-          value: string(signupsAllowed)
-        }
-        {
-          name: 'ENABLE_DB_WAL'
-          value: 'true'
-        }
-        {
-          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
-          value: 'false'
-        }
-      ], adminToken != '' ? [
-        {
-          name: 'ADMIN_TOKEN'
-          value: '@Microsoft.KeyVault(SecretUri=${keyVault.outputs.uri}secrets/vaultwarden-admin-token/)'
-        }
-      ] : [])
-    }
-    httpsOnly: true
-    diagnosticSettings: [
-      {
-        workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-        logCategoriesAndGroups: [
-          {
-            categoryGroup: 'allLogs'
-          }
-        ]
-        metricCategories: [
-          {
-            category: 'AllMetrics'
-          }
-        ]
-      }
-    ]
+    appServicePlanResourceId: appServicePlan.outputs.resourceId
+    subnetResourceId: vnet.outputs.subnetResourceIds[0]
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    storageAccountName: storageAccount.outputs.name
+    storageAccountKey: storageAccountResource.listKeys().keys[0].value
+    domainName: domainName
+    signupsAllowed: signupsAllowed
+    vaultwardenImageTag: vaultwardenImageTag
+    adminTokenSecretUri: adminToken != '' ? '${keyVault.outputs.uri}secrets/vaultwarden-admin-token/' : ''
   }
   dependsOn: adminToken != '' ? [keyVaultSecret] : []
 }
 
 // Grant App Service managed identity access to Key Vault secrets
-module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
+module keyVaultRoleAssignment 'modules/role-assignment.bicep' = if (adminToken != '') {
   scope: rg
   name: 'keyvault-role-assignment-deployment'
   params: {
@@ -370,7 +193,7 @@ module keyVaultRoleAssignment 'role-assignment.bicep' = if (adminToken != '') {
 // Outputs
 output resourceGroupName string = rg.name
 output vaultwardenUrl string = 'https://${appService.outputs.defaultHostname}'
-output storageAccountName string = storageAccountName
+output storageAccountName string = storageAccount.outputs.name
 output appServiceName string = appService.outputs.name
 output appServicePlanName string = appServicePlan.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
