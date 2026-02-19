@@ -11,15 +11,17 @@ param resourceGroupName string
 @description('Name of the storage account to register')
 param storageAccountName string
 
+@description('Fully qualified resource ID of the storage account')
+param storageAccountResourceId string
+
 @description('Name of the file share to protect')
 param fileShareName string
 
 // Variables for backup configuration
 var backupFabric = 'Azure'
 var backupManagementType = 'AzureStorage'
-// Construct the storage account resource ID using resourceId function to ensure it's fully qualified
-// Since this module is deployed at resource group scope, resourceId automatically uses the current RG context
-var storageAccountId = resourceId('Microsoft.Storage/storageAccounts', storageAccountName)
+// Use the fully qualified resource ID passed from the storage account module
+var storageAccountId = storageAccountResourceId
 var fileShareResourceId = '${storageAccountId}/fileServices/default/shares/${fileShareName}'
 
 // Register the storage account with the Recovery Services Vault as a protection container
