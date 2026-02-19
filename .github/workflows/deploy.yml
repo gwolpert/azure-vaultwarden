@@ -68,6 +68,35 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Access your Vaultwarden instance at: ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
 
+      - name: Enable backup protection
+        run: |
+          ./enable-backup-protection.sh \
+            "${{ steps.deploy.outputs.resourceGroupName }}" \
+            "${{ steps.deploy.outputs.storageAccountName }}" \
+            "${{ steps.deploy.outputs.recoveryServicesVaultName }}" \
+            "vaultwarden-data"
+          
+          # Display status in workflow summary
+          PROTECTION_STATUS=$(az backup item show \
+            --resource-group "${{ steps.deploy.outputs.resourceGroupName }}" \
+            --vault-name "${{ steps.deploy.outputs.recoveryServicesVaultName }}" \
+            --container-name "storagecontainer;Storage;${{ steps.deploy.outputs.resourceGroupName }};${{ steps.deploy.outputs.storageAccountName }}" \
+            --name "AzureFileShare;vaultwarden-data" \
+            --backup-management-type AzureStorage \
+            --workload-type AzureFileShare \
+            --query properties.protectionStatus \
+            --output tsv 2>/dev/null || echo "Unknown")
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backup Protection Status" >> $GITHUB_STEP_SUMMARY
+          if [ "$PROTECTION_STATUS" = "Protected" ]; then
+            echo "✅ Backup protection is active" >> $GITHUB_STEP_SUMMARY
+            echo "- Daily backups at 2:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+            echo "- 30-day retention" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Backup protection status: $PROTECTION_STATUS" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Verify deployment
         run: |
           echo "Waiting for application to be ready..."
