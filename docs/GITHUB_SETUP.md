@@ -447,9 +447,9 @@ Instead of storing secrets in GitHub, reference them from Azure Key Vault:
 
 Create separate environments for each region:
 - `dev-westeurope`
-- `dev-westus`
+- `dev-northeurope`
 - `prod-westeurope`
-- `prod-westus`
+- `prod-northeurope`
 
 ### Custom Workflows per Environment
 
