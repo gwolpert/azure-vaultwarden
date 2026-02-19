@@ -73,9 +73,9 @@ jobs:
           {
             "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
             "type": "QuickStart",
-            "itemDisplayName": "Vaultwarden on Azure Container Apps",
-            "description": "Deploy Vaultwarden (Bitwarden-compatible server) on Azure Container Apps with persistent storage, monitoring, and automatic HTTPS.",
-            "summary": "This template deploys Vaultwarden on Azure Container Apps with Virtual Network, Storage Account for data persistence, and Log Analytics for monitoring.",
+            "itemDisplayName": "Vaultwarden on Azure App Service",
+            "description": "Deploy Vaultwarden (Bitwarden-compatible server) on Azure App Service with persistent storage, monitoring, and automatic HTTPS.",
+            "summary": "This template deploys Vaultwarden on Azure App Service with Virtual Network, Storage Account for data persistence, and Log Analytics for monitoring.",
             "githubUsername": "gwolpert",
             "dateUpdated": "$(date +%Y-%m-%d)",
             "categories": [
@@ -84,7 +84,7 @@ jobs:
               "Security"
             ],
             "products": [
-              "Azure Container Apps",
+              "Azure App Service",
               "Azure Storage",
               "Azure Virtual Network",
               "Azure Log Analytics"
@@ -107,9 +107,9 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Release ${{ steps.tag.outputs.tag }}
           body: |
-            ## Vaultwarden on Azure Container Apps - Release ${{ steps.tag.outputs.tag }}
+            ## Vaultwarden on Azure App Service - Release ${{ steps.tag.outputs.tag }}
             
-            This release includes the compiled ARM template for deploying Vaultwarden on Azure Container Apps.
+            This release includes the compiled ARM template for deploying Vaultwarden on Azure App Service.
             
             ### Files
             - **main.json** - ARM template compiled from Bicep
@@ -130,11 +130,12 @@ jobs:
             
             ### What's Deployed
             
-            - Virtual Network with Container Apps subnet
+            - Virtual Network with App Service and Private Endpoint subnets
             - Storage Account with File Share for data persistence
+            - Recovery Services Vault for automated backups
             - Log Analytics Workspace for monitoring
-            - Container App Environment
-            - Container App running Vaultwarden
+            - App Service Plan and App Service running Vaultwarden
+            - Key Vault for secrets management
             
             ### Documentation
             

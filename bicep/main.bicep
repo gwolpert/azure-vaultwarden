@@ -106,38 +106,9 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
   ]
 }
 
-// Note: File share backup protection must be configured post-deployment using Azure CLI or Portal
-// This is because the backup protection container registration requires the storage account to be
-// fully provisioned and accessible, which is better handled as a post-deployment step.
-//
-// When using GitHub Actions, backup protection is automatically enabled as part of the workflow.
-//
-// For manual deployments, use the provided script:
-//    ./enable-backup-protection.sh \
-//      {resourceGroupName}-rg \
-//      {storageAccountName} \
-//      {resourceGroupName}-rsv \
-//      vaultwarden-data
-//
-// Or use Azure CLI commands directly:
-//
-// 1. Register the storage account with the Recovery Services Vault:
-//    az backup container register \
-//      --resource-group {resourceGroupName}-rg \
-//      --vault-name {resourceGroupName}-rsv \
-//      --backup-management-type AzureStorage \
-//      --workload-type AzureFileShare \
-//      --storage-account /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}-rg/providers/Microsoft.Storage/storageAccounts/{storageAccountName}
-//
-// 2. Enable protection for the file share:
-//    az backup protection enable-for-azurefileshare \
-//      --resource-group {resourceGroupName}-rg \
-//      --vault-name {resourceGroupName}-rsv \
-//      --policy-name vaultwarden-daily-backup-policy \
-//      --storage-account {storageAccountName} \
-//      --azure-file-share vaultwarden-data
-//
-// See docs/BACKUP_PROTECTION.md for detailed instructions.
+// Note: File share backup protection is configured post-deployment.
+// - GitHub Actions: automatically enabled via the deploy workflow.
+// - Manual deployments: run ./enable-backup-protection.sh (see docs/BACKUP_PROTECTION.md).
 
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {

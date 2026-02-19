@@ -56,9 +56,11 @@ Expected resources:
 - [ ] Virtual Network
 - [ ] Storage Account
 - [ ] File Share
+- [ ] Recovery Services Vault
 - [ ] Log Analytics Workspace
 - [ ] App Service Plan
 - [ ] App Service (Web App)
+- [ ] Key Vault
 
 ### 2. Network Configuration Verification
 
@@ -72,18 +74,18 @@ az network vnet show \
 
 Expected:
 - Address space: 10.0.0.0/16
-- Subnet: container-apps-subnet
+- Subnets: app-service-subnet, private-endpoint-subnet
 
 #### Check Subnet Configuration
 ```bash
 az network vnet subnet show \
-  --name container-apps-subnet \
+  --name app-service-subnet \
   --vnet-name vaultwarden-dev-vnet \
   --resource-group vaultwarden-dev-rg \
   --query "{name:name, addressPrefix:addressPrefix}"
 ```
 
-Expected: Subnet 10.0.0.0/23
+Expected: Subnet 10.0.0.0/24
 
 ### 3. Storage Account Verification
 
@@ -506,7 +508,8 @@ Use this checklist to verify your deployment:
 ### Infrastructure
 - [ ] Resource group created
 - [ ] Virtual network deployed with correct address space
-- [ ] Subnet configured for App Service VNet Integration
+- [ ] Subnet configured for App Service VNet integration
+- [ ] Private Endpoint subnet configured for storage
 - [ ] Storage account created with security settings
 - [ ] File share created and accessible
 - [ ] Log Analytics workspace deployed
