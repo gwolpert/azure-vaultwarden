@@ -142,7 +142,7 @@ check_bicep_template() {
     fi
     
     # Check for required modules
-    if grep -q "br/public:avm" bicep/main.bicep; then
+    if grep -rq "br/public:avm" bicep/; then
         print_pass "Uses Azure Verified Modules (AVM)"
     else
         print_warn "Does not use Azure Verified Modules"
@@ -240,7 +240,7 @@ check_azure_providers() {
         return
     fi
     
-    local providers=("Microsoft.App" "Microsoft.OperationalInsights" "Microsoft.Storage" "Microsoft.Network")
+    local providers=("Microsoft.Web" "Microsoft.OperationalInsights" "Microsoft.Storage" "Microsoft.Network" "Microsoft.RecoveryServices" "Microsoft.KeyVault")
     
     for provider in "${providers[@]}"; do
         STATUS=$(az provider show --namespace "$provider" --query "registrationState" -o tsv 2>/dev/null || echo "Unknown")
@@ -264,23 +264,23 @@ check_existing_deployment() {
         return
     fi
     
-    local rg_name="${1:-rg-vaultwarden-dev}"
+    local rg_name="${1:-vaultwarden-dev-rg}"
     
     if az group exists --name "$rg_name" | grep -q "true"; then
         print_info "Resource group '$rg_name' exists"
         
-        # Check for container app
-        if az containerapp list --resource-group "$rg_name" --query "[0].name" -o tsv &> /dev/null; then
-            APP_NAME=$(az containerapp list --resource-group "$rg_name" --query "[0].name" -o tsv)
-            print_info "  Container app: $APP_NAME"
+        # Check for app service
+        if az webapp list --resource-group "$rg_name" --query "[0].name" -o tsv &> /dev/null; then
+            APP_NAME=$(az webapp list --resource-group "$rg_name" --query "[0].name" -o tsv)
+            print_info "  App Service: $APP_NAME"
             
-            # Get FQDN
-            FQDN=$(az containerapp show --name "$APP_NAME" --resource-group "$rg_name" --query "properties.configuration.ingress.fqdn" -o tsv 2>/dev/null || echo "")
-            if [ ! -z "$FQDN" ]; then
-                print_info "  URL: https://$FQDN"
+            # Get default hostname
+            HOSTNAME=$(az webapp show --name "$APP_NAME" --resource-group "$rg_name" --query "defaultHostName" -o tsv 2>/dev/null || echo "")
+            if [ ! -z "$HOSTNAME" ]; then
+                print_info "  URL: https://$HOSTNAME"
             fi
         else
-            print_info "  No container apps found"
+            print_info "  No app services found"
         fi
     else
         print_info "No deployment found at '$rg_name'"

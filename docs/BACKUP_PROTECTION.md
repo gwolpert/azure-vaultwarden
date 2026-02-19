@@ -209,11 +209,7 @@ az backup restore restore-azurefileshare \
 
 ## Recommendation
 
-**For production deployments**, we recommend:
-1. Try the automatic Bicep deployment first (default behavior)
-2. If it fails with `BMSUserErrorInvalidSourceResourceId`, redeploy with `enableBackupProtection=false`
-3. Then run the Azure CLI script to enable backup protection
-4. This hybrid approach ensures your deployment succeeds while still getting backup protection
+**For production deployments**, we recommend using GitHub Actions for automated backup protection setup. For manual deployments, run the `enable-backup-protection.sh` script after deploying the infrastructure.
 
 ## See Also
 

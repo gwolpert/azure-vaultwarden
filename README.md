@@ -647,7 +647,7 @@ For issues with:
 
 ## License
 
-This deployment template is provided as-is. Vaultwarden is licensed under the GPL-3.0 license.
+This deployment template is provided as-is. Vaultwarden is licensed under the [GNU Affero General Public License v3.0](https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt).
 
 ## Additional Resources
 
