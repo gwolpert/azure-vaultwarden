@@ -114,9 +114,6 @@ resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' e
   scope: rg
   #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
   name: storageAccount.outputs.name
-  dependsOn: [
-    storageAccount
-  ]
 }
 
 // Deploy Log Analytics Workspace
