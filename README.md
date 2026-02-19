@@ -132,11 +132,11 @@ az account set --subscription "<your-subscription-id>"
 # Deploy
 az deployment sub create \
   --name vaultwarden-deployment \
-  --location eastus \
+  --location westeurope \
   --template-file bicep/main.bicep \
   --parameters \
     resourceGroupName="vaultwarden-dev" \
-    location="eastus" \
+    location="westeurope" \
     environmentName="dev" \
     domainName="" \
     adminToken="" \

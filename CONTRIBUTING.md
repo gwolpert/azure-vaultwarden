@@ -52,10 +52,45 @@ Before submitting a PR, run the validation script:
 
 This checks Bicep templates, file structure, and workflow configuration.
 
+## Bicep Conventions
+
+### Azure Verified Modules
+
+Use [Azure Verified Modules (AVM)](https://azure.github.io/Azure-Verified-Modules/) whenever possible. They keep the Bicep templates readable and consistent with Azure best practices.
+
+### Resource Naming
+
+Follow the abbreviations recommended by Microsoft's [Cloud Adoption Framework (CAF)](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations).
+
+The naming convention for resources is:
+
+```
+{resourceGroupName}-{abbreviation}
+```
+
+where the CAF abbreviation is used as a **suffix**. For example:
+
+| Resource | Abbreviation | Example Name |
+|----------|-------------|-------------|
+| Storage Account | `st` | `vaultwardendevst` |
+| Key Vault | `kv` | `vaultwarden-dev-kv` |
+| App Service Plan | `asp` | `vaultwarden-dev-asp` |
+| Virtual Network | `vnet` | `vaultwarden-dev-vnet` |
+
+`resourceGroupName` is determined by the user of the template. The recommended format is `vaultwarden-{env}` (e.g., `vaultwarden-dev`, `vaultwarden-prod`).
+
+> **Note:** Keep `resourceGroupName` short (max 22 characters). Long names can cause issues with Key Vault (24-character limit) and Storage Account (24-character limit) name lengths.
+
+### Recommended Region
+
+The default recommended region is **West Europe** (`westeurope`).
+
 ## Guidelines
 
 - **Keep changes small** — smaller PRs are easier to review and merge
 - **Follow existing patterns** — match the style and conventions already in the codebase
+- **Use Azure Verified Modules** for new Bicep resources whenever available
+- **Follow CAF naming conventions** as described above
 - **Update documentation** if your change affects how users deploy or configure the project
 - **One concern per PR** — avoid mixing unrelated changes
 
