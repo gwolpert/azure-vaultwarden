@@ -118,7 +118,7 @@ if [ -z "$CONTAINER_NAME" ]; then
     
     # Wait for registration to complete and container to become available
     print_info "Waiting for registration to complete..."
-    MAX_RETRIES=12    # total wait time = MAX_RETRIES * SLEEP_SECONDS (here: 12 * 10 = 120s)
+    MAX_RETRIES=12    # Minimum wait time = MAX_RETRIES * SLEEP_SECONDS (120s) plus command execution time
     SLEEP_SECONDS=10
     RETRY=1
     while [ "$RETRY" -le "$MAX_RETRIES" ]; do

@@ -107,7 +107,7 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 //      --vault-name {resourceGroupName}-rsv \
 //      --backup-management-type AzureStorage \
 //      --workload-type AzureFileShare \
-//      --storage-account {storageAccountResourceId}
+//      --storage-account /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}-rg/providers/Microsoft.Storage/storageAccounts/{storageAccountName}
 //
 // 2. Enable protection for the file share:
 //    az backup protection enable-for-azurefileshare \
@@ -117,7 +117,7 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 //      --storage-account {storageAccountName} \
 //      --azure-file-share vaultwarden-data
 //
-// Or use the provided script:
+// Or use the provided script (recommended):
 //    ./scripts/enable-backup-protection.sh \
 //      {resourceGroupName}-rg \
 //      {storageAccountName} \
