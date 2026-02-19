@@ -34,11 +34,11 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
             }
           }
         ]
-        serviceEndpoints: [
-          {
-            service: 'Microsoft.Storage'
-          }
-        ]
+      }
+      {
+        name: 'private-endpoint-subnet'
+        addressPrefix: '10.0.1.0/24'
+        privateEndpointNetworkPolicies: 'Disabled'
       }
     ]
   }
@@ -47,3 +47,5 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
 output name string = vnetDeployment.outputs.name
 output resourceId string = vnetDeployment.outputs.resourceId
 output subnetResourceIds array = vnetDeployment.outputs.subnetResourceIds
+output appServiceSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[0]
+output privateEndpointSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[1]

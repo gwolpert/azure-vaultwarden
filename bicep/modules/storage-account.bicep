@@ -12,8 +12,11 @@ param baseName string
 @description('The Azure region where resources will be deployed')
 param location string
 
-@description('The resource ID of the subnet to grant network access')
-param subnetResourceId string
+@description('The resource ID of the subnet for the private endpoint')
+param privateEndpointSubnetResourceId string
+
+@description('The resource ID of the private DNS zone for the storage account private endpoint')
+param privateDnsZoneResourceId string
 
 // Build the full storage account name using naming convention
 // Storage account: Must be 3-24 chars, lowercase letters and numbers only
@@ -39,16 +42,20 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.9.1
     allowBlobPublicAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
+    publicNetworkAccess: 'Disabled'
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'
-      virtualNetworkRules: [
-        {
-          id: subnetResourceId
-          action: 'Allow'
-        }
-      ]
     }
+    privateEndpoints: [
+      {
+        service: 'file'
+        subnetResourceId: privateEndpointSubnetResourceId
+        privateDnsZoneResourceIds: [
+          privateDnsZoneResourceId
+        ]
+      }
+    ]
     fileServices: {
       shares: [
         {
