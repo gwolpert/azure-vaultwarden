@@ -4,6 +4,9 @@
 
 targetScope = 'resourceGroup'
 
+@description('The base name for resources (without suffixes)')
+param baseName string
+
 @description('The resource ID of the Virtual Network to link the DNS zone to')
 param vnetResourceId string
 
@@ -12,7 +15,7 @@ module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.3.
   name: '${deployment().name}-private-dns-zone'
   params: {
     #disable-next-line no-hardcoded-env-urls
-    name: 'privatelink.file.core.windows.net'
+    name: '${baseName}.file.core.windows.net'
     location: 'global'
     virtualNetworkLinks: [
       {

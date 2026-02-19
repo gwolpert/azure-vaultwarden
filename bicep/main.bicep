@@ -77,6 +77,7 @@ module privateDnsZone 'modules/private-dns-zone.bicep' = {
   scope: rg
   name: 'private-dns-zone-deployment'
   params: {
+    baseName: resourceGroupName
     vnetResourceId: vnet.outputs.resourceId
   }
 }
