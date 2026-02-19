@@ -30,7 +30,7 @@ var storageAccountName = toLower('${replace(baseName, '-', '')}st')
 
 // Deploy Storage Account with lock to prevent accidental deletion
 module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.9.1' = {
-  name: 'storage-deployment'
+  name: '${deployment().name}-storage-deployment'
   params: {
     name: storageAccountName
     location: location
@@ -64,5 +64,13 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.9.1
   }
 }
 
+// Reference the storage account to retrieve keys
+resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+  #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
+  name: storageAccountName
+}
+
 output name string = storageAccountName
 output resourceId string = storageAccountDeployment.outputs.resourceId
+@secure()
+output primaryKey string = storageAccountResource.listKeys().keys[0].value

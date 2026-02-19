@@ -16,7 +16,7 @@ var logAnalyticsWorkspaceName = '${baseName}-log'
 
 // Deploy Log Analytics Workspace
 module logAnalyticsDeployment 'br/public:avm/res/operational-insights/workspace:0.3.4' = {
-  name: 'log-analytics-deployment'
+  name: '${deployment().name}-log-analytics-avm'
   params: {
     name: logAnalyticsWorkspaceName
     location: location

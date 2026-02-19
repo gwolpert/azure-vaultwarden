@@ -109,13 +109,6 @@ module backupProtection 'modules/backup-protection.bicep' = {
   }
 }
 
-// Get storage account keys using listKeys function
-resource storageAccountResource 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
-  scope: rg
-  #disable-next-line BCP334 // resourceGroupName constraints (@minLength(3) + @maxLength(22)) with 'st' suffix ensure 5-24 char storage name
-  name: storageAccount.outputs.name
-}
-
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {
   scope: rg
@@ -168,7 +161,7 @@ module appService 'modules/app-service.bicep' = {
     subnetResourceId: vnet.outputs.subnetResourceIds[0]
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     storageAccountName: storageAccount.outputs.name
-    storageAccountKey: storageAccountResource.listKeys().keys[0].value
+    storageAccountKey: storageAccount.outputs.primaryKey
     domainName: domainName
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag

@@ -30,7 +30,7 @@ var appServicePlanName = '${baseName}-asp'
 
 // Deploy App Service Plan
 module appServicePlanDeployment 'br/public:avm/res/web/serverfarm:0.6.0' = {
-  name: 'app-service-plan-deployment'
+  name: '${deployment().name}-app-service-plan'
   params: {
     name: appServicePlanName
     location: location

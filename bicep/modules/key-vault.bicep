@@ -20,7 +20,7 @@ var keyVaultName = '${replace(baseName, '-', '')}kv'
 
 // Deploy Key Vault for secrets management
 module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.6.2' = {
-  name: 'keyvault-deployment'
+  name: '${deployment().name}-key-vault'
   params: {
     name: keyVaultName
     location: location

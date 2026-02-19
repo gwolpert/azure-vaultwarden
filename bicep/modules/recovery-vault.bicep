@@ -17,7 +17,7 @@ var recoveryServicesVaultName = '${baseName}-rsv'
 
 // Deploy Recovery Services Vault for backup
 module recoveryVaultDeployment 'br/public:avm/res/recovery-services/vault:0.8.0' = {
-  name: 'recovery-vault-deployment'
+  name: '${deployment().name}-recovery-vault'
   params: {
     name: recoveryServicesVaultName
     location: location

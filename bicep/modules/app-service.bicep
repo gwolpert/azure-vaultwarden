@@ -44,7 +44,7 @@ var appServiceName = '${baseName}-app'
 
 // Deploy App Service (Web App for Containers)
 module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
-  name: 'app-service-deployment'
+  name: '${deployment().name}-avm'
   params: {
     name: appServiceName
     location: location
@@ -117,4 +117,4 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
 output name string = appServiceDeployment.outputs.name
 output resourceId string = appServiceDeployment.outputs.resourceId
 output defaultHostname string = appServiceDeployment.outputs.defaultHostname
-output systemAssignedMIPrincipalId string = appServiceDeployment.outputs.systemAssignedMIPrincipalId
+output systemAssignedMIPrincipalId string = appServiceDeployment.outputs.systemAssignedMIPrincipalId!

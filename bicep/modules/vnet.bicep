@@ -15,7 +15,7 @@ var vnetName = '${baseName}-vnet'
 
 // Deploy Virtual Network with subnet for App Service VNet Integration
 module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
-  name: 'vnet-deployment'
+  name: '${deployment().name}-vnet'
   params: {
     name: vnetName
     location: location
