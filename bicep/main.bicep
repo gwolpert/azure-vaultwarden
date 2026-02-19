@@ -88,7 +88,7 @@ module storageAccount 'modules/storage-account.bicep' = {
   params: {
     baseName: resourceGroupName
     location: location
-    privateEndpointSubnetResourceId: vnet.outputs.subnetResourceIds[1]
+    privateEndpointSubnetResourceId: vnet.outputs.privateEndpointSubnetResourceId
     privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
   }
 }
@@ -188,7 +188,7 @@ module appService 'modules/app-service.bicep' = {
     baseName: resourceGroupName
     location: location
     appServicePlanResourceId: appServicePlan.outputs.resourceId
-    subnetResourceId: vnet.outputs.subnetResourceIds[0]
+    subnetResourceId: vnet.outputs.appServiceSubnetResourceId
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     storageAccountName: storageAccount.outputs.name
     storageAccountKey: storageAccount.outputs.primaryKey

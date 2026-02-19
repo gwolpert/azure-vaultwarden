@@ -121,7 +121,7 @@
 - Storage Account public network access **completely disabled** (Private Link only)
 - Private DNS Zone resolves storage account to private IP within VNet
 - HTTPS-only access with Azure-managed certificates
-- Private endpoint support available on Standard (S1+) and Premium tiers
+- App Service inbound private endpoints (for private access to the web app) require Premium tiers; accessing Private Link resources (like the storage account) via VNet integration is supported from Basic (B1) and above
 
 ### Data Security
 - Storage Account with:
