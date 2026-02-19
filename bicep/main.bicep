@@ -104,7 +104,6 @@ module backupProtection 'modules/backup-protection.bicep' = {
     vaultName: recoveryServicesVault.outputs.name
     resourceGroupName: resourceGroupNameWithSuffix
     storageAccountName: storageAccount.outputs.name
-    storageAccountResourceId: storageAccount.outputs.resourceId
     fileShareName: 'vaultwarden-data'
   }
 }
