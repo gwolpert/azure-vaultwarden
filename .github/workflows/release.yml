@@ -46,7 +46,7 @@ jobs:
                 "value": "rg-vaultwarden"
               },
               "location": {
-                "value": "eastus"
+                "value": "westeurope"
               },
               "environmentName": {
                 "value": "dev"

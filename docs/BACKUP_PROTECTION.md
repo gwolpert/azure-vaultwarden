@@ -35,7 +35,7 @@ Deploy the Bicep template normally. This creates:
 ```bash
 az deployment sub create \
   --name vaultwarden-deployment \
-  --location eastus \
+  --location westeurope \
   --template-file bicep/main.bicep \
   --parameters resourceGroupName="vaultwarden-dev"
 ```

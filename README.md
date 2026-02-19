@@ -210,7 +210,7 @@ The ARM template is compiled from the Bicep source, ensuring consistency between
 
 ## Cost Estimation
 
-Approximate monthly costs (East US region, B1 default):
+Approximate monthly costs (West Europe region, B1 default):
 
 | Resource | Estimated Cost |
 |----------|---------------|

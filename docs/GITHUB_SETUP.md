@@ -179,7 +179,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Description | Example Value |
 |--------------|-------------|---------------|
 | `RESOURCE_GROUP_NAME` | Resource group name | `vaultwarden-dev` |
-| `AZURE_LOCATION` | Azure region | `eastus` |
+| `AZURE_LOCATION` | Azure region | `westeurope` |
 | `ENVIRONMENT_NAME` | Environment identifier | `dev` |
 | `DOMAIN_NAME` | Custom domain (optional) | `` (empty for auto-generated) |
 | `SIGNUPS_ALLOWED` | Allow user signups | `true` |
@@ -191,7 +191,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Value |
 |--------------|-------|
 | `RESOURCE_GROUP_NAME` | `vaultwarden-staging` |
-| `AZURE_LOCATION` | `eastus` |
+| `AZURE_LOCATION` | `westeurope` |
 | `ENVIRONMENT_NAME` | `staging` |
 | `DOMAIN_NAME` | `https://vault-staging.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
@@ -203,7 +203,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Value |
 |--------------|-------|
 | `RESOURCE_GROUP_NAME` | `vaultwarden-prod` |
-| `AZURE_LOCATION` | `eastus` |
+| `AZURE_LOCATION` | `westeurope` |
 | `ENVIRONMENT_NAME` | `prod` |
 | `DOMAIN_NAME` | `https://vault.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
@@ -313,7 +313,7 @@ ADMIN_TOKEN: (leave empty or set a test token)
 **Variables:**
 ```
 RESOURCE_GROUP_NAME: vaultwarden-dev
-AZURE_LOCATION: eastus
+AZURE_LOCATION: westeurope
 ENVIRONMENT_NAME: dev
 DOMAIN_NAME: (empty)
 SIGNUPS_ALLOWED: true
@@ -334,7 +334,7 @@ ADMIN_TOKEN: <strong-secure-random-token-from-password-manager>
 **Variables:**
 ```
 RESOURCE_GROUP_NAME: vaultwarden-prod
-AZURE_LOCATION: eastus
+AZURE_LOCATION: westeurope
 ENVIRONMENT_NAME: prod
 DOMAIN_NAME: https://vault.example.com
 SIGNUPS_ALLOWED: false
@@ -446,10 +446,10 @@ Instead of storing secrets in GitHub, reference them from Azure Key Vault:
 ### Multi-Region Deployment
 
 Create separate environments for each region:
-- `dev-eastus`
 - `dev-westeurope`
-- `prod-eastus`
+- `dev-westus`
 - `prod-westeurope`
+- `prod-westus`
 
 ### Custom Workflows per Environment
 
