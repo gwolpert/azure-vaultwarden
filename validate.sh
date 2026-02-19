@@ -189,7 +189,7 @@ check_github_workflows() {
 check_documentation() {
     print_header "Checking Documentation"
     
-    local docs=("README.md" "GITHUB_SETUP.md" "ARCHITECTURE.md" "TESTING.md" "QUICK_REFERENCE.md")
+    local docs=("README.md" "docs/GITHUB_SETUP.md" "docs/ARCHITECTURE.md" "docs/TESTING.md" "docs/QUICK_REFERENCE.md")
     
     for doc in "${docs[@]}"; do
         if [ -f "$doc" ]; then
@@ -300,7 +300,7 @@ print_summary() {
         print_pass "All critical checks passed! ✨"
         echo ""
         echo "Next steps:"
-        echo "1. Set up GitHub Environments (see GITHUB_SETUP.md)"
+        echo "1. Set up GitHub Environments (see docs/GITHUB_SETUP.md)"
         echo "2. Configure secrets and variables in GitHub"
         echo "3. Run the 'Deploy Vaultwarden to Azure' workflow"
         return 0

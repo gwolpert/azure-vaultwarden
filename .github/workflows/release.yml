@@ -125,7 +125,7 @@ jobs:
             ### Deployment Methods
             
             1. **One-Click Deploy**: Use the Deploy to Azure button above
-            2. **GitHub Actions**: Configure GitHub Environments (see GITHUB_SETUP.md)
+            2. **GitHub Actions**: Configure GitHub Environments (see docs/GITHUB_SETUP.md)
             3. **Manual Deployment**: Download main.json and deploy via Azure CLI
             
             ### What's Deployed
