@@ -28,16 +28,28 @@
 │  │  │  │  │  │  - VNet Integration      │    │     │   │  │ │
 │  │  │  │  │  └──────────┬───────────────┘    │     │   │  │ │
 │  │  │  │  │             │                     │     │   │  │ │
-│  │  │  │  │             │ Mounts              │     │   │  │ │
+│  │  │  │  │             │ Mounts (via VNet)   │     │   │  │ │
 │  │  │  │  │             │                     │     │   │  │ │
 │  │  │  │  └─────────────┼─────────────────────┘     │   │  │ │
 │  │  │  │                │                            │   │  │ │
 │  │  │  └────────────────┼────────────────────────────┘   │  │ │
 │  │  │                   │                                 │  │ │
-│  │  └───────────────────┼─────────────────────────────────┘  │ │
-│  │                      │                                     │ │
-│  │  ┌───────────────────▼───────────────────────────────┐    │ │
+│  │  │  ┌────────────────▼───────────────────────────┐   │  │ │
+│  │  │  │  Private Endpoint Subnet (10.0.1.0/24)    │   │  │ │
+│  │  │  │                                             │   │  │ │
+│  │  │  │  ┌─────────────────────────────────────┐  │   │  │ │
+│  │  │  │  │  Private Endpoint (NIC)             │  │   │  │ │
+│  │  │  │  │  - Private IP from VNet space       │  │   │  │ │
+│  │  │  │  │  - Azure Files sub-resource         │  │   │  │ │
+│  │  │  │  └──────────────┬──────────────────────┘  │   │  │ │
+│  │  │  └─────────────────┼───────────────────────────┘   │  │ │
+│  │  │                    │                                 │  │ │
+│  │  └────────────────────┼─────────────────────────────────┘  │ │
+│  │                       │                                     │ │
+│  │  ┌────────────────────▼───────────────────────────────┐    │ │
 │  │  │          Storage Account (Azure Files)            │    │ │
+│  │  │          - Public network access: DISABLED        │    │ │
+│  │  │          - Private endpoint only                  │    │ │
 │  │  │                                                    │    │ │
 │  │  │  ┌──────────────────────────────────────────┐    │    │ │
 │  │  │  │   File Share: vaultwarden-data          │    │    │ │
@@ -55,6 +67,13 @@
 │  │  │        - Daily backup policy (2 AM UTC)           │    │ │
 │  │  │        - 30-day retention                          │    │ │
 │  │  │        - File share protection                     │    │ │
+│  │  └────────────────────────────────────────────────────┘    │ │
+│  │                                                              │ │
+│  │  ┌────────────────────────────────────────────────────┐    │ │
+│  │  │        Private DNS Zone                            │    │ │
+│  │  │        - privatelink.file.core.windows.net         │    │ │
+│  │  │        - Linked to VNet                            │    │ │
+│  │  │        - Resolves storage to private IP            │    │ │
 │  │  └────────────────────────────────────────────────────┘    │ │
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
@@ -87,16 +106,20 @@
 1. **User Access**: Users access Vaultwarden via HTTPS through the App Service's public endpoint
 2. **App Service**: Runs the Vaultwarden container with automatic HTTPS termination
 3. **Secrets Management**: App Service uses its system-assigned managed identity to retrieve admin token from Key Vault
-4. **Data Storage**: App Service mounts Azure File Share for persistent data storage
-5. **Backup Protection**: Recovery Services Vault automatically backs up the file share daily at 2 AM UTC
-6. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
-7. **Networking**: App Service is integrated with Virtual Network for enhanced security
+4. **Data Storage**: App Service mounts Azure File Share via VNet integration → Private Endpoint → Storage Account
+5. **DNS Resolution**: Private DNS Zone (`privatelink.file.core.windows.net`) resolves storage account to its private IP
+6. **Backup Protection**: Recovery Services Vault automatically backs up the file share daily at 2 AM UTC
+7. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
+8. **Networking**: App Service is integrated with Virtual Network; Storage Account is accessible only via Private Link
 
 ## Security Features
 
 ### Network Security
 - Virtual Network isolation with VNet integration
-- App Service subnet with service delegation
+- App Service subnet with service delegation (10.0.0.0/24)
+- Private Endpoint subnet for storage account (10.0.1.0/24)
+- Storage Account public network access **completely disabled** (Private Link only)
+- Private DNS Zone resolves storage account to private IP within VNet
 - HTTPS-only access with Azure-managed certificates
 - Private endpoint support available on Standard (S1+) and Premium tiers
 
@@ -105,7 +128,8 @@
   - HTTPS-only traffic enforced
   - Minimum TLS 1.2
   - No public blob access
-  - Private file share access
+  - **Public network access disabled** (Private Endpoint only)
+  - Private file share access via Azure Private Link
   - **CanNotDelete** resource lock to prevent accidental deletion
 - Automated daily backups with 30-day retention
 - Point-in-time recovery capabilities
@@ -153,9 +177,11 @@
 | Storage Account | Standard LRS, ~5GB data | $2-5 |
 | Recovery Services Vault + Backup | Daily backups, 30-day retention | $5-10 |
 | Log Analytics | ~10GB/month logs | $2-10 |
-| Virtual Network | Subnet, no additional charges | Free |
+| Virtual Network | Two subnets, no additional charges | Free |
+| Private Endpoint | Storage account private link | ~$7-10 |
+| Private DNS Zone | privatelink.file.core.windows.net | < $1 |
 | Key Vault | Operations-based pricing | < $1 |
-| **Total** | | **$22-41/month** |
+| **Total** | | **$29-52/month** |
 
 **B1 Features (Default)**:
 - ✅ Full VNet integration support
@@ -196,12 +222,13 @@
 
 ### Deployment Steps
 1. **Resource Group Creation**: Subscription-scoped deployment creates resource group
-2. **Network Setup**: Virtual Network and subnet provisioned with App Service delegation
-3. **Storage Provisioning**: Storage account and file share created
-4. **Monitoring Setup**: Log Analytics Workspace deployed
-5. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
-6. **Key Vault**: Deployed for secrets management
-7. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration
+2. **Network Setup**: Virtual Network with two subnets (app service + private endpoint) provisioned
+3. **Private DNS Zone**: DNS zone `privatelink.file.core.windows.net` created and linked to VNet
+4. **Storage Provisioning**: Storage account and file share created with Private Endpoint; public access disabled
+5. **Monitoring Setup**: Log Analytics Workspace deployed
+6. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
+7. **Key Vault**: Deployed for secrets management
+8. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration
 
 ### Post-Deployment
 1. Verify App Service health status
@@ -345,6 +372,7 @@ az webapp log tail --name <app-name> --resource-group <rg-name>
 - [ ] Set up Azure Monitor alerts
 - [x] Configure backup automation (daily backups with 30-day retention)
 - [x] Enable storage account lock to prevent accidental deletion
+- [x] Enable Private Endpoint for storage account (public access disabled)
 - [ ] Review and restrict network access
 - [ ] Enable deployment slots for zero-downtime updates
 - [ ] Configure auto-scaling rules based on load

@@ -72,6 +72,15 @@ module vnet 'modules/vnet.bicep' = {
   }
 }
 
+// Deploy Private DNS Zone for storage account private endpoint
+module privateDnsZone 'modules/private-dns-zone.bicep' = {
+  scope: rg
+  name: 'private-dns-zone-deployment'
+  params: {
+    vnetResourceId: vnet.outputs.resourceId
+  }
+}
+
 // Deploy Storage Account with lock to prevent accidental deletion
 module storageAccount 'modules/storage-account.bicep' = {
   scope: rg
@@ -79,7 +88,8 @@ module storageAccount 'modules/storage-account.bicep' = {
   params: {
     baseName: resourceGroupName
     location: location
-    subnetResourceId: vnet.outputs.subnetResourceIds[0]
+    privateEndpointSubnetResourceId: vnet.outputs.subnetResourceIds[1]
+    privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
   }
 }
 
