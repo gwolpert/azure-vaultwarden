@@ -76,16 +76,10 @@ if ! az backup vault show --name "$RECOVERY_VAULT" --resource-group "$RESOURCE_G
 fi
 
 print_info "Checking if file share exists..."
-STORAGE_ACCOUNT_KEY=$(az storage account keys list \
-    --account-name "$STORAGE_ACCOUNT" \
-    --resource-group "$RESOURCE_GROUP" \
-    --query "[0].value" \
-    --output tsv)
-
 if ! az storage share show \
     --name "$FILE_SHARE" \
     --account-name "$STORAGE_ACCOUNT" \
-    --account-key "$STORAGE_ACCOUNT_KEY" &> /dev/null; then
+    --auth-mode login &> /dev/null; then
     print_error "File share '$FILE_SHARE' not found in storage account '$STORAGE_ACCOUNT'"
     exit 1
 fi
