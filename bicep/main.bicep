@@ -48,6 +48,9 @@ param vaultwardenImageTag string = 'latest'
 ])
 param appServicePlanSkuName string = 'B1'
 
+@description('Enable automatic backup protection during deployment (default: true). If false, use scripts/enable-backup-protection.sh after deployment to enable backups via Azure CLI.')
+param enableBackupProtection bool = true
+
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 
@@ -97,7 +100,7 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 }
 
 // Enable automatic backup protection for the file share
-module backupProtection 'modules/backup-protection.bicep' = {
+module backupProtection 'modules/backup-protection.bicep' = if (enableBackupProtection) {
   scope: rg
   name: 'backup-protection-deployment'
   params: {

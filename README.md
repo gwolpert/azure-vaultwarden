@@ -37,6 +37,7 @@ This repository supports two deployment approaches:
 - **[Quick Start & README](README.md)** - This file (deployment overview)
 - **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - Complete guide for setting up GitHub Environments and Actions
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Detailed architecture, security, and operational guide
+- **[Backup Protection Setup](docs/BACKUP_PROTECTION.md)** - Backup protection setup guide and troubleshooting
 - **[Testing Guide](docs/TESTING.md)** - Comprehensive testing and verification procedures
 - **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands and quick reference
 
@@ -339,7 +340,9 @@ The App Service can be scaled manually or automatically (auto-scaling available 
 
 ### Automated Daily Backups
 
-The deployment automatically creates and configures a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. The file share backup protection is enabled automatically during deployment.
+The deployment automatically creates and configures a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. 
+
+**Important**: If you encounter errors during backup protection setup (`BMSUserErrorInvalidSourceResourceId`), see the [Backup Protection Setup Guide](docs/BACKUP_PROTECTION.md) for alternative deployment methods using Azure CLI scripts.
 
 #### Backup Configuration
 
@@ -349,9 +352,10 @@ The backup operates with the following settings:
 - **Retention**: 30 days
 - **Backup Location**: Recovery Services Vault in the same resource group
 - **Protection**: Storage account has a CanNotDelete lock to prevent accidental deletion
-- **Automatic Setup**: File share is automatically registered and protected during deployment
+- **Automatic Setup**: File share is automatically registered and protected during deployment (can be disabled with `enableBackupProtection=false` parameter)
+- **Fallback Method**: If automatic setup fails, use `scripts/enable-backup-protection.sh` to enable backups after deployment
 
-The backup runs automatically and requires no manual intervention. Backups are stored in the Recovery Services Vault and can be restored through the Azure Portal or Azure CLI.
+For detailed backup protection setup instructions, including troubleshooting and the Azure CLI fallback method, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
 
 ### View Backup Status
 
