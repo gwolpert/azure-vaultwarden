@@ -99,7 +99,10 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 // Note: File share backup protection must be configured post-deployment using Azure CLI or Portal
 // This is because the backup protection container registration requires the storage account to be
 // fully provisioned and accessible, which is better handled as a post-deployment step.
-// Use the following commands after deployment:
+//
+// When using GitHub Actions, backup protection is automatically enabled as part of the workflow.
+//
+// For manual deployments, use the following commands after deployment:
 //
 // 1. Register the storage account with the Recovery Services Vault:
 //    az backup container register \
@@ -117,12 +120,7 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 //      --storage-account {storageAccountName} \
 //      --azure-file-share vaultwarden-data
 //
-// Or use the provided script (recommended):
-//    ./scripts/enable-backup-protection.sh \
-//      {resourceGroupName}-rg \
-//      {storageAccountName} \
-//      {resourceGroupName}-rsv \
-//      vaultwarden-data
+// See docs/BACKUP_PROTECTION.md for detailed instructions.
 
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {

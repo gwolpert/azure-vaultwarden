@@ -342,7 +342,9 @@ The App Service can be scaled manually or automatically (auto-scaling available 
 
 The deployment automatically creates and configures a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. 
 
-**Important**: File share backup protection must be configured post-deployment using Azure CLI. This is because the backup protection container registration requires the storage account to be fully provisioned and accessible.
+**GitHub Actions**: Backup protection is automatically enabled as part of the deployment workflow.
+
+**Manual Deployments**: If deploying via Azure CLI (not GitHub Actions), backup protection must be configured post-deployment using Azure CLI commands. This is because the backup protection container registration requires the storage account to be fully provisioned and accessible.
 
 #### Backup Configuration
 
@@ -352,21 +354,15 @@ The backup operates with the following settings:
 - **Retention**: 30 days
 - **Backup Location**: Recovery Services Vault in the same resource group
 - **Protection**: Storage account has a CanNotDelete lock to prevent accidental deletion
-- **Setup Method**: Post-deployment via Azure CLI script
+- **Setup Method**: 
+  - Automatic when using GitHub Actions
+  - Manual post-deployment steps when using Azure CLI
 
-#### Enabling Backup Protection
+#### Enabling Backup Protection (Manual Deployments Only)
 
-After deploying the infrastructure, run the provided script to enable backup protection:
+If you deployed manually without GitHub Actions, follow the instructions in [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md) to enable backup protection using Azure CLI commands.
 
-```bash
-./scripts/enable-backup-protection.sh \
-  vaultwarden-dev-rg \
-  vaultwardendevst \
-  vaultwarden-dev-rsv \
-  vaultwarden-data
-```
-
-For detailed backup protection setup instructions and troubleshooting, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
+For detailed backup protection information, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
 
 ### View Backup Status
 

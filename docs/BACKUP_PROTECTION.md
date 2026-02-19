@@ -6,6 +6,14 @@ This document explains how to enable backup protection for the Vaultwarden file 
 
 Azure Backup protection for file shares must be configured post-deployment using Azure CLI or Portal. This is because the backup protection container registration requires the storage account to be fully provisioned and accessible, which is better handled as a post-deployment step.
 
+### Automatic Setup via GitHub Actions
+
+When deploying via GitHub Actions, backup protection is **automatically configured** as part of the deployment workflow. No manual steps are required.
+
+### Manual Setup
+
+If you're deploying manually (not using GitHub Actions), follow the steps below to enable backup protection after your infrastructure deployment completes.
+
 ## Why Post-Deployment?
 
 Azure Backup API has strict requirements for resource IDs and timing that are not fully compatible with ARM/Bicep deployment. The backup protection container registration can fail during infrastructure-as-code deployments due to:
@@ -13,9 +21,9 @@ Azure Backup API has strict requirements for resource IDs and timing that are no
 - Resource ID format expectations that differ between Bicep and Azure CLI
 - Azure Backup service propagation delays
 
-Therefore, the recommended approach is to deploy all infrastructure via Bicep, then enable backup protection using Azure CLI.
+Therefore, backup protection is enabled post-deployment using Azure CLI commands.
 
-## Setup Instructions
+## Manual Setup Instructions
 
 ### Step 1: Deploy Infrastructure
 
@@ -32,30 +40,48 @@ az deployment sub create \
   --parameters resourceGroupName="vaultwarden-dev"
 ```
 
-### Step 2: Enable Backup Protection
+### Step 2: Enable Backup Protection Manually
 
-After the deployment completes successfully, run the provided script:
+After the deployment completes successfully, run the following commands:
+
+#### 2.1 Register the storage account with the Recovery Services Vault
 
 ```bash
-# Login to Azure if not already logged in
-az login
+# Set variables
+RESOURCE_GROUP="vaultwarden-dev-rg"
+STORAGE_ACCOUNT="vaultwardendevst"
+RECOVERY_VAULT="vaultwarden-dev-rsv"
+FILE_SHARE="vaultwarden-data"
 
-# Set your subscription
-az account set --subscription "<your-subscription-id>"
+# Get the storage account resource ID
+STORAGE_ACCOUNT_ID=$(az storage account show \
+  --name "$STORAGE_ACCOUNT" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query id \
+  --output tsv)
 
-# Run the script
-./scripts/enable-backup-protection.sh \
-  vaultwarden-dev-rg \
-  vaultwardendevst \
-  vaultwarden-dev-rsv \
-  vaultwarden-data
+# Register the storage account
+az backup container register \
+  --resource-group "$RESOURCE_GROUP" \
+  --vault-name "$RECOVERY_VAULT" \
+  --backup-management-type AzureStorage \
+  --workload-type AzureFileShare \
+  --storage-account "$STORAGE_ACCOUNT_ID"
 ```
 
-**Script parameters:**
-1. Resource group name (with -rg suffix): `vaultwarden-dev-rg`
-2. Storage account name: `vaultwardendevst` (baseName without dashes + 'st')
-3. Recovery vault name: `vaultwarden-dev-rsv` (baseName + '-rsv')
-4. File share name: `vaultwarden-data`
+**Note**: Registration may take a few minutes to propagate. Wait 1-2 minutes before proceeding to the next step.
+
+#### 2.2 Enable protection for the file share
+
+```bash
+# Enable backup protection
+az backup protection enable-for-azurefileshare \
+  --resource-group "$RESOURCE_GROUP" \
+  --vault-name "$RECOVERY_VAULT" \
+  --policy-name "vaultwarden-daily-backup-policy" \
+  --storage-account "$STORAGE_ACCOUNT" \
+  --azure-file-share "$FILE_SHARE"
+```
 
 ### Step 3: Verify backup protection
 
@@ -63,36 +89,16 @@ Check that backup protection is enabled:
 
 ```bash
 az backup item show \
-  --resource-group vaultwarden-dev-rg \
-  --vault-name vaultwarden-dev-rsv \
+  --resource-group "$RESOURCE_GROUP" \
+  --vault-name "$RECOVERY_VAULT" \
   --backup-management-type AzureStorage \
   --workload-type AzureFileShare \
-  --container-name "storagecontainer;Storage;vaultwarden-dev-rg;vaultwardendevst" \
-  --name "AzureFileShare;vaultwarden-data" \
+  --container-name "storagecontainer;Storage;${RESOURCE_GROUP};${STORAGE_ACCOUNT}" \
+  --name "AzureFileShare;${FILE_SHARE}" \
   --query "properties.protectionStatus"
 ```
 
 Expected output: `"Protected"`
-
-## What the Script Does
-
-The script automates the post-deployment backup protection setup:
-
-1. **Validates Prerequisites**: Checks for Azure CLI and login status
-2. **Validates Resources**: Ensures storage account, recovery vault, and file share exist
-3. **Registers Storage Account**: Creates a backup protection container in the recovery vault
-4. **Waits for Registration**: Polls for container availability (up to 2 minutes with retries)
-5. **Enables Protection**: Configures backup protection for the file share using the daily backup policy
-6. **Verifies Status**: Confirms that protection is active
-
-## Why Use This Approach?
-
-The Azure CLI post-deployment approach is more reliable because:
-1. **Timing Control**: Script validates that required resources exist and polls for registration completion before proceeding
-2. **Better Error Handling**: Azure CLI provides clearer error messages
-3. **Proven Method**: Azure CLI backup commands are well-tested and stable
-4. **Flexibility**: Easy to retry or troubleshoot if issues occur
-5. **No Deployment Failure**: Main infrastructure deployment always succeeds
 
 ## Backup Configuration
 
@@ -101,6 +107,21 @@ The backup operates with the following settings:
 - **Retention**: 30 days
 - **Policy**: `vaultwarden-daily-backup-policy`
 - **Protected Resource**: `vaultwarden-data` file share
+
+## Deployment Methods Comparison
+
+| Method | Backup Protection Setup | When to Use |
+|--------|------------------------|-------------|
+| **GitHub Actions** | Automatic (part of workflow) | Recommended for all deployments |
+| **Manual Bicep** | Manual (follow steps above) | When not using GitHub Actions |
+
+## Why This Approach Works
+
+The post-deployment approach is more reliable because:
+1. **Timing Control**: Ensures storage account is fully provisioned before registration
+2. **Better Error Handling**: Azure CLI provides clearer error messages
+3. **Proven Method**: Azure CLI backup commands are well-tested and stable
+4. **Flexibility**: Easy to retry or troubleshoot if issues occur
 
 ## Troubleshooting
 
