@@ -8,6 +8,7 @@
 main.json
 main.parameters.json
 metadata.json
+backup-protection.json
 
 # Backup files
 backup/
