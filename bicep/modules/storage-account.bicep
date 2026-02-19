@@ -49,6 +49,8 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.9.1
     }
     privateEndpoints: [
       {
+        name: '${baseName}-pep'
+        customNetworkInterfaceName: '${baseName}-nic'
         service: 'file'
         subnetResourceId: privateEndpointSubnetResourceId
         privateDnsZoneResourceIds: [
