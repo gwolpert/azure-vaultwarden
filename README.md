@@ -342,7 +342,7 @@ The App Service can be scaled manually or automatically (auto-scaling available 
 
 The deployment automatically creates and configures a Recovery Services Vault with a daily backup policy for the Vaultwarden file share. 
 
-**Important**: If you encounter errors during backup protection setup (`BMSUserErrorInvalidSourceResourceId`), see the [Backup Protection Setup Guide](docs/BACKUP_PROTECTION.md) for alternative deployment methods using Azure CLI scripts.
+**Important**: File share backup protection must be configured post-deployment using Azure CLI. This is because the backup protection container registration requires the storage account to be fully provisioned and accessible.
 
 #### Backup Configuration
 
@@ -352,10 +352,21 @@ The backup operates with the following settings:
 - **Retention**: 30 days
 - **Backup Location**: Recovery Services Vault in the same resource group
 - **Protection**: Storage account has a CanNotDelete lock to prevent accidental deletion
-- **Automatic Setup**: File share is automatically registered and protected during deployment (can be disabled with `enableBackupProtection=false` parameter)
-- **Fallback Method**: If automatic setup fails, use `scripts/enable-backup-protection.sh` to enable backups after deployment
+- **Setup Method**: Post-deployment via Azure CLI script
 
-For detailed backup protection setup instructions, including troubleshooting and the Azure CLI fallback method, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
+#### Enabling Backup Protection
+
+After deploying the infrastructure, run the provided script to enable backup protection:
+
+```bash
+./scripts/enable-backup-protection.sh \
+  vaultwarden-dev-rg \
+  vaultwardendevst \
+  vaultwarden-dev-rsv \
+  vaultwarden-data
+```
+
+For detailed backup protection setup instructions and troubleshooting, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
 
 ### View Backup Status
 

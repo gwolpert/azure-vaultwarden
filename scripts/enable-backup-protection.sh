@@ -116,20 +116,46 @@ if [ -z "$CONTAINER_NAME" ]; then
     
     print_info "Storage account registered successfully"
     
-    # Wait a bit for registration to complete
+    # Wait for registration to complete and container to become available
     print_info "Waiting for registration to complete..."
-    sleep 10
-    
-    # Get container name after registration
-    CONTAINER_NAME=$(az backup container show \
-        --resource-group "$RESOURCE_GROUP" \
-        --vault-name "$RECOVERY_VAULT" \
-        --name "storagecontainer;Storage;${RESOURCE_GROUP};${STORAGE_ACCOUNT}" \
-        --backup-management-type AzureStorage \
-        --query name \
-        --output tsv)
+    MAX_RETRIES=12    # total wait time = MAX_RETRIES * SLEEP_SECONDS (here: 12 * 10 = 120s)
+    SLEEP_SECONDS=10
+    RETRY=1
+    while [ "$RETRY" -le "$MAX_RETRIES" ]; do
+        print_info "Checking for backup container (attempt ${RETRY}/${MAX_RETRIES})..."
+        
+        # Temporarily disable 'set -e' around az invocation to avoid premature exit on transient failures
+        set +e
+        CONTAINER_NAME=$(az backup container show \
+            --resource-group "$RESOURCE_GROUP" \
+            --vault-name "$RECOVERY_VAULT" \
+            --name "storagecontainer;Storage;${RESOURCE_GROUP};${STORAGE_ACCOUNT}" \
+            --backup-management-type AzureStorage \
+            --query name \
+            --output tsv 2>/dev/null)
+        AZ_EXIT_CODE=$?
+        set -e
+        
+        if [ "$AZ_EXIT_CODE" -eq 0 ] && [ -n "$CONTAINER_NAME" ]; then
+            print_info "Backup container is now available."
+            break
+        fi
+        
+        if [ "$RETRY" -eq "$MAX_RETRIES" ]; then
+            print_error "Backup container did not become available after ${MAX_RETRIES} attempts."
+            break
+        fi
+        
+        sleep "$SLEEP_SECONDS"
+        RETRY=$((RETRY + 1))
+    done
 else
     print_info "Storage account is already registered"
+fi
+
+if [ -z "$CONTAINER_NAME" ]; then
+    print_error "Failed to retrieve backup container name. Cannot continue with enabling protection."
+    exit 1
 fi
 
 print_info "Container name: $CONTAINER_NAME"
@@ -152,15 +178,14 @@ if [ -n "$PROTECTED_ITEM" ]; then
     print_warning "File share is already protected"
     print_info "Backup protection is already enabled for '$FILE_SHARE'"
 else
-    # Get the backup policy ID
-    POLICY_ID=$(az backup policy show \
+    # Ensure the backup policy exists (handle errors explicitly under set -e)
+    print_info "Verifying backup policy exists..."
+    if ! az backup policy show \
         --resource-group "$RESOURCE_GROUP" \
         --vault-name "$RECOVERY_VAULT" \
         --name "vaultwarden-daily-backup-policy" \
         --query id \
-        --output tsv)
-    
-    if [ -z "$POLICY_ID" ]; then
+        --output tsv >/dev/null 2>&1; then
         print_error "Backup policy 'vaultwarden-daily-backup-policy' not found"
         exit 1
     fi

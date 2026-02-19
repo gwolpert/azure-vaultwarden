@@ -4,36 +4,25 @@ This document explains how to enable backup protection for the Vaultwarden file 
 
 ## Overview
 
-Azure Backup protection for file shares can be configured in two ways:
-1. **Automatic (Bicep)**: Enabled during the main Bicep deployment (default)
-2. **Manual (Azure CLI)**: Enabled after deployment using a script (fallback)
+Azure Backup protection for file shares must be configured post-deployment using Azure CLI or Portal. This is because the backup protection container registration requires the storage account to be fully provisioned and accessible, which is better handled as a post-deployment step.
 
-## Problem
+## Why Post-Deployment?
 
-When enabling backup protection via Bicep, you may encounter this error:
-
-```
-SourceResourceId must be a fully qualified ARM Id of source storage account. None. 
-(Code: BMSUserErrorInvalidSourceResourceId)
-```
-
-This error occurs due to:
+Azure Backup API has strict requirements for resource IDs and timing that are not fully compatible with ARM/Bicep deployment. The backup protection container registration can fail during infrastructure-as-code deployments due to:
 - Timing issues between storage account creation and backup registration
-- Azure Backup API requirements that may not be fully compatible with ARM/Bicep deployment
 - Resource ID format expectations that differ between Bicep and Azure CLI
+- Azure Backup service propagation delays
 
-## Solution 1: Automatic Bicep Deployment (Default)
+Therefore, the recommended approach is to deploy all infrastructure via Bicep, then enable backup protection using Azure CLI.
 
-By default, the Bicep template attempts to enable backup protection automatically during deployment.
+## Setup Instructions
 
-**Improvements made:**
-- Pass the fully qualified storage account resource ID from the storage module
-- Ensure proper dependency chain between modules
-- Use resource outputs instead of reconstructing IDs
+### Step 1: Deploy Infrastructure
 
-**To use this method:**
-
-Deploy normally - backup protection is enabled by default:
+Deploy the Bicep template normally. This creates:
+- Recovery Services Vault with backup policy
+- Storage account with file share
+- All other Vaultwarden infrastructure
 
 ```bash
 az deployment sub create \
@@ -43,32 +32,9 @@ az deployment sub create \
   --parameters resourceGroupName="vaultwarden-dev"
 ```
 
-## Solution 2: Manual Azure CLI Script (Fallback)
+### Step 2: Enable Backup Protection
 
-If the Bicep deployment fails with the `BMSUserErrorInvalidSourceResourceId` error, use the Azure CLI script to enable backup protection after the main deployment completes.
-
-### Step 1: Deploy without backup protection
-
-Disable automatic backup protection during deployment:
-
-```bash
-az deployment sub create \
-  --name vaultwarden-deployment \
-  --location eastus \
-  --template-file bicep/main.bicep \
-  --parameters \
-    resourceGroupName="vaultwarden-dev" \
-    enableBackupProtection=false
-```
-
-Or if using GitHub Actions, set the environment variable:
-```
-ENABLE_BACKUP_PROTECTION=false
-```
-
-### Step 2: Run the backup protection script
-
-After the deployment completes successfully, run the script:
+After the deployment completes successfully, run the provided script:
 
 ```bash
 # Login to Azure if not already logged in
@@ -108,18 +74,29 @@ az backup item show \
 
 Expected output: `"Protected"`
 
-## Why Use the Azure CLI Script?
+## What the Script Does
 
-The Azure CLI approach is more reliable because:
-1. **Timing Control**: Script waits for resources to be fully ready
+The script automates the post-deployment backup protection setup:
+
+1. **Validates Prerequisites**: Checks for Azure CLI and login status
+2. **Validates Resources**: Ensures storage account, recovery vault, and file share exist
+3. **Registers Storage Account**: Creates a backup protection container in the recovery vault
+4. **Waits for Registration**: Polls for container availability (up to 2 minutes with retries)
+5. **Enables Protection**: Configures backup protection for the file share using the daily backup policy
+6. **Verifies Status**: Confirms that protection is active
+
+## Why Use This Approach?
+
+The Azure CLI post-deployment approach is more reliable because:
+1. **Timing Control**: Script validates that required resources exist and polls for registration completion before proceeding
 2. **Better Error Handling**: Azure CLI provides clearer error messages
 3. **Proven Method**: Azure CLI backup commands are well-tested and stable
 4. **Flexibility**: Easy to retry or troubleshoot if issues occur
-5. **No Deployment Failure**: Main deployment succeeds even if backup setup needs attention
+5. **No Deployment Failure**: Main infrastructure deployment always succeeds
 
 ## Backup Configuration
 
-Both methods configure backup with the same settings:
+The backup operates with the following settings:
 - **Schedule**: Daily at 2:00 AM UTC
 - **Retention**: 30 days
 - **Policy**: `vaultwarden-daily-backup-policy`

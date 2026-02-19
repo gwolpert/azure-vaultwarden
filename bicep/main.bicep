@@ -48,9 +48,6 @@ param vaultwardenImageTag string = 'latest'
 ])
 param appServicePlanSkuName string = 'B1'
 
-@description('Enable automatic backup protection during deployment (default: true). If false, use scripts/enable-backup-protection.sh after deployment to enable backups via Azure CLI.')
-param enableBackupProtection bool = true
-
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 
@@ -99,18 +96,33 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
   ]
 }
 
-// Enable automatic backup protection for the file share
-module backupProtection 'modules/backup-protection.bicep' = if (enableBackupProtection) {
-  scope: rg
-  name: 'backup-protection-deployment'
-  params: {
-    vaultName: recoveryServicesVault.outputs.name
-    resourceGroupName: resourceGroupNameWithSuffix
-    storageAccountName: storageAccount.outputs.name
-    storageAccountResourceId: storageAccount.outputs.resourceId
-    fileShareName: 'vaultwarden-data'
-  }
-}
+// Note: File share backup protection must be configured post-deployment using Azure CLI or Portal
+// This is because the backup protection container registration requires the storage account to be
+// fully provisioned and accessible, which is better handled as a post-deployment step.
+// Use the following commands after deployment:
+//
+// 1. Register the storage account with the Recovery Services Vault:
+//    az backup container register \
+//      --resource-group {resourceGroupName}-rg \
+//      --vault-name {resourceGroupName}-rsv \
+//      --backup-management-type AzureStorage \
+//      --workload-type AzureFileShare \
+//      --storage-account {storageAccountResourceId}
+//
+// 2. Enable protection for the file share:
+//    az backup protection enable-for-azurefileshare \
+//      --resource-group {resourceGroupName}-rg \
+//      --vault-name {resourceGroupName}-rsv \
+//      --policy-name vaultwarden-daily-backup-policy \
+//      --storage-account {storageAccountName} \
+//      --azure-file-share vaultwarden-data
+//
+// Or use the provided script:
+//    ./scripts/enable-backup-protection.sh \
+//      {resourceGroupName}-rg \
+//      {storageAccountName} \
+//      {resourceGroupName}-rsv \
+//      vaultwarden-data
 
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {

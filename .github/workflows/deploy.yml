@@ -53,7 +53,6 @@ jobs:
             signupsAllowed=${{ vars.SIGNUPS_ALLOWED }}
             vaultwardenImageTag=${{ vars.VAULTWARDEN_IMAGE_TAG }}
             appServicePlanSkuName=${{ vars.APP_SERVICE_PLAN_SKU_NAME || 'B1' }}
-            enableBackupProtection=${{ vars.ENABLE_BACKUP_PROTECTION || 'true' }}
           failOnStdErr: false
           deploymentName: vaultwarden-deployment-${{ github.run_number }}
 
@@ -68,13 +67,9 @@ jobs:
           echo "**Storage Account:** ${{ steps.deploy.outputs.storageAccountName }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Access your Vaultwarden instance at: ${{ steps.deploy.outputs.vaultwardenUrl }}" >> $GITHUB_STEP_SUMMARY
-          
-          # Check if backup protection was disabled
-          if [ "${{ vars.ENABLE_BACKUP_PROTECTION || 'true' }}" = "false" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Backup Protection**: Disabled during deployment" >> $GITHUB_STEP_SUMMARY
-            echo "To enable backup protection, run: \`./scripts/enable-backup-protection.sh ${{ steps.deploy.outputs.resourceGroupName }} ${{ steps.deploy.outputs.storageAccountName }} ${{ steps.deploy.outputs.recoveryServicesVaultName }} vaultwarden-data\`" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Important**: Backup protection must be enabled post-deployment" >> $GITHUB_STEP_SUMMARY
+          echo "Run: \`./scripts/enable-backup-protection.sh ${{ steps.deploy.outputs.resourceGroupName }} ${{ steps.deploy.outputs.storageAccountName }} ${{ steps.deploy.outputs.recoveryServicesVaultName }} vaultwarden-data\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Verify deployment
         run: |
