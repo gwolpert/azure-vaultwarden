@@ -189,7 +189,7 @@ check_github_workflows() {
 check_documentation() {
     print_header "Checking Documentation"
     
-    local docs=("README.md" "docs/GITHUB_SETUP.md" "docs/ARCHITECTURE.md" "docs/TESTING.md" "docs/QUICK_REFERENCE.md")
+    local docs=("README.md" "docs/GITHUB_SETUP.md" "docs/ARCHITECTURE.md" "docs/BACKUP_PROTECTION.md" "docs/TESTING.md" "docs/QUICK_REFERENCE.md")
     
     for doc in "${docs[@]}"; do
         if [ -f "$doc" ]; then

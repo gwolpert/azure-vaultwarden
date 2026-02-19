@@ -391,11 +391,11 @@ az role assignment create \
 
 **Solution:** Ensure the service principal has "Contributor" role on the subscription.
 
-### Error: "The subscription is not registered to use namespace 'Microsoft.App'"
+### Error: "The subscription is not registered to use namespace 'Microsoft.Web'"
 
 **Solution:** Register the required resource providers:
 ```bash
-az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.Web
 az provider register --namespace Microsoft.OperationalInsights
 ```
 
