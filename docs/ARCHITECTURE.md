@@ -169,7 +169,7 @@
 
 ## Cost Breakdown
 
-### Monthly Cost Estimates (East US)
+### Monthly Cost Estimates (West Europe)
 
 | Resource | Configuration | Estimated Cost |
 |----------|--------------|----------------|

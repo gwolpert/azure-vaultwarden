@@ -132,11 +132,11 @@ az account set --subscription "<your-subscription-id>"
 # Deploy
 az deployment sub create \
   --name vaultwarden-deployment \
-  --location eastus \
+  --location westeurope \
   --template-file bicep/main.bicep \
   --parameters \
     resourceGroupName="vaultwarden-dev" \
-    location="eastus" \
+    location="westeurope" \
     environmentName="dev" \
     domainName="" \
     adminToken="" \
@@ -210,7 +210,7 @@ The ARM template is compiled from the Bicep source, ensuring consistency between
 
 ## Cost Estimation
 
-Approximate monthly costs (East US region, B1 default):
+Approximate monthly costs (West Europe region, B1 default):
 
 | Resource | Estimated Cost |
 |----------|---------------|
@@ -231,9 +231,11 @@ For issues with:
 - **Azure Resources**: See [Azure Documentation](https://docs.microsoft.com/azure/)
 - **This Deployment**: Open an issue in this repository
 
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
 ## License
 
-This deployment template is provided as-is. Vaultwarden is licensed under the [GNU Affero General Public License v3.0](https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt).
+This project is licensed under the [MIT License](LICENSE). Vaultwarden itself is licensed under the [GNU Affero General Public License v3.0](https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt).
 
 ## Additional Resources
 
