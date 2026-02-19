@@ -360,7 +360,17 @@ The backup operates with the following settings:
 
 #### Enabling Backup Protection (Manual Deployments Only)
 
-If you deployed manually without GitHub Actions, follow the instructions in [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md) to enable backup protection using Azure CLI commands.
+If you deployed manually without GitHub Actions, run the provided script to enable backup protection:
+
+```bash
+./enable-backup-protection.sh \
+  vaultwarden-dev-rg \
+  vaultwardendevst \
+  vaultwarden-dev-rsv \
+  vaultwarden-data
+```
+
+Alternatively, follow the step-by-step Azure CLI instructions in [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
 
 For detailed backup protection information, see [docs/BACKUP_PROTECTION.md](docs/BACKUP_PROTECTION.md).
 

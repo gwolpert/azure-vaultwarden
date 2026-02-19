@@ -102,7 +102,14 @@ module recoveryServicesVault 'modules/recovery-vault.bicep' = {
 //
 // When using GitHub Actions, backup protection is automatically enabled as part of the workflow.
 //
-// For manual deployments, use the following commands after deployment:
+// For manual deployments, use the provided script:
+//    ./enable-backup-protection.sh \
+//      {resourceGroupName}-rg \
+//      {storageAccountName} \
+//      {resourceGroupName}-rsv \
+//      vaultwarden-data
+//
+// Or use Azure CLI commands directly:
 //
 // 1. Register the storage account with the Recovery Services Vault:
 //    az backup container register \

@@ -42,9 +42,22 @@ az deployment sub create \
 
 ### Step 2: Enable Backup Protection Manually
 
-After the deployment completes successfully, run the following commands:
+After the deployment completes successfully, you can use the provided script or run the Azure CLI commands manually.
 
-#### 2.1 Register the storage account with the Recovery Services Vault
+#### Option A: Using the Script (Recommended)
+
+```bash
+# Run the script from the repository root
+./enable-backup-protection.sh \
+  vaultwarden-dev-rg \
+  vaultwardendevst \
+  vaultwarden-dev-rsv \
+  vaultwarden-data
+```
+
+#### Option B: Manual Azure CLI Commands
+
+##### 2.1 Register the storage account with the Recovery Services Vault
 
 ```bash
 # Set variables
@@ -71,7 +84,7 @@ az backup container register \
 
 **Note**: Registration may take a few minutes to propagate. Wait 1-2 minutes before proceeding to the next step.
 
-#### 2.2 Enable protection for the file share
+##### 2.2 Enable protection for the file share
 
 ```bash
 # Enable backup protection
