@@ -30,15 +30,15 @@ This repository supports two deployment approaches:
 - Environment-specific configurations
 - Approval workflows for production
 - More maintainable and follows Azure best practices
-- See [GitHub Setup Guide](GITHUB_SETUP.md) for details
+- See [GitHub Setup Guide](docs/GITHUB_SETUP.md) for details
 
 ## Documentation
 
 - **[Quick Start & README](README.md)** - This file (deployment overview)
-- **[GitHub Setup Guide](GITHUB_SETUP.md)** - Complete guide for setting up GitHub Environments and Actions
-- **[Architecture Overview](ARCHITECTURE.md)** - Detailed architecture, security, and operational guide
-- **[Testing Guide](TESTING.md)** - Comprehensive testing and verification procedures
-- **[Quick Reference](QUICK_REFERENCE.md)** - Common commands and quick reference
+- **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - Complete guide for setting up GitHub Environments and Actions
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - Detailed architecture, security, and operational guide
+- **[Testing Guide](docs/TESTING.md)** - Comprehensive testing and verification procedures
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands and quick reference
 
 ## Validation
 
@@ -89,7 +89,7 @@ This repository uses GitHub Actions with GitHub Environments for deployment. Thi
 
 ### 1. Set Up GitHub Environments
 
-Follow the detailed guide in [GITHUB_SETUP.md](GITHUB_SETUP.md) to:
+Follow the detailed guide in [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) to:
 1. Create Azure service principal
 2. Configure GitHub Environments (dev, staging, prod)
 3. Set up secrets and variables for each environment
@@ -146,7 +146,7 @@ az deployment sub create \
 
 ## Configuration Parameters
 
-Parameters are configured through GitHub Environment Variables and Secrets (see [GITHUB_SETUP.md](GITHUB_SETUP.md)).
+Parameters are configured through GitHub Environment Variables and Secrets (see [GITHUB_SETUP.md](docs/GITHUB_SETUP.md)).
 
 ### Environment Secrets
 
@@ -489,7 +489,7 @@ az role assignment create \
 
 After assigning the role, redeploy via GitHub Actions or run the deployment again.
 
-See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal setup instructions.
+See [GitHub Setup Guide](docs/GITHUB_SETUP.md) for complete service principal setup instructions.
 
 ### Container Not Starting
 
