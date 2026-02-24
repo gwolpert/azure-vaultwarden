@@ -1,3 +1,8 @@
+---
+layout: default
+title: GitHub Setup Guide
+---
+
 # GitHub Environments Setup Guide
 
 This guide explains how to configure GitHub Environments for deploying Vaultwarden to Azure using GitHub Actions.

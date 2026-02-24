@@ -1,3 +1,8 @@
+---
+layout: default
+title: Testing Guide
+---
+
 # Testing and Verification Guide
 
 This document provides comprehensive testing procedures to verify the Vaultwarden deployment.

@@ -9,6 +9,7 @@ main.json
 main.parameters.json
 metadata.json
 backup-protection.json
+docs/arm/
 
 # Backup files
 backup/
@@ -40,3 +41,8 @@ node_modules/
 tmp/
 temp/
 *.tmp
+
+# Jekyll build artifacts
+_site/
+.jekyll-cache/
+.jekyll-metadata
