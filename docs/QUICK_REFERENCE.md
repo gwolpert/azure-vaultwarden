@@ -1,3 +1,8 @@
+---
+layout: default
+title: Quick Reference
+---
+
 # Quick Reference
 
 Common commands and workflows for managing Vaultwarden on Azure.

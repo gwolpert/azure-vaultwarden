@@ -8,21 +8,21 @@ This repository contains Bicep templates for deploying [Vaultwarden](https://git
 
 Deploy directly to Azure with one click using the latest release:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2Fgwolpert%2Fazure-vaultwarden%2Freleases%2Flatest%2Fdownload%2Fmain.json)
-[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fgithub.com%2Fgwolpert%2Fazure-vaultwarden%2Freleases%2Flatest%2Fdownload%2Fmain.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgwolpert.github.io%2Fazure-vaultwarden%2Farm%2Fmain.json)
+[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fgwolpert.github.io%2Fazure-vaultwarden%2Farm%2Fmain.json)
 
-**Note:** The "Deploy to Azure" button uses the ARM template compiled from Bicep and published in releases. For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
+**Note:** The "Deploy to Azure" button uses the ARM template compiled from Bicep and hosted on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/). For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
 
 ## Deployment Methods
 
 This repository supports two deployment approaches:
 
 ### 1. One-Click Deploy (Quick Start)
-- **File:** ARM template compiled from Bicep (available in releases)
+- **File:** ARM template compiled from Bicep (hosted on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/arm/main.json))
 - **Best for:** Quick testing, demos, personal use
 - Uses direct Azure resource definitions
 - Deploy with the button above or via Azure Portal
-- Template is automatically compiled from `bicep/main.bicep` on each release
+- Template is automatically compiled from `bicep/main.bicep` and published to GitHub Pages
 
 ### 2. GitHub Actions with Bicep (Recommended for Production)
 - **Files:** `bicep/main.bicep` (using Azure Verified Modules)
@@ -33,6 +33,8 @@ This repository supports two deployment approaches:
 - See [GitHub Setup Guide](docs/GITHUB_SETUP.md) for details
 
 ## Documentation
+
+Full documentation is available on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/).
 
 - **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - GitHub Environments, secrets, and variables configuration
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Architecture, security, scaling, and cost details

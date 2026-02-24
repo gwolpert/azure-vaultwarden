@@ -1,3 +1,8 @@
+---
+layout: default
+title: Backup Protection Setup
+---
+
 # Backup Protection Setup
 
 This document explains how to enable backup protection for the Vaultwarden file share.
