@@ -183,33 +183,6 @@ See [Backup Protection Setup](docs/BACKUP_PROTECTION.md) for detailed instructio
 az group delete --name vaultwarden-dev-rg --yes --no-wait
 ```
 
-## Creating Releases
-
-To create a new release with the compiled ARM template:
-
-### Automatic Release (Recommended)
-
-1. Create and push a new tag:
-   ```bash
-   git tag -a v1.0.0 -m "Release v1.0.0"
-   git push origin v1.0.0
-   ```
-
-2. The `release.yml` workflow will automatically:
-   - Compile `bicep/main.bicep` to `main.json`
-   - Generate `main.parameters.json` and `metadata.json`
-   - Create a GitHub release with these files attached
-   - Update the Deploy to Azure button to use the new release
-
-### Manual Release
-
-1. Go to Actions > "Create Release with ARM Template"
-2. Click "Run workflow"
-3. Enter the release tag (e.g., `v1.0.0`)
-4. Click "Run workflow"
-
-The ARM template is compiled from the Bicep source, ensuring consistency between deployment methods.
-
 ## Cost Estimation
 
 Approximate monthly costs (West Europe region, B1 default):
