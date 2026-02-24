@@ -16,11 +16,11 @@ Deploy directly to Azure with one click:
 
 ## Documentation
 
-- [GitHub Setup Guide](GITHUB_SETUP.md) — GitHub Environments, secrets, and variables configuration
-- [Architecture Overview](ARCHITECTURE.md) — Architecture, security, scaling, and cost details
-- [Backup Protection Setup](BACKUP_PROTECTION.md) — Backup setup and restore procedures
-- [Testing Guide](TESTING.md) — Post-deployment verification procedures
-- [Quick Reference](QUICK_REFERENCE.md) — Common commands for day-to-day operations
+- [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) — GitHub Environments, secrets, and variables configuration
+- [Architecture Overview]({% link ARCHITECTURE.md %}) — Architecture, security, scaling, and cost details
+- [Backup Protection Setup]({% link BACKUP_PROTECTION.md %}) — Backup setup and restore procedures
+- [Testing Guide]({% link TESTING.md %}) — Post-deployment verification procedures
+- [Quick Reference]({% link QUICK_REFERENCE.md %}) — Common commands for day-to-day operations
 
 ## Deployment Methods
 
@@ -33,7 +33,7 @@ Deploy directly to Azure with one click:
 - Uses `bicep/main.bicep` with Azure Verified Modules
 - Best for production, team environments, and CI/CD
 - Environment-specific configurations and approval workflows
-- See [GitHub Setup Guide](GITHUB_SETUP.md) for details
+- See [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) for details
 
 ## Source Code
 

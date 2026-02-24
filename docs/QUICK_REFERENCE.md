@@ -176,7 +176,7 @@ After assigning the role, redeploy the template.
 1. Pre-create the role assignment manually before deployment
 2. Ask an administrator with Owner role to run the deployment
 
-See [GitHub Setup Guide](GITHUB_SETUP.md) for complete service principal configuration.
+See [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) for complete service principal configuration.
 
 ### Container Won't Start
 ```bash
