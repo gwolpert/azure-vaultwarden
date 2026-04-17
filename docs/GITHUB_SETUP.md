@@ -166,7 +166,7 @@ For each environment (dev, staging, prod), add the following **Secrets**:
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | `abcdef12-3456-7890-abcd-ef1234567890` |
 | `ADMIN_TOKEN` | Vaultwarden admin panel token | `your-secure-admin-token` (or leave empty to disable) |
 
-> **Note:** The `ADMIN_TOKEN` is automatically hashed using **argon2id** during the GitHub Actions deployment. The plaintext token you provide in the secret is never stored — only the argon2id PHC-format hash is saved to Azure Key Vault. The PHC string is self-contained (it embeds the salt and parameters), so Vaultwarden can verify the admin password directly from the stored hash. A new hash with a fresh random salt is generated on each deployment.
+> **Note:** The `ADMIN_TOKEN` is automatically hashed using **argon2id** during Bicep deployment, regardless of the deployment method (GitHub Actions, Deploy to Azure button, or Azure CLI). The plaintext token you provide is never stored — only the argon2id PHC-format hash is saved to Azure Key Vault. The PHC string is self-contained (it embeds the salt and parameters), so Vaultwarden can verify the admin password directly from the stored hash. A new hash with a fresh random salt is generated on each deployment. If you provide a pre-hashed token (starting with `$argon2`), it will be stored as-is.
 >
 > You can also generate the hash manually using the argon2 CLI:
 > ```bash

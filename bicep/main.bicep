@@ -141,13 +141,23 @@ module keyVault 'modules/key-vault.bicep' = {
   }
 }
 
-// Store admin token in Key Vault (only if provided) using a separate module
+// Hash admin token with argon2id using a deployment script (only if provided)
+module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
+  scope: rg
+  name: 'hash-admin-token-deployment'
+  params: {
+    adminToken: adminToken
+    location: location
+  }
+}
+
+// Store hashed admin token in Key Vault (only if provided)
 module keyVaultSecret 'modules/keyvault-secret.bicep' = if (adminToken != '') {
   scope: rg
   name: 'keyvault-secret-deployment'
   params: {
     keyVaultName: keyVault.outputs.name
-    adminToken: adminToken
+    adminToken: hashAdminToken!.outputs.hashedToken
   }
 }
 

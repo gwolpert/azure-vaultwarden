@@ -36,18 +36,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Hash admin token with argon2id
-        id: hash_admin_token
-        if: ${{ secrets.ADMIN_TOKEN != '' }}
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq argon2 > /dev/null 2>&1
-          SALT=$(openssl rand -base64 32)
-          HASHED_TOKEN=$(echo -n "$ADMIN_TOKEN" | argon2 "$SALT" -e -id -k 65540 -t 3 -p 4)
-          echo "::add-mask::$HASHED_TOKEN"
-          echo "hashed_token=$HASHED_TOKEN" >> "$GITHUB_OUTPUT"
-        env:
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-
       - name: Deploy Bicep template
         uses: azure/arm-deploy@v2
         id: deploy
@@ -61,7 +49,7 @@ jobs:
             location=${{ vars.AZURE_LOCATION }}
             environmentName=${{ vars.ENVIRONMENT_NAME }}
             domainName=${{ vars.DOMAIN_NAME }}
-            adminToken=${{ steps.hash_admin_token.outputs.hashed_token || '' }}
+            adminToken=${{ secrets.ADMIN_TOKEN }}
             signupsAllowed=${{ vars.SIGNUPS_ALLOWED }}
             vaultwardenImageTag=${{ vars.VAULTWARDEN_IMAGE_TAG }}
             appServicePlanSkuName=${{ vars.APP_SERVICE_PLAN_SKU_NAME || 'B1' }}
