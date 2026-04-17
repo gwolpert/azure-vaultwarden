@@ -38,6 +38,7 @@ Full documentation is available on [GitHub Pages](https://gwolpert.github.io/azu
 
 - **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - GitHub Environments, secrets, and variables configuration
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Architecture, security, scaling, and cost details
+- **[Backup and Recovery](docs/BACKUP_PROTECTION.md)** - PostgreSQL backup and restore procedures
 - **[Testing Guide](docs/TESTING.md)** - Post-deployment verification procedures
 - **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands for day-to-day operations
 

@@ -18,7 +18,7 @@ Deploy directly to Azure with one click:
 
 - [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) — GitHub Environments, secrets, and variables configuration
 - [Architecture Overview]({% link ARCHITECTURE.md %}) — Architecture, security, scaling, and cost details
-- [Backup Protection Setup]({% link BACKUP_PROTECTION.md %}) — Backup setup and restore procedures
+- [Backup and Recovery]({% link BACKUP_PROTECTION.md %}) — PostgreSQL backup and restore procedures
 - [Testing Guide]({% link TESTING.md %}) — Post-deployment verification procedures
 - [Quick Reference]({% link QUICK_REFERENCE.md %}) — Common commands for day-to-day operations
 
