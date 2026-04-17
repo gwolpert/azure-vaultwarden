@@ -18,7 +18,7 @@ title: Architecture Overview
 │  │  │              Virtual Network (10.0.0.0/16)           │  │ │
 │  │  │                                                        │  │ │
 │  │  │  ┌──────────────────────────────────────────────┐   │  │ │
-│  │  │  │  App Service Subnet (10.0.0.0/24)           │   │  │ │
+│  │  │  │  snet-app-service (10.0.0.0/24)             │   │  │ │
 │  │  │  │                                               │   │  │ │
 │  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
 │  │  │  │  │  App Service Plan (B1 Basic)      │     │   │  │ │
@@ -40,7 +40,7 @@ title: Architecture Overview
 │  │  │  └────────────────┼────────────────────────────┘   │  │ │
 │  │  │                   │ PostgreSQL (via VNet)           │  │ │
 │  │  │  ┌────────────────▼───────────────────────────┐   │  │ │
-│  │  │  │  PostgreSQL Subnet (10.0.1.0/24)          │   │  │ │
+│  │  │  │  snet-postgresql (10.0.1.0/24)             │   │  │ │
 │  │  │  │  - Delegated to PostgreSQL Flexible Server │   │  │ │
 │  │  │  │                                             │   │  │ │
 │  │  │  │  ┌─────────────────────────────────────┐  │   │  │ │
@@ -103,8 +103,8 @@ title: Architecture Overview
 
 ### Network Security
 - Virtual Network isolation with VNet integration
-- App Service subnet with service delegation (10.0.0.0/24)
-- PostgreSQL subnet with service delegation for Flexible Server (10.0.1.0/24)
+- App Service subnet (`snet-app-service`) with service delegation (10.0.0.0/24)
+- PostgreSQL subnet (`snet-postgresql`) with service delegation for Flexible Server (10.0.1.0/24)
 - PostgreSQL Flexible Server accessible only via VNet integration (no public access)
 - Private DNS Zone resolves PostgreSQL server to private IP within VNet
 - HTTPS-only access with Azure-managed certificates

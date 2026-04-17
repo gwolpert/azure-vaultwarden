@@ -59,9 +59,7 @@ az resource list --resource-group vaultwarden-dev-rg --output table
 
 Expected resources:
 - [ ] Virtual Network
-- [ ] Storage Account
-- [ ] File Share
-- [ ] Recovery Services Vault
+- [ ] Azure Database for PostgreSQL Flexible Server
 - [ ] Log Analytics Workspace
 - [ ] App Service Plan
 - [ ] App Service (Web App)
@@ -79,12 +77,12 @@ az network vnet show \
 
 Expected:
 - Address space: 10.0.0.0/16
-- Subnets: app-service-subnet, private-endpoint-subnet
+- Subnets: snet-app-service, snet-postgresql
 
 #### Check Subnet Configuration
 ```bash
 az network vnet subnet show \
-  --name app-service-subnet \
+  --name snet-app-service \
   --vnet-name vaultwarden-dev-vnet \
   --resource-group vaultwarden-dev-rg \
   --query "{name:name, addressPrefix:addressPrefix}"
@@ -92,38 +90,42 @@ az network vnet subnet show \
 
 Expected: Subnet 10.0.0.0/24
 
-### 3. Storage Account Verification
+### 3. PostgreSQL Verification
 
-#### Check Storage Account
+#### Check PostgreSQL Flexible Server
 ```bash
-STORAGE_NAME=$(az storage account list \
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
   --resource-group vaultwarden-dev-rg \
-  --query "[0].name" -o tsv)
-
-az storage account show \
-  --name $STORAGE_NAME \
-  --query "{name:name, httpsOnly:enableHttpsTrafficOnly, minTls:minimumTlsVersion, publicAccess:allowBlobPublicAccess}"
+  --query "{name:name, state:state, version:version, sku:sku.name, publicAccess:network.publicNetworkAccess}"
 ```
 
 Expected:
-- HTTPS only: true
-- Min TLS: TLS1_2
-- Public access: false
+- State: Ready
+- Version: 16 (or configured version)
+- Public access: Disabled
 
-#### Verify File Share
+#### Verify Database Exists
 ```bash
-STORAGE_KEY=$(az storage account keys list \
-  --account-name $STORAGE_NAME \
+az postgres flexible-server db show \
+  --server-name vaultwarden-dev-psql \
   --resource-group vaultwarden-dev-rg \
-  --query "[0].value" -o tsv)
-
-az storage share list \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
-  --output table
+  --database-name vaultwarden
 ```
 
-Expected: File share named "vaultwarden-data" exists
+Expected: Database named "vaultwarden" exists
+
+#### Check VNet Integration
+```bash
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
+  --resource-group vaultwarden-dev-rg \
+  --query "{delegatedSubnet:network.delegatedSubnetResourceId, privateDnsZone:network.privateDnsZoneArmResourceId}"
+```
+
+Expected:
+- Delegated subnet references snet-postgresql
+- Private DNS zone is configured
 
 ### 4. App Service Verification
 
@@ -153,6 +155,18 @@ Verify:
 - [ ] alwaysOn: true
 - [ ] httpsOnly: true
 
+#### Check Environment Variables
+```bash
+az webapp config appsettings list \
+  --name vaultwarden-dev-app \
+  --resource-group vaultwarden-dev-rg \
+  --query "[?name=='DATABASE_URL' || name=='IP_HEADER'].{name:name, slotSetting:slotSetting}"
+```
+
+Expected:
+- DATABASE_URL: Set (pointing to PostgreSQL Flexible Server)
+- IP_HEADER: Set
+
 #### Check VNet Integration
 ```bash
 az webapp vnet-integration list \
@@ -161,7 +175,7 @@ az webapp vnet-integration list \
 ```
 
 Expected:
-- VNet integration configured with app-service-subnet
+- VNet integration configured with snet-app-service
 
 #### Check App Service Plan
 ```bash
@@ -262,17 +276,30 @@ az monitor log-analytics query \
 
 ### 8. Security Verification
 
-#### Check Storage Account Security
+#### Check PostgreSQL Security
 ```bash
-az storage account show \
-  --name $STORAGE_NAME \
-  --query "{httpsOnly:enableHttpsTrafficOnly, tlsVersion:minimumTlsVersion, blobPublicAccess:allowBlobPublicAccess, networkRules:networkRuleSet.defaultAction}"
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
+  --resource-group vaultwarden-dev-rg \
+  --query "{publicAccess:network.publicNetworkAccess, sslEnforcement:requireSecureTransport}"
 ```
 
 Expected:
-- HTTPS only: true
-- TLS version: TLS1_2
-- Blob public access: false
+- Public access: Disabled
+- SSL enforcement: Enabled (secure transport required)
+
+#### Verify PostgreSQL VNet Integration
+```bash
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
+  --resource-group vaultwarden-dev-rg \
+  --query "network"
+```
+
+Expected:
+- Delegated subnet configured (snet-postgresql)
+- Private DNS zone associated
+- No public network access
 
 #### Verify App Service Secrets
 ```bash
@@ -369,35 +396,38 @@ echo "Load test completed"
 
 Check logs for any errors during load
 
-### 3. Storage Performance
+### 3. Database Performance
 
-#### Write Test
+> **Note:** The `date -u -d` syntax below is GNU-specific (Linux). On macOS/BSD, use `date -u -v-1H` instead.
+
+#### Check PostgreSQL Metrics
 ```bash
-# Create a test file
-echo "Test data" > test.txt
+az monitor metrics list \
+  --resource $(az postgres flexible-server show --name vaultwarden-dev-psql --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --metric "cpu_percent" \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --interval PT1M \
+  --output table
+```
 
-# Upload to file share
-az storage file upload \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
-  --share-name vaultwarden-data \
-  --source test.txt \
-  --path test.txt
+#### Check Active Connections
+```bash
+az monitor metrics list \
+  --resource $(az postgres flexible-server show --name vaultwarden-dev-psql --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --metric "active_connections" \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --interval PT1M \
+  --output table
+```
 
-# Verify upload
-az storage file show \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
-  --share-name vaultwarden-data \
-  --path test.txt
-
-# Cleanup
-rm test.txt
-az storage file delete \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY \
-  --share-name vaultwarden-data \
-  --path test.txt
+#### Check Storage Usage
+```bash
+az monitor metrics list \
+  --resource $(az postgres flexible-server show --name vaultwarden-dev-psql --resource-group vaultwarden-dev-rg --query id -o tsv) \
+  --metric "storage_percent" \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --interval PT1M \
+  --output table
 ```
 
 ## Monitoring Validation
@@ -429,54 +459,52 @@ az monitor metrics alert create \
 
 ## Backup and Recovery Testing
 
-### 1. Backup Test
+### 1. Verify Built-in Backups
+
+Azure Database for PostgreSQL Flexible Server includes automatic backups. Verify the backup configuration:
 
 ```bash
-# Create backup directory
-mkdir -p backup-test
-
-# Download all data
-az storage file download-batch \
-  --destination backup-test \
-  --source vaultwarden-data \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY
-
-# Verify backup
-ls -lh backup-test/
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
+  --resource-group vaultwarden-dev-rg \
+  --query "{backupRetentionDays:backup.backupRetentionDays, geoRedundantBackup:backup.geoRedundantBackup, earliestRestoreDate:backup.earliestRestoreDate}"
 ```
 
-Expected: Database files and attachments downloaded
+Expected:
+- Backup retention days: 7 (or configured value)
+- Earliest restore date: Should be populated
 
-### 2. Recovery Test
+### 2. Point-in-Time Restore Test (Non-Production Only)
+
+To validate recoverability, you can perform a point-in-time restore to a new server:
 
 ```bash
-# Stop App Service
-az webapp stop \
-  --name vaultwarden-dev-app \
-  --resource-group vaultwarden-dev-rg
+# Get the earliest restore point
+EARLIEST=$(az postgres flexible-server show \
+  --name vaultwarden-dev-psql \
+  --resource-group vaultwarden-dev-rg \
+  --query "backup.earliestRestoreDate" -o tsv)
 
-# Wait for stop
-sleep 10
+echo "Earliest restore point: $EARLIEST"
 
-# Upload backup
-az storage file upload-batch \
-  --destination vaultwarden-data \
-  --source backup-test \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY
+# Perform a point-in-time restore to a new server (non-production testing only)
+az postgres flexible-server restore \
+  --resource-group vaultwarden-dev-rg \
+  --name vaultwarden-dev-psql-restore-test \
+  --source-server vaultwarden-dev-psql \
+  --restore-time "$EARLIEST"
 
-# Start App Service
-az webapp start \
-  --name vaultwarden-dev-app \
-  --resource-group vaultwarden-dev-rg
+# Verify the restored server is ready
+az postgres flexible-server show \
+  --name vaultwarden-dev-psql-restore-test \
+  --resource-group vaultwarden-dev-rg \
+  --query "{name:name, state:state}"
 
-# Verify application is accessible
-sleep 60
-curl -I "https://$VAULTWARDEN_URL"
-
-# Cleanup
-rm -rf backup-test
+# Clean up the test restore server
+az postgres flexible-server delete \
+  --name vaultwarden-dev-psql-restore-test \
+  --resource-group vaultwarden-dev-rg \
+  --yes
 ```
 
 ## Troubleshooting Tests
@@ -513,26 +541,26 @@ Use this checklist to verify your deployment:
 ### Infrastructure
 - [ ] Resource group created
 - [ ] Virtual network deployed with correct address space
-- [ ] Subnet configured for App Service VNet integration
-- [ ] Private Endpoint subnet configured for storage
-- [ ] Storage account created with security settings
-- [ ] File share created and accessible
+- [ ] Subnet configured for App Service VNet integration (snet-app-service)
+- [ ] PostgreSQL subnet configured with delegation for Flexible Server (snet-postgresql)
+- [ ] Azure Database for PostgreSQL Flexible Server deployed and ready
+- [ ] PostgreSQL database "vaultwarden" created
 - [ ] Log Analytics workspace deployed
 
 ### Application
 - [ ] App Service running
 - [ ] Correct container image deployed
-- [ ] Environment variables set
-- [ ] Storage mounted correctly
+- [ ] DATABASE_URL environment variable set (pointing to PostgreSQL)
+- [ ] IP_HEADER environment variable set
 - [ ] HTTPS configured
-- [ ] VNet integration configured
+- [ ] VNet integration configured (snet-app-service)
 
 ### Security
-- [ ] HTTPS enforced
-- [ ] Storage HTTPS-only enabled
-- [ ] TLS 1.2 minimum configured
+- [ ] HTTPS enforced on App Service
+- [ ] PostgreSQL public network access disabled
+- [ ] PostgreSQL SSL enforcement enabled
+- [ ] PostgreSQL accessible only via VNet (private access)
 - [ ] Secrets stored securely
-- [ ] Public blob access disabled
 - [ ] Managed identity enabled
 
 ### Functionality
@@ -541,7 +569,7 @@ Use this checklist to verify your deployment:
 - [ ] Can create account (if enabled)
 - [ ] Can login with credentials
 - [ ] Vault operations work
-- [ ] Data persists across restarts
+- [ ] Data persists across App Service restarts (stored in PostgreSQL)
 - [ ] Admin panel accessible (if enabled)
 
 ### Monitoring
@@ -551,9 +579,9 @@ Use this checklist to verify your deployment:
 - [ ] No critical errors in logs
 
 ### Backup/Recovery
-- [ ] Can backup data from file share
-- [ ] Can restore data to file share
-- [ ] Application recovers after restoration
+- [ ] PostgreSQL automatic backups configured
+- [ ] Backup retention period verified
+- [ ] Point-in-time restore validated (non-production)
 
 ## Test Report Template
 
@@ -576,7 +604,7 @@ Resource Deployment
 ------------------
 [ ] Resource group: PASS/FAIL
 [ ] Virtual network: PASS/FAIL
-[ ] Storage account: PASS/FAIL
+[ ] PostgreSQL Flexible Server: PASS/FAIL
 [ ] App Service Plan: PASS/FAIL
 [ ] App Service: PASS/FAIL
 [ ] Log Analytics: PASS/FAIL
@@ -584,7 +612,8 @@ Resource Deployment
 Security
 --------
 [ ] HTTPS enforcement: PASS/FAIL
-[ ] Storage security: PASS/FAIL
+[ ] PostgreSQL private access: PASS/FAIL
+[ ] PostgreSQL SSL enforcement: PASS/FAIL
 [ ] Secrets management: PASS/FAIL
 [ ] Managed identity: PASS/FAIL
 
@@ -602,8 +631,8 @@ Performance
 
 Backup/Recovery
 --------------
-[ ] Backup creation: PASS/FAIL
-[ ] Data restoration: PASS/FAIL
+[ ] PostgreSQL automatic backups: PASS/FAIL
+[ ] Backup retention verified: PASS/FAIL
 
 Issues Found
 -----------
@@ -629,22 +658,36 @@ echo "Starting automated verification..."
 
 RG_NAME="vaultwarden-dev-rg"
 APP_NAME="vaultwarden-dev-app"
+PSQL_NAME="vaultwarden-dev-psql"
 
 # Test 1: Resource Group
 echo "Test 1: Resource Group"
 az group show --name $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
-# Test 2: App Service
-echo "Test 2: App Service"
+# Test 2: PostgreSQL Flexible Server
+echo "Test 2: PostgreSQL Flexible Server"
+az postgres flexible-server show --name $PSQL_NAME --resource-group $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
+
+# Test 3: PostgreSQL Database
+echo "Test 3: PostgreSQL Database"
+az postgres flexible-server db show --server-name $PSQL_NAME --resource-group $RG_NAME --database-name vaultwarden &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
+
+# Test 4: App Service
+echo "Test 4: App Service"
 az webapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
-# Test 3: Application Access
-echo "Test 3: Application Access"
+# Test 5: Application Access
+echo "Test 5: Application Access"
 URL=$(az webapp show --name $APP_NAME --resource-group $RG_NAME --query "defaultHostName" -o tsv)
 curl -s -o /dev/null -w "%{http_code}" "https://$URL" | grep -q "200" && echo "✓ PASS" || echo "✗ FAIL"
 
-# Test 4: App Service Logs
-echo "Test 4: App Service Logs"
+# Test 6: PostgreSQL Private Access
+echo "Test 6: PostgreSQL Private Access"
+PUBLIC=$(az postgres flexible-server show --name $PSQL_NAME --resource-group $RG_NAME --query "network.publicNetworkAccess" -o tsv)
+[ "$PUBLIC" = "Disabled" ] && echo "✓ PASS" || echo "✗ FAIL"
+
+# Test 7: App Service Logs
+echo "Test 7: App Service Logs"
 az webapp log tail --name $APP_NAME --resource-group $RG_NAME --only-show-errors &> /dev/null && echo "✓ PASS" || echo "✗ FAIL"
 
 echo "Automated verification complete!"
