@@ -87,31 +87,38 @@ az webapp restart \
 
 ### Backup Data
 ```bash
-# Get storage account name
-STORAGE_NAME=$(az storage account list -g <rg-name> --query "[0].name" -o tsv)
-
-# Get storage key
-STORAGE_KEY=$(az storage account keys list \
-  --account-name $STORAGE_NAME \
+# Get PostgreSQL server FQDN
+PSQL_FQDN=$(az postgres flexible-server show \
+  --name <baseName>-psql \
   --resource-group <rg-name> \
-  --query "[0].value" -o tsv)
+  --query "fullyQualifiedDomainName" -o tsv)
 
-# Download all files
-az storage file download-batch \
-  --destination ./backup \
-  --source vaultwarden-data \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY
+# Dump the database (you will be prompted for the password)
+pg_dump \
+  --host=$PSQL_FQDN \
+  --username=vaultwardenadmin \
+  --dbname=vaultwarden \
+  --format=custom \
+  --file=vaultwarden_backup.dump
 ```
 
 ### Restore Data
 ```bash
-# Upload files back
-az storage file upload-batch \
-  --destination vaultwarden-data \
-  --source ./backup \
-  --account-name $STORAGE_NAME \
-  --account-key $STORAGE_KEY
+# Stop the App Service before restoring
+az webapp stop --name <app-name> --resource-group <rg-name>
+
+# Restore the database from a backup
+pg_restore \
+  --host=$PSQL_FQDN \
+  --username=vaultwardenadmin \
+  --dbname=vaultwarden \
+  --clean \
+  --if-exists \
+  --no-owner \
+  vaultwarden_backup.dump
+
+# Start the App Service after restoring
+az webapp start --name <app-name> --resource-group <rg-name>
 ```
 
 ## Monitoring
@@ -207,12 +214,27 @@ az appservice plan update \
 
 ### Database Issues
 ```bash
-# Check if WAL mode is enabled (in App Service logs)
-az webapp log tail --name <app-name> --resource-group <rg-name> | grep WAL
+# Check PostgreSQL server status
+az postgres flexible-server show \
+  --name <baseName>-psql \
+  --resource-group <rg-name> \
+  --query "{state:state, version:version, fqdn:fullyQualifiedDomainName}"
 
-# SSH into container (if needed for debugging)
-az webapp ssh \
+# Test connectivity from App Service
+az webapp ssh --name <app-name> --resource-group <rg-name>
+# Inside the container, verify the DATABASE_URL is set:
+#   echo $DATABASE_URL
+
+# Check App Service connection string configuration
+az webapp config appsettings list \
   --name <app-name> \
+  --resource-group <rg-name> \
+  --query "[?name=='DATABASE_URL']"
+
+# View PostgreSQL server logs
+az postgres flexible-server parameter show \
+  --name log_connections \
+  --server-name <baseName>-psql \
   --resource-group <rg-name>
 ```
 
@@ -268,13 +290,15 @@ az webapp config ssl bind \
 
 ## Environment Names by Default
 
-Based on GitHub Environment configuration:
+Based on GitHub Environment configuration (CAF naming conventions):
 
-- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-app` / `vaultwarden-dev-asp`
-- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-app` / `vaultwarden-staging-asp`
-- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-app` / `vaultwarden-prod-asp`
+- **Development**: `vaultwarden-dev-rg` / `vaultwarden-dev-app` / `vaultwarden-dev-asp` / `vaultwarden-dev-psql`
+- **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-app` / `vaultwarden-staging-asp` / `vaultwarden-staging-psql`
+- **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-app` / `vaultwarden-prod-asp` / `vaultwarden-prod-psql`
 
-Replace `<app-name>`, `<asp-name>`, and `<rg-name>` with your actual values in commands above.
+VNet subnets: `snet-app-service` (App Service integration) / `snet-postgresql` (PostgreSQL private access)
+
+Replace `<baseName>-*`, `<app-name>`, `<asp-name>`, and `<rg-name>` with your actual values in commands above.
 
 ## Useful Aliases
 
@@ -318,6 +342,12 @@ az webapp show --name $APP_NAME --resource-group $RG_NAME &> /dev/null && echo "
 echo -n "Running Status: "
 STATUS=$(az webapp show --name $APP_NAME --resource-group $RG_NAME --query "state" -o tsv 2>/dev/null)
 [[ "$STATUS" == "Running" ]] && echo "✅ $STATUS" || echo "⚠️ $STATUS"
+
+# Check PostgreSQL server
+PSQL_NAME="vaultwarden-dev-psql"
+echo -n "PostgreSQL Server: "
+PSQL_STATE=$(az postgres flexible-server show --name $PSQL_NAME --resource-group $RG_NAME --query "state" -o tsv 2>/dev/null)
+[[ "$PSQL_STATE" == "Ready" ]] && echo "✅ $PSQL_STATE" || echo "⚠️ $PSQL_STATE"
 
 # Check HTTP endpoint
 echo -n "HTTP Endpoint: "
