@@ -232,8 +232,8 @@ az webapp config appsettings list \
   --query "[?name=='DATABASE_URL']"
 
 # View PostgreSQL server logs
-az postgres flexible-server parameter show \
-  --name log_connections \
+az postgres flexible-server server-logs download \
+  --name <log-file-name> \
   --server-name <baseName>-psql \
   --resource-group <rg-name>
 ```

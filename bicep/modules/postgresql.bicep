@@ -65,7 +65,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
 
 // Build the connection string for Vaultwarden
 // Format: postgresql://user:password@host:5432/dbname
-var connectionString = 'postgresql://${administratorLogin}:${administratorLoginPassword}@${postgresqlServerName}.postgres.database.azure.com:5432/${databaseName}?sslmode=require'
+var connectionString = 'postgresql://${administratorLogin}:${administratorLoginPassword}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
 
 output name string = postgresqlDeployment.outputs.name
 output resourceId string = postgresqlDeployment.outputs.resourceId

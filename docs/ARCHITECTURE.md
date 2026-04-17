@@ -145,7 +145,7 @@ title: Architecture Overview
 
 ### Performance Optimizations
 - PostgreSQL Flexible Server for reliable, scalable database performance
-- PostgreSQL connection pooling for efficient resource utilization
+- Optional: external PostgreSQL connection pooling (for example, PgBouncer) can improve resource utilization, but it is not configured by this repo
 - VNet integration for optimal network performance
 - B1 SKU: 1 core, 1.75 GB RAM (suitable for small to medium deployments, 5-50 users)
 - Upgrade to Standard (S1+) or Premium tiers for auto-scaling and higher capacity
