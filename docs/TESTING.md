@@ -688,6 +688,8 @@ PUBLIC=$(az postgres flexible-server show --name $PSQL_NAME --resource-group $RG
 
 # Test 7: App Service Logs
 echo "Test 7: App Service Logs"
+# log tail is a streaming command that runs indefinitely; exit code 124 (timeout) means
+# the connection was established successfully before the 15-second limit expired.
 timeout 15s az webapp log tail --name $APP_NAME --resource-group $RG_NAME --only-show-errors &> /dev/null
 LOG_TAIL_STATUS=$?
 if [ "$LOG_TAIL_STATUS" -eq 0 ] || [ "$LOG_TAIL_STATUS" -eq 124 ]; then
