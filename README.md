@@ -153,6 +153,7 @@ Parameters are configured through GitHub Environment Variables and Secrets. See 
 ## Security
 
 - **Admin panel** is disabled by default. Enable it by setting the `ADMIN_TOKEN` secret and redeploying.
+- **Admin token hashing**: The `ADMIN_TOKEN` is automatically hashed using **argon2id** during deployment before being stored in Azure Key Vault. This ensures the plaintext token is never persisted — only the PHC-format hash is stored.
 - **User signups** are disabled by default. Enable via the `SIGNUPS_ALLOWED` variable.
 - **HTTPS** is enforced automatically with Azure-managed certificates.
 - **Secrets** are stored in Azure Key Vault, accessed via managed identity.

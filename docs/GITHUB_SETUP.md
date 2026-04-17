@@ -166,6 +166,11 @@ For each environment (dev, staging, prod), add the following **Secrets**:
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | `abcdef12-3456-7890-abcd-ef1234567890` |
 | `ADMIN_TOKEN` | Vaultwarden admin panel token | `your-secure-admin-token` (or leave empty to disable) |
 
+> **Note:** The `ADMIN_TOKEN` is automatically hashed using **argon2id** during the GitHub Actions deployment. The plaintext token you provide in the secret is never stored — only the argon2id PHC-format hash is saved to Azure Key Vault. You can also generate the hash manually:
+> ```bash
+> echo -n "MySecretPassword" | argon2 "$(openssl rand -base64 32)" -e -id -k 65540 -t 3 -p 4
+> ```
+
 ### Adding Secrets
 
 1. In the environment settings, scroll to "Environment secrets"
@@ -425,7 +430,7 @@ az provider register --namespace Microsoft.OperationalInsights
 3. **Limit Deployment Branches**: Only allow specific branches to deploy to production
 4. **Rotate Secrets**: Regularly rotate admin tokens and service principal credentials
 5. **Audit Access**: Review who has access to environment secrets regularly
-6. **Use Strong Admin Tokens**: Generate using: `openssl rand -base64 32`
+6. **Use Strong Admin Tokens**: Generate using: `openssl rand -base64 32`. The token is automatically hashed with argon2id during deployment.
 7. **Separate Service Principals**: Consider using different service principals per environment
 
 ## Advanced Configuration
