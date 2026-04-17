@@ -398,7 +398,7 @@ Check logs for any errors during load
 
 ### 3. Database Performance
 
-> **Note:** The `date -u -d` syntax below is GNU-specific (Linux). On macOS/BSD, use `date -u -v-1H` instead.
+> **Note:** The `date -u -d` syntax below is GNU-specific (Linux). On macOS/BSD, use `date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ'` instead.
 
 #### Check PostgreSQL Metrics
 ```bash

@@ -64,9 +64,14 @@ FQDN=$(az postgres flexible-server show \
   --name "$SERVER_NAME" \
   --query "fullyQualifiedDomainName" -o tsv)
 
+# Set password via environment variable (avoid passing in connection string)
+export PGPASSWORD="<your-admin-password>"
+
 # Create a backup (requires network access to the server)
-pg_dump "postgresql://${ADMIN_USER}:<password>@${FQDN}:5432/${DB_NAME}?sslmode=require" \
+pg_dump "postgresql://${ADMIN_USER}@${FQDN}:5432/${DB_NAME}?sslmode=require" \
   --file vaultwarden-backup.sql
+
+unset PGPASSWORD
 ```
 
 **Note**: Since the PostgreSQL server is VNet-integrated (private access only), `pg_dump` must be run from a machine with network access to the VNet (e.g., an Azure VM in the same VNet, or via VPN/ExpressRoute).
@@ -74,9 +79,13 @@ pg_dump "postgresql://${ADMIN_USER}:<password>@${FQDN}:5432/${DB_NAME}?sslmode=r
 ### Restore from pg_dump
 
 ```bash
+export PGPASSWORD="<your-admin-password>"
+
 # Restore from a backup file
-psql "postgresql://${ADMIN_USER}:<password>@${FQDN}:5432/${DB_NAME}?sslmode=require" \
+psql "postgresql://${ADMIN_USER}@${FQDN}:5432/${DB_NAME}?sslmode=require" \
   --file vaultwarden-backup.sql
+
+unset PGPASSWORD
 ```
 
 ## Verifying Backups
