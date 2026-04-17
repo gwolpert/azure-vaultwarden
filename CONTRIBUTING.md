@@ -77,7 +77,7 @@ where the CAF abbreviation is used as a **suffix**. For example:
 | App Service Plan | `asp` | `vaultwarden-dev-asp` |
 | App Service | `app` | `vaultwarden-dev-app` |
 | Virtual Network | `vnet` | `vaultwarden-dev-vnet` |
-| Subnet | `snet` | `snet-app-service` |
+| Subnet | `snet` | `app-service-snet` |
 | Log Analytics Workspace | `log` | `vaultwarden-dev-log` |
 | Resource Group | `rg` | `vaultwarden-dev-rg` |
 

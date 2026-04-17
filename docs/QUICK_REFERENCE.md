@@ -296,7 +296,7 @@ Based on GitHub Environment configuration (CAF naming conventions):
 - **Staging**: `vaultwarden-staging-rg` / `vaultwarden-staging-app` / `vaultwarden-staging-asp` / `vaultwarden-staging-psql`
 - **Production**: `vaultwarden-prod-rg` / `vaultwarden-prod-app` / `vaultwarden-prod-asp` / `vaultwarden-prod-psql`
 
-VNet subnets: `snet-app-service` (App Service integration) / `snet-postgresql` (PostgreSQL private access)
+VNet subnets: `app-service-snet` (App Service integration) / `postgresql-snet` (PostgreSQL private access)
 
 Replace `<baseName>-*`, `<app-name>`, `<asp-name>`, and `<rg-name>` with your actual values in commands above.
 

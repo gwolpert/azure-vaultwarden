@@ -77,12 +77,12 @@ az network vnet show \
 
 Expected:
 - Address space: 10.0.0.0/16
-- Subnets: snet-app-service, snet-postgresql
+- Subnets: app-service-snet, postgresql-snet
 
 #### Check Subnet Configuration
 ```bash
 az network vnet subnet show \
-  --name snet-app-service \
+  --name app-service-snet \
   --vnet-name vaultwarden-dev-vnet \
   --resource-group vaultwarden-dev-rg \
   --query "{name:name, addressPrefix:addressPrefix}"
@@ -124,7 +124,7 @@ az postgres flexible-server show \
 ```
 
 Expected:
-- Delegated subnet references snet-postgresql
+- Delegated subnet references postgresql-snet
 - Private DNS zone is configured
 
 ### 4. App Service Verification
@@ -175,7 +175,7 @@ az webapp vnet-integration list \
 ```
 
 Expected:
-- VNet integration configured with snet-app-service
+- VNet integration configured with app-service-snet
 
 #### Check App Service Plan
 ```bash
@@ -297,7 +297,7 @@ az postgres flexible-server show \
 ```
 
 Expected:
-- Delegated subnet configured (snet-postgresql)
+- Delegated subnet configured (postgresql-snet)
 - Private DNS zone associated
 - No public network access
 
@@ -541,8 +541,8 @@ Use this checklist to verify your deployment:
 ### Infrastructure
 - [ ] Resource group created
 - [ ] Virtual network deployed with correct address space
-- [ ] Subnet configured for App Service VNet integration (snet-app-service)
-- [ ] PostgreSQL subnet configured with delegation for Flexible Server (snet-postgresql)
+- [ ] Subnet configured for App Service VNet integration (app-service-snet)
+- [ ] PostgreSQL subnet configured with delegation for Flexible Server (postgresql-snet)
 - [ ] Azure Database for PostgreSQL Flexible Server deployed and ready
 - [ ] PostgreSQL database "vaultwarden" created
 - [ ] Log Analytics workspace deployed
@@ -553,7 +553,7 @@ Use this checklist to verify your deployment:
 - [ ] DATABASE_URL environment variable set (pointing to PostgreSQL)
 - [ ] IP_HEADER environment variable set
 - [ ] HTTPS configured
-- [ ] VNet integration configured (snet-app-service)
+- [ ] VNet integration configured (app-service-snet)
 
 ### Security
 - [ ] HTTPS enforced on App Service

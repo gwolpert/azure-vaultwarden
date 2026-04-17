@@ -24,7 +24,7 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
     ]
     subnets: [
       {
-        name: 'snet-app-service'
+        name: 'app-service-snet'
         addressPrefix: '10.0.0.0/24'
         delegations: [
           {
@@ -36,7 +36,7 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
         ]
       }
       {
-        name: 'snet-postgresql'
+        name: 'postgresql-snet'
         addressPrefix: '10.0.1.0/24'
         delegations: [
           {
