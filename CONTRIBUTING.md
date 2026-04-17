@@ -72,14 +72,18 @@ where the CAF abbreviation is used as a **suffix**. For example:
 
 | Resource | Abbreviation | Example Name |
 |----------|-------------|-------------|
-| Storage Account | `st` | `vaultwardendevst` |
-| Key Vault | `kv` | `vaultwarden-dev-kv` |
+| PostgreSQL Flexible Server | `psql` | `vaultwarden-dev-psql` |
+| Key Vault | `kv` | `vaultwardendevkv` |
 | App Service Plan | `asp` | `vaultwarden-dev-asp` |
+| App Service | `app` | `vaultwarden-dev-app` |
 | Virtual Network | `vnet` | `vaultwarden-dev-vnet` |
+| Subnet | `snet` | `snet-app-service` |
+| Log Analytics Workspace | `log` | `vaultwarden-dev-log` |
+| Resource Group | `rg` | `vaultwarden-dev-rg` |
 
 `resourceGroupName` is determined by the user of the template. The recommended format is `vaultwarden-{env}` (e.g., `vaultwarden-dev`, `vaultwarden-prod`).
 
-> **Note:** Keep `resourceGroupName` short (max 22 characters). Long names can cause issues with Key Vault (24-character limit) and Storage Account (24-character limit) name lengths.
+> **Note:** Keep `resourceGroupName` short (max 22 characters). Long names can cause issues with Key Vault (24-character limit) name lengths.
 
 ### Recommended Region
 

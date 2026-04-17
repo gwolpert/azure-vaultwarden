@@ -13,7 +13,7 @@ param location string
 // Build the full Key Vault name using naming convention
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
-// Pattern: {baseName without dashes}kv (hyphens removed for consistency with storage account)
+// Pattern: {baseName without dashes}kv (hyphens removed for valid Key Vault naming)
 // Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
 var keyVaultName = '${replace(baseName, '-', '')}kv'
