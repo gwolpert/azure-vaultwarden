@@ -13,7 +13,7 @@ param location string
 // Build the full VNet name using naming convention
 var vnetName = '${baseName}-vnet'
 
-// Deploy Virtual Network with subnet for App Service VNet Integration
+// Deploy Virtual Network with subnets for App Service and PostgreSQL
 module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
   name: '${deployment().name}-vnet'
   params: {
@@ -36,9 +36,16 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
         ]
       }
       {
-        name: 'private-endpoint-subnet'
+        name: 'postgresql-subnet'
         addressPrefix: '10.0.1.0/24'
-        privateEndpointNetworkPolicies: 'Disabled'
+        delegations: [
+          {
+            name: 'MicrosoftDBforPostgreSQL'
+            properties: {
+              serviceName: 'Microsoft.DBforPostgreSQL/flexibleServers'
+            }
+          }
+        ]
       }
     ]
   }
@@ -48,4 +55,4 @@ output name string = vnetDeployment.outputs.name
 output resourceId string = vnetDeployment.outputs.resourceId
 output subnetResourceIds array = vnetDeployment.outputs.subnetResourceIds
 output appServiceSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[0]
-output privateEndpointSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[1]
+output postgresqlSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[1]
