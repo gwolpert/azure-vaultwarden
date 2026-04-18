@@ -5,6 +5,9 @@ targetScope = 'resourceGroup'
 @description('The name of the Key Vault')
 param keyVaultName string
 
+@description('Whether an admin token was provided')
+param hasAdminToken bool = false
+
 @description('The admin token to store (optional)')
 @secure()
 param adminToken string = ''
@@ -19,7 +22,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
 }
 
 // Create the admin token secret (only if provided)
-resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (adminToken != '') {
+resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = if (hasAdminToken) {
   parent: keyVault
   name: 'vaultwarden-admin-token'
   properties: {
@@ -36,5 +39,5 @@ resource databaseUrlSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
   }
 }
 
-output adminTokenSecretUri string = adminToken != '' ? adminTokenSecret.properties.secretUri : ''
+output adminTokenSecretUri string = hasAdminToken ? adminTokenSecret!.properties.secretUri : ''
 output databaseUrlSecretUri string = databaseUrlSecret.properties.secretUri

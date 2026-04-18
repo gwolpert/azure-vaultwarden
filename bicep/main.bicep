@@ -145,6 +145,7 @@ module keyVaultSecrets 'modules/keyvault-secret.bicep' = {
   name: 'keyvault-secrets-deployment'
   params: {
     keyVaultName: keyVault.outputs.name
+    hasAdminToken: adminToken != ''
     adminToken: adminToken != '' ? hashAdminToken!.outputs.hashedToken : ''
     databaseUrl: postgresql.outputs.connectionString
   }
@@ -163,7 +164,7 @@ module appService 'modules/app-service.bicep' = {
     domainName: domainName
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag
-    adminTokenSecretUri: adminToken != '' ? keyVaultSecrets.outputs.adminTokenSecretUri : ''
+    adminTokenSecretUri: keyVaultSecrets.outputs.adminTokenSecretUri
     databaseUrlSecretUri: keyVaultSecrets.outputs.databaseUrlSecretUri
   }
 }

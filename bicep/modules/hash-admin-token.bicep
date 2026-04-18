@@ -61,5 +61,4 @@ PYEOF
   }
 }
 
-@secure()
 output hashedToken string = hashScript.properties.outputs.hashedToken

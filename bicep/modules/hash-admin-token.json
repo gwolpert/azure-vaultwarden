@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.42.1.51946",
+      "templateHash": "18024542931227144345"
+    }
+  },
+  "parameters": {
+    "adminToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The plaintext admin token to hash with argon2id"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The Azure region for the deployment script resources"
+      }
+    },
+    "utcValue": {
+      "type": "string",
+      "defaultValue": "[utcNow()]",
+      "metadata": {
+        "description": "Force new hash generation on each deployment"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2023-08-01",
+      "name": "hash-admin-token",
+      "location": "[parameters('location')]",
+      "kind": "AzureCLI",
+      "properties": {
+        "azCliVersion": "2.63.0",
+        "retentionInterval": "PT1H",
+        "timeout": "PT10M",
+        "cleanupPreference": "Always",
+        "forceUpdateTag": "[parameters('utcValue')]",
+        "environmentVariables": [
+          {
+            "name": "ADMIN_TOKEN",
+            "secureValue": "[parameters('adminToken')]"
+          }
+        ],
+        "scriptContent": "      set -e\n      python3 -m pip install --quiet 'argon2-cffi==23.1.0'\n      python3 << 'PYEOF'\nimport argon2, os, json\n\ntoken = os.environ['ADMIN_TOKEN']\n\n# Skip hashing if the token is already an argon2 PHC string\nif token.startswith('$argon2'):\n    hashed = token\nelse:\n    hasher = argon2.PasswordHasher(\n        time_cost=3,\n        memory_cost=65540,\n        parallelism=4,\n        type=argon2.Type.ID\n    )\n    hashed = hasher.hash(token)\n\nwith open(os.environ['AZ_SCRIPTS_OUTPUT_PATH'], 'w') as f:\n    json.dump({'hashedToken': hashed}, f)\nPYEOF\n    "
+      }
+    }
+  ],
+  "outputs": {
+    "hashedToken": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'hash-admin-token'), '2023-08-01').outputs.hashedToken]"
+    }
+  }
+}
