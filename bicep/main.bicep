@@ -11,7 +11,7 @@ targetScope = 'subscription'
 param resourceGroupName string = 'vaultwarden-dev'
 
 @description('The Azure region where resources will be deployed')
-param location string = 'westeurope'
+param location string = 'northeurope'
 
 @description('Environment name (dev, staging, prod)')
 @allowed([
