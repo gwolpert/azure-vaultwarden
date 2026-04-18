@@ -25,6 +25,9 @@ param location string
 @description('Force new hash generation on each deployment')
 param utcValue string = utcNow()
 
+// Load the Python hashing script from a separate file for easy editing
+var pythonScript = loadTextContent('../../scripts/hash-admin-token.py')
+
 // Reference the existing Key Vault to store the hashed admin token
 resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   name: keyVaultName
@@ -46,7 +49,7 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
         secureValue: adminToken
       }
     ]
-    scriptContent: replace(loadTextContent('../../scripts/hash-admin-token.sh'), '{{PYTHON_SCRIPT}}', loadTextContent('../../scripts/hash-admin-token.py'))
+    scriptContent: '#!/bin/bash\nset -e\npython3 -m pip install --quiet \'argon2-cffi==23.1.0\'\ncat > /tmp/hash-admin-token.py << \'PYEOF\'\n${pythonScript}\nPYEOF\npython3 /tmp/hash-admin-token.py\n'
   }
 }
 
