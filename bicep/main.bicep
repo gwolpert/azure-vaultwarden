@@ -99,7 +99,7 @@ module postgresql 'modules/postgresql.bicep' = {
     privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
     administratorLoginPassword: postgresqlAdminPassword
     keyVaultName: keyVault.outputs.name
-    enableLock: enablePostgresqlLock
+    enablePostgresqlLock: enablePostgresqlLock
   }
 }
 
