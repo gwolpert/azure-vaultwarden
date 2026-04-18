@@ -135,6 +135,7 @@ module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
   scope: rg
   name: 'hash-admin-token-deployment'
   params: {
+    baseName: resourceGroupName
     adminToken: adminToken
     keyVaultName: keyVault.outputs.name
     location: location
