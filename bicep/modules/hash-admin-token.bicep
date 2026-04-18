@@ -36,7 +36,7 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
     ]
     scriptContent: '''
       set -e
-      pip install argon2-cffi --quiet
+      python3 -m pip install --quiet 'argon2-cffi==23.1.0'
       python3 << 'PYEOF'
 import argon2, os, json
 
@@ -61,4 +61,5 @@ PYEOF
   }
 }
 
+@secure()
 output hashedToken string = hashScript.properties.outputs.hashedToken
