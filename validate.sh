@@ -240,7 +240,7 @@ check_azure_providers() {
         return
     fi
     
-    local providers=("Microsoft.Web" "Microsoft.OperationalInsights" "Microsoft.Storage" "Microsoft.Network" "Microsoft.RecoveryServices" "Microsoft.KeyVault")
+    local providers=("Microsoft.Web" "Microsoft.OperationalInsights" "Microsoft.DBforPostgreSQL" "Microsoft.Network" "Microsoft.KeyVault")
     
     for provider in "${providers[@]}"; do
         STATUS=$(az provider show --namespace "$provider" --query "registrationState" -o tsv 2>/dev/null || echo "Unknown")

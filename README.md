@@ -38,7 +38,7 @@ Full documentation is available on [GitHub Pages](https://gwolpert.github.io/azu
 
 - **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - GitHub Environments, secrets, and variables configuration
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Architecture, security, scaling, and cost details
-- **[Backup Protection Setup](docs/BACKUP_PROTECTION.md)** - Backup setup and restore procedures
+- **[Backup and Recovery](docs/BACKUP_PROTECTION.md)** - PostgreSQL backup and restore procedures
 - **[Testing Guide](docs/TESTING.md)** - Post-deployment verification procedures
 - **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands for day-to-day operations
 
@@ -62,21 +62,19 @@ This will check:
 The deployment creates the following Azure resources:
 
 - **Resource Group**: Container for all resources
-- **Virtual Network**: Isolated network with dedicated subnet for App Service VNet integration
-- **Storage Account**: Azure Files storage for persistent Vaultwarden data (with CanNotDelete lock)
-- **Recovery Services Vault**: Backup vault for automated daily backups of Vaultwarden data
-- **Backup Policy**: Daily backup schedule with 30-day retention for file share protection
+- **Virtual Network**: Isolated network with dedicated subnets for App Service and PostgreSQL VNet integration
+- **Azure Database for PostgreSQL Flexible Server**: Burstable B1MS with VNet integration for persistent Vaultwarden data
 - **Log Analytics Workspace**: Monitoring and logging
 - **App Service Plan**: B1 (Basic) Linux plan with VNet integration (upgradable to Standard/Premium for auto-scaling and deployment slots)
 - **App Service**: Web App for Containers running Vaultwarden
-- **Key Vault**: Secure storage for secrets (admin token)
+- **Key Vault**: Secure storage for secrets (admin token, database connection string)
 
 ## Prerequisites
 
 - Azure subscription
 - Azure CLI installed ([Install guide](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
 - Bicep CLI installed (comes with Azure CLI 2.20.0+)
-- Appropriate permissions to create resources in your Azure subscription
+- Appropriate permissions to create resources in your Azure subscription (including the `Microsoft.DBforPostgreSQL` resource provider registered)
 - Service principal with **Contributor** and **User Access Administrator** roles (for GitHub Actions deployment) or **Owner** role (which includes both)
 
 ## Quick Start
@@ -142,13 +140,14 @@ az deployment sub create \
     environmentName="dev" \
     domainName="" \
     adminToken="" \
+    postgresqlAdminPassword="<your-secure-password>" \
     signupsAllowed=false \
     vaultwardenImageTag="latest"
 ```
 
 ## Configuration
 
-Parameters are configured through GitHub Environment Variables and Secrets. See [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for complete configuration details including secrets, variables, and per-environment settings.
+Parameters are configured through GitHub Environment Variables and Secrets. The `POSTGRESQL_ADMIN_PASSWORD` secret is required for database authentication. See [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for complete configuration details including secrets, variables, and per-environment settings.
 
 ## Security
 
@@ -156,18 +155,15 @@ Parameters are configured through GitHub Environment Variables and Secrets. See 
 - **User signups** are disabled by default. Enable via the `SIGNUPS_ALLOWED` variable.
 - **HTTPS** is enforced automatically with Azure-managed certificates.
 - **Secrets** are stored in Azure Key Vault, accessed via managed identity.
-- **Storage** is secured with Private Endpoint (public access disabled) and a CanNotDelete lock.
+- **PostgreSQL** is VNet-integrated with private access only (no public endpoint).
 
 See [Architecture Overview](docs/ARCHITECTURE.md) for full security details.
 
 ## Backup and Recovery
 
-The deployment creates a Recovery Services Vault with daily backups at 2:00 AM UTC and 30-day retention.
+Azure Database for PostgreSQL Flexible Server includes built-in automated backups with 7-day retention. No additional backup configuration is required.
 
-- **GitHub Actions**: Backup protection is enabled automatically during deployment.
-- **Manual deployments**: Run `./enable-backup-protection.sh` after deployment.
-
-See [Backup Protection Setup](docs/BACKUP_PROTECTION.md) for detailed instructions, restore procedures, and troubleshooting.
+See [Architecture Overview](docs/ARCHITECTURE.md) for full details on backup and restore procedures.
 
 ## Updating Vaultwarden
 
@@ -190,12 +186,12 @@ Approximate monthly costs (West Europe region, B1 default):
 | Resource | Estimated Cost |
 |----------|---------------|
 | App Service Plan (B1) | ~$13-15 |
-| Storage Account | ~$2-5 |
-| Recovery Services Vault + Backup | ~$5-10 |
+| PostgreSQL Flexible Server (B1MS) | ~$12-15 |
 | Log Analytics | ~$2-10 |
 | Virtual Network | Free |
 | Key Vault | < $1 |
-| **Total** | **~$22-41/month** |
+| Private DNS Zone | < $1 |
+| **Total** | **~$28-42/month** |
 
 See [Architecture Overview](docs/ARCHITECTURE.md) for upgrade options and detailed cost breakdown.
 
