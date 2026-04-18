@@ -165,6 +165,7 @@ For each environment (dev, staging, prod), add the following **Secrets**:
 | `AZURE_TENANT_ID` | Azure AD tenant ID | `87654321-4321-4321-4321-210987654321` |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | `abcdef12-3456-7890-abcd-ef1234567890` |
 | `ADMIN_TOKEN` | Vaultwarden admin panel token | `your-secure-admin-token` (or leave empty to disable) |
+| `POSTGRESQL_ADMIN_PASSWORD` | Password for the PostgreSQL administrator account | A strong password (min 8 chars, mixed case, numbers, special chars) |
 
 > **Note:** The `ADMIN_TOKEN` is automatically hashed using **argon2id** during Bicep deployment, regardless of the deployment method (GitHub Actions, Deploy to Azure button, or Azure CLI). The plaintext token you provide may exist in the system that initiates the deployment (for example, as a GitHub Secret or in your local CLI environment), but this deployment does not persist the plaintext in Azure Key Vault or deployment outputs — only the argon2id PHC-format hash is saved to Azure Key Vault. The PHC string is self-contained (it embeds the salt and parameters), so Vaultwarden can verify the admin password directly from the stored hash. A new hash with a fresh random salt is generated on each deployment. If you provide a pre-hashed token (starting with `$argon2`), it will be stored as-is.
 >
@@ -320,6 +321,7 @@ AZURE_CLIENT_ID: 12345678-1234-1234-1234-123456789012
 AZURE_TENANT_ID: 87654321-4321-4321-4321-210987654321
 AZURE_SUBSCRIPTION_ID: abcdef12-3456-7890-abcd-ef1234567890
 ADMIN_TOKEN: (leave empty or set a test token)
+POSTGRESQL_ADMIN_PASSWORD: DevP@ssw0rd!2024
 ```
 
 **Variables:**
@@ -341,6 +343,7 @@ AZURE_CLIENT_ID: 12345678-1234-1234-1234-123456789012
 AZURE_TENANT_ID: 87654321-4321-4321-4321-210987654321
 AZURE_SUBSCRIPTION_ID: abcdef12-3456-7890-abcd-ef1234567890
 ADMIN_TOKEN: <strong-secure-random-token-from-password-manager>
+POSTGRESQL_ADMIN_PASSWORD: <strong-unique-password-from-password-manager>
 ```
 
 **Variables:**
@@ -409,6 +412,7 @@ az role assignment create \
 ```bash
 az provider register --namespace Microsoft.Web
 az provider register --namespace Microsoft.OperationalInsights
+az provider register --namespace Microsoft.DBforPostgreSQL
 ```
 
 ### Error: "Authentication failed"
@@ -485,7 +489,7 @@ az group delete --name <resource-group-name> --yes
 4. Type the resource group name to confirm
 5. Click "Delete"
 
-**Important:** Always backup your Vaultwarden data before deleting resources. Deletion is permanent and cannot be undone.
+**Important:** Always backup your Vaultwarden data (including the PostgreSQL database) before deleting resources. Deletion is permanent and cannot be undone.
 
 Optionally, after deleting Azure resources:
 - Remove the GitHub environment from repository settings if no longer needed

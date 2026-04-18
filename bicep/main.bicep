@@ -5,7 +5,7 @@
 targetScope = 'subscription'
 
 // Parameters
-@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character. The value is used to build the storage account name as {resourceGroupName without dashes}st (e.g., "vaultwarden-dev" becomes "vaultwardendevst"), resulting in a 5-24 character storage account name.')
+@description('The name of the resource group (without -rg suffix). Must be lowercase letters, numbers, and hyphens only. Min 3 characters, max 22 characters. Must contain at least 1 alphanumeric character.')
 @minLength(3)
 @maxLength(22)
 param resourceGroupName string = 'vaultwarden-dev'
@@ -48,6 +48,10 @@ param vaultwardenImageTag string = 'latest'
 ])
 param appServicePlanSkuName string = 'B1'
 
+@description('PostgreSQL administrator login password')
+@secure()
+param postgresqlAdminPassword string
+
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 
@@ -62,7 +66,7 @@ resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   }
 }
 
-// Deploy Virtual Network with subnet for App Service VNet Integration
+// Deploy Virtual Network with subnets for App Service and PostgreSQL
 module vnet 'modules/vnet.bicep' = {
   scope: rg
   name: 'vnet-deployment'
@@ -72,7 +76,7 @@ module vnet 'modules/vnet.bicep' = {
   }
 }
 
-// Deploy Private DNS Zone for storage account private endpoint
+// Deploy Private DNS Zone for PostgreSQL Flexible Server
 module privateDnsZone 'modules/private-dns-zone.bicep' = {
   scope: rg
   name: 'private-dns-zone-deployment'
@@ -81,34 +85,18 @@ module privateDnsZone 'modules/private-dns-zone.bicep' = {
   }
 }
 
-// Deploy Storage Account with lock to prevent accidental deletion
-module storageAccount 'modules/storage-account.bicep' = {
+// Deploy Azure Database for PostgreSQL Flexible Server
+module postgresql 'modules/postgresql.bicep' = {
   scope: rg
-  name: 'storage-deployment'
+  name: 'postgresql-deployment'
   params: {
     baseName: resourceGroupName
     location: location
-    privateEndpointSubnetResourceId: vnet.outputs.privateEndpointSubnetResourceId
+    delegatedSubnetResourceId: vnet.outputs.postgresqlSubnetResourceId
     privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
+    administratorLoginPassword: postgresqlAdminPassword
   }
 }
-
-// Deploy Recovery Services Vault for backup
-module recoveryServicesVault 'modules/recovery-vault.bicep' = {
-  scope: rg
-  name: 'recovery-vault-deployment'
-  params: {
-    baseName: resourceGroupName
-    location: location
-  }
-  dependsOn: [
-    storageAccount
-  ]
-}
-
-// Note: File share backup protection is configured post-deployment.
-// - GitHub Actions: automatically enabled via the deploy workflow.
-// - Manual deployments: run ./enable-backup-protection.sh (see docs/BACKUP_PROTECTION.md).
 
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {
@@ -151,13 +139,14 @@ module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
   }
 }
 
-// Store hashed admin token in Key Vault (only if provided)
-module keyVaultSecret 'modules/keyvault-secret.bicep' = if (adminToken != '') {
+// Store secrets in Key Vault (database URL is always stored, admin token only if provided)
+module keyVaultSecrets 'modules/keyvault-secret.bicep' = {
   scope: rg
-  name: 'keyvault-secret-deployment'
+  name: 'keyvault-secrets-deployment'
   params: {
     keyVaultName: keyVault.outputs.name
-    adminToken: hashAdminToken!.outputs.hashedToken
+    adminToken: adminToken != '' ? hashAdminToken!.outputs.hashedToken : ''
+    databaseUrl: postgresql.outputs.connectionString
   }
 }
 
@@ -171,18 +160,16 @@ module appService 'modules/app-service.bicep' = {
     appServicePlanResourceId: appServicePlan.outputs.resourceId
     subnetResourceId: vnet.outputs.appServiceSubnetResourceId
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    storageAccountName: storageAccount.outputs.name
-    storageAccountKey: storageAccount.outputs.primaryKey
     domainName: domainName
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag
-    adminTokenSecretUri: adminToken != '' ? '${keyVault.outputs.uri}secrets/vaultwarden-admin-token/' : ''
+    adminTokenSecretUri: adminToken != '' ? keyVaultSecrets.outputs.adminTokenSecretUri : ''
+    databaseUrlSecretUri: keyVaultSecrets.outputs.databaseUrlSecretUri
   }
-  dependsOn: adminToken != '' ? [keyVaultSecret] : []
 }
 
-// Grant App Service managed identity access to Key Vault secrets
-module keyVaultRoleAssignment 'modules/role-assignment.bicep' = if (adminToken != '') {
+// Grant App Service managed identity access to Key Vault secrets (always needed for DATABASE_URL)
+module keyVaultRoleAssignment 'modules/role-assignment.bicep' = {
   scope: rg
   name: 'keyvault-role-assignment-deployment'
   params: {
@@ -194,10 +181,8 @@ module keyVaultRoleAssignment 'modules/role-assignment.bicep' = if (adminToken !
 // Outputs
 output resourceGroupName string = rg.name
 output vaultwardenUrl string = 'https://${appService.outputs.defaultHostname}'
-output storageAccountName string = storageAccount.outputs.name
 output appServiceName string = appService.outputs.name
 output appServicePlanName string = appServicePlan.outputs.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
 output keyVaultName string = keyVault.outputs.name
-output recoveryServicesVaultName string = recoveryServicesVault.outputs.name
-output backupPolicyName string = 'vaultwarden-daily-backup-policy'
+output postgresqlServerName string = postgresql.outputs.name

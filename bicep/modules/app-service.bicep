@@ -19,13 +19,6 @@ param subnetResourceId string
 @description('Resource ID of the Log Analytics Workspace')
 param logAnalyticsWorkspaceResourceId string
 
-@description('Storage account name')
-param storageAccountName string
-
-@description('Storage account access key')
-@secure()
-param storageAccountKey string
-
 @description('The domain name for Vaultwarden')
 param domainName string
 
@@ -37,6 +30,9 @@ param vaultwardenImageTag string
 
 @description('Admin token configuration (URI to Key Vault secret)')
 param adminTokenSecretUri string = ''
+
+@description('Database URL configuration (URI to Key Vault secret)')
+param databaseUrlSecretUri string
 
 // Build the full App Service name using naming convention
 // Official abbreviation: 'app'
@@ -54,20 +50,6 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
       systemAssigned: true
     }
     virtualNetworkSubnetResourceId: subnetResourceId
-    configs: [
-      {
-        name: 'azurestorageaccounts'
-        properties: {
-          'vaultwarden-data': {
-            type: 'AzureFiles'
-            accountName: storageAccountName
-            shareName: 'vaultwarden-data'
-            mountPath: '/data'
-            accessKey: storageAccountKey
-          }
-        }
-      }
-    ]
     siteConfig: {
       linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
       alwaysOn: true
@@ -81,8 +63,12 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
           value: string(signupsAllowed)
         }
         {
-          name: 'ENABLE_DB_WAL'
-          value: 'true'
+          name: 'DATABASE_URL'
+          value: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
+        }
+        {
+          name: 'IP_HEADER'
+          value: 'X-Client-IP'
         }
         {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
