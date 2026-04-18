@@ -29,7 +29,7 @@ param skuName string
 var appServicePlanName = '${baseName}-asp'
 
 // Deploy App Service Plan
-module appServicePlanDeployment 'br/public:avm/res/web/serverfarm:0.6.0' = {
+module appServicePlanDeployment 'br/public:avm/res/web/serverfarm:0.7.0' = {
   name: '${deployment().name}-app-service-plan'
   params: {
     name: appServicePlanName

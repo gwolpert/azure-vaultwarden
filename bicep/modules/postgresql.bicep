@@ -40,7 +40,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
 }
 
 // Deploy Azure Database for PostgreSQL Flexible Server using AVM
-module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.4.0' = {
+module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.15.3' = {
   name: '${deployment().name}-postgresql'
   params: {
     name: postgresqlServerName
@@ -50,7 +50,11 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     version: '16'
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
-    passwordAuth: 'Enabled'
+    authConfig: {
+      activeDirectoryAuth: 'Disabled'
+      passwordAuth: 'Enabled'
+    }
+    availabilityZone: -1
     storageSizeGB: 32
     delegatedSubnetResourceId: delegatedSubnetResourceId
     privateDnsZoneArmResourceId: privateDnsZoneResourceId
@@ -76,11 +80,11 @@ resource databaseUrlSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
   parent: keyVault
   name: 'vaultwarden-database-url'
   properties: {
-    value: 'postgresql://${uriComponent(administratorLogin)}:${uriComponent(administratorLoginPassword)}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
+    value: 'postgresql://${uriComponent(administratorLogin)}:${uriComponent(administratorLoginPassword)}@${postgresqlDeployment.outputs.?fqdn ?? ''}:5432/${databaseName}?sslmode=require'
   }
 }
 
 output name string = postgresqlDeployment.outputs.name
 output resourceId string = postgresqlDeployment.outputs.resourceId
-output fqdn string = postgresqlDeployment.outputs.fqdn
+output fqdn string = postgresqlDeployment.outputs.?fqdn ?? ''
 output databaseUrlSecretUri string = databaseUrlSecret.properties.secretUri
