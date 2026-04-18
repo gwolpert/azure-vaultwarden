@@ -6,6 +6,8 @@ on:
     paths:
       - 'docs/**'
       - 'bicep/**'
+      - 'scripts/**'
+      - 'GitVersion.yml'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -19,21 +21,56 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      semVer: ${{ steps.determine-version.outputs.semVer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1
+        with:
+          versionSpec: '6.x'
+
+      - name: Execute GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.1
+
+      - name: Determine version from PR labels
+        id: determine-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITVERSION_MAJOR: ${{ steps.gitversion.outputs.major }}
+          GITVERSION_MINOR: ${{ steps.gitversion.outputs.minor }}
+          GITVERSION_PATCH: ${{ steps.gitversion.outputs.patch }}
+        run: bash scripts/determine-version.sh
+
   build:
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Compile ARM template from Bicep
-        run: |
-          mkdir -p docs/arm
-          az bicep build --file bicep/main.bicep --outfile docs/arm/main.json
-          echo "ARM template compiled successfully"
+        run: bash scripts/compile-arm-template.sh
+
+      - name: Upload ARM template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-template
+          path: docs/arm/main.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -57,3 +94,36 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  release:
+    name: Create GitHub Release
+    needs: [version, build, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download ARM template artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arm-template
+          path: arm
+
+      - name: Check if tag already exists
+        id: check-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_TAG: v${{ needs.version.outputs.semVer }}
+        run: bash scripts/check-tag-exists.sh
+
+      - name: Create GitHub Release
+        if: steps.check-tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.semVer }}
+          name: v${{ needs.version.outputs.semVer }}
+          files: arm/main.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true
