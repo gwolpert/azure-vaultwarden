@@ -9,6 +9,9 @@
 
 targetScope = 'resourceGroup'
 
+@description('The base name for resources (without suffixes)')
+param baseName string
+
 @description('The plaintext admin token to hash with argon2id')
 @secure()
 param adminToken string
@@ -28,7 +31,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
 }
 
 resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: 'hash-admin-token'
+  name: '${baseName}-hash-token-script'
   location: location
   kind: 'AzureCLI'
   properties: {
