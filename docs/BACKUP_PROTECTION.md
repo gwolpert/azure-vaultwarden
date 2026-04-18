@@ -103,7 +103,7 @@ az postgres flexible-server show \
 
 In addition to automated backups, the deployment includes:
 
-- **CanNotDelete resource lock** on the PostgreSQL server to prevent accidental deletion
+- **Optional CanNotDelete resource lock** on the PostgreSQL server to prevent accidental deletion (enable by setting `enablePostgresqlLock=true`; requires `Microsoft.Authorization/locks/write` permission on the deploying principal)
 - **VNet integration** ensures the database is only accessible within the private network
 - **SSL enforcement** for all database connections
 - **Encryption at rest** managed by Azure

@@ -26,6 +26,9 @@ param administratorLoginPassword string
 @description('The name of the Key Vault to store the database URL in')
 param keyVaultName string
 
+@description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission.')
+param enableLock bool = false
+
 // Build the full PostgreSQL server name using naming convention
 // PostgreSQL Flexible Server: Must be 3-63 chars, lowercase letters, numbers, and hyphens
 // Pattern: {baseName}-psql
@@ -66,10 +69,12 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
         collation: 'en_US.utf8'
       }
     ]
-    lock: {
-      kind: 'CanNotDelete'
-      name: 'postgresql-lock'
-    }
+    lock: enableLock
+      ? {
+          kind: 'CanNotDelete'
+          name: 'postgresql-lock'
+        }
+      : null
   }
 }
 

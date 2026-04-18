@@ -50,7 +50,7 @@ title: Architecture Overview
 │  │  │  │  │  - SSL enforced                     │  │   │  │ │
 │  │  │  │  │  - VNet integrated (private access) │  │   │  │ │
 │  │  │  │  │  - Built-in backup (7-day retention)│  │   │  │ │
-│  │  │  │  │  - CanNotDelete lock enabled        │  │   │  │ │
+│  │  │  │  │  - Optional CanNotDelete lock       │  │   │  │ │
 │  │  │  │  └─────────────────────────────────────┘  │   │  │ │
 │  │  │  └─────────────────────────────────────────────┘   │  │ │
 │  │  │                                                     │  │ │
@@ -116,7 +116,7 @@ title: Architecture Overview
   - VNet integration (private access only, no public endpoint)
   - Encrypted data at rest (Azure-managed encryption)
   - Encrypted data in transit (TLS 1.2+)
-  - **CanNotDelete** resource lock to prevent accidental deletion
+  - Optional **CanNotDelete** resource lock to prevent accidental deletion (requires `Microsoft.Authorization/locks/write` permission)
 - Built-in automated backups with 7-day retention (configurable up to 35 days)
 - Point-in-time restore capability
 
@@ -182,7 +182,7 @@ title: Architecture Overview
 **Backup & Protection Features**:
 - ✅ PostgreSQL built-in backup with 7-day retention (configurable up to 35 days)
 - ✅ Point-in-time restore for data protection
-- ✅ PostgreSQL server lock prevents accidental deletion
+- ✅ Optional PostgreSQL server lock prevents accidental deletion (enable via `enablePostgresqlLock` parameter)
 - ✅ Compliance-ready backup solution
 
 **Note**: B1 provides excellent value for small to medium deployments (5-50 users). For larger deployments or auto-scaling needs, upgrade to Standard (S1+) or Premium tiers.
@@ -265,7 +265,7 @@ AppServiceHTTPLogs
    - **Setup**: Automatically enabled on PostgreSQL Flexible Server at deployment
    - **Operation**: Fully automatic with no manual intervention required
 2. **Manual Backups**: Alternative option using `pg_dump` via Azure CLI or direct connection for logical backups
-3. **Database Protection**: CanNotDelete lock prevents accidental PostgreSQL server deletion
+3. **Database Protection**: Optional CanNotDelete lock prevents accidental PostgreSQL server deletion (enable via `enablePostgresqlLock` parameter)
 
 ### Recovery Procedures
 
@@ -287,7 +287,7 @@ AppServiceHTTPLogs
 ### Business Continuity
 - **RTO (Recovery Time Objective)**: < 1 hour with point-in-time restore
 - **RPO (Recovery Point Objective)**: Near-zero data loss (continuous backup with transaction log archiving)
-- **Data Protection**: Resource lock prevents accidental deletion of PostgreSQL server
+- **Data Protection**: Optional resource lock prevents accidental deletion of PostgreSQL server
 - **Geo-redundant Backup**: Available as a configuration option for cross-region protection
 - **Backup Retention**: 7 days default (configurable up to 35 days)
 
@@ -364,7 +364,7 @@ az webapp ssh --name <app-name> --resource-group <rg-name>
 - [ ] Configure custom domain with valid SSL certificate
 - [ ] Set up Azure Monitor alerts
 - [x] Configure backup automation (PostgreSQL built-in backup with 7-day retention)
-- [x] Enable PostgreSQL server lock to prevent accidental deletion
+- [ ] Enable PostgreSQL server lock to prevent accidental deletion (set `enablePostgresqlLock=true`; requires `Microsoft.Authorization/locks/write` permission)
 - [x] Enable VNet integration for PostgreSQL Flexible Server (no public access)
 - [ ] Review and restrict network access
 - [ ] Enable deployment slots for zero-downtime updates
@@ -384,7 +384,7 @@ az webapp ssh --name <app-name> --resource-group <rg-name>
 - Access control: Azure RBAC for resource management
 - Network isolation: VNET integration available
 - Backup and recovery: Automated daily backups with configurable retention
-- Data protection: Resource locks prevent accidental resource deletion
+- Data protection: Optional resource locks prevent accidental resource deletion
 
 ## Updates and Maintenance
 

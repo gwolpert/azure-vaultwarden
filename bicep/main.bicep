@@ -52,6 +52,9 @@ param appServicePlanSkuName string = 'B1'
 @secure()
 param postgresqlAdminPassword string
 
+@description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission on the deploying principal.')
+param enablePostgresqlLock bool = false
+
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
 
@@ -96,6 +99,7 @@ module postgresql 'modules/postgresql.bicep' = {
     privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
     administratorLoginPassword: postgresqlAdminPassword
     keyVaultName: keyVault.outputs.name
+    enableLock: enablePostgresqlLock
   }
 }
 
