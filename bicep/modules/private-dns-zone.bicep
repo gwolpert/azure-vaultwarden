@@ -11,7 +11,8 @@ param vnetResourceId string
 module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.3.1' = {
   name: '${deployment().name}-private-dns-zone'
   params: {
-    name: 'privatelink${environment().suffixes.postgresqlServerHostname}'
+    #disable-next-line no-hardcoded-env-urls
+    name: 'privatelink.postgres.database.azure.com'
     location: 'global'
     virtualNetworkLinks: [
       {

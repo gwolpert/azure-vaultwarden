@@ -45,9 +45,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     storageSizeGB: 32
     delegatedSubnetResourceId: delegatedSubnetResourceId
     privateDnsZoneArmResourceId: privateDnsZoneResourceId
-    highAvailability: {
-      mode: 'Disabled'
-    }
+    highAvailability: 'Disabled'
     backupRetentionDays: 7
     databases: [
       {
