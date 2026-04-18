@@ -49,7 +49,15 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
         secureValue: adminToken
       }
     ]
-    scriptContent: '#!/bin/bash\nset -e\npython3 -m pip install --quiet \'argon2-cffi==23.1.0\'\ncat > /tmp/hash-admin-token.py << \'PYEOF\'\n${pythonScript}\nPYEOF\npython3 /tmp/hash-admin-token.py\n'
+    scriptContent: format('''
+#!/bin/bash
+set -e
+python3 -m pip install --quiet 'argon2-cffi==23.1.0'
+cat > /tmp/hash-admin-token.py << 'PYEOF'
+{0}
+PYEOF
+python3 /tmp/hash-admin-token.py
+''', pythonScript)
   }
 }
 
