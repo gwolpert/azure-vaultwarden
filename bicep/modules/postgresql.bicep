@@ -75,7 +75,7 @@ resource databaseUrlSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
   parent: keyVault
   name: 'vaultwarden-database-url'
   properties: {
-    value: 'postgresql://${administratorLogin}:${administratorLoginPassword}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
+    value: 'postgresql://${uriComponent(administratorLogin)}:${uriComponent(administratorLoginPassword)}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
   }
 }
 
