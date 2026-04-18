@@ -6,11 +6,12 @@ on:
     paths:
       - 'docs/**'
       - 'bicep/**'
+      - 'GitVersion.yml'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -19,7 +20,68 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    outputs:
+      semVer: ${{ steps.determine-version.outputs.semVer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.1
+        with:
+          versionSpec: '6.x'
+
+      - name: Execute GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.1
+
+      - name: Determine version from PR labels
+        id: determine-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITVERSION_MAJOR: ${{ steps.gitversion.outputs.major }}
+          GITVERSION_MINOR: ${{ steps.gitversion.outputs.minor }}
+          GITVERSION_PATCH: ${{ steps.gitversion.outputs.patch }}
+        run: |
+          FINAL_MAJOR=$GITVERSION_MAJOR
+          FINAL_MINOR=$GITVERSION_MINOR
+          FINAL_PATCH=$GITVERSION_PATCH
+
+          # Try to find the merged PR number from the commit message
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          PR_NUMBER=$(echo "$COMMIT_MSG" | grep -oP '#\K\d+' | head -1 || echo "")
+
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Found PR #${PR_NUMBER}, checking labels..."
+            LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
+
+            if echo "$LABELS" | grep -q "version:major"; then
+              echo "Major version bump requested via PR label"
+              FINAL_MAJOR=$((GITVERSION_MAJOR + 1))
+              FINAL_MINOR=0
+              FINAL_PATCH=0
+            elif echo "$LABELS" | grep -q "version:minor"; then
+              echo "Minor version bump requested via PR label"
+              FINAL_MINOR=$((GITVERSION_MINOR + 1))
+              FINAL_PATCH=0
+            else
+              echo "No version bump label found, using default patch bump"
+            fi
+          else
+            echo "No PR number found in commit message, using GitVersion calculated version"
+          fi
+
+          SEMVER="${FINAL_MAJOR}.${FINAL_MINOR}.${FINAL_PATCH}"
+          echo "Calculated version: ${SEMVER}"
+          echo "semVer=${SEMVER}" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,6 +96,12 @@ jobs:
           mkdir -p docs/arm
           az bicep build --file bicep/main.bicep --outfile docs/arm/main.json
           echo "ARM template compiled successfully"
+
+      - name: Upload ARM template artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-template
+          path: docs/arm/main.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -57,3 +125,24 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  release:
+    name: Create GitHub Release
+    needs: [version, build, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download ARM template artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arm-template
+          path: arm
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version.outputs.semVer }}
+          name: v${{ needs.version.outputs.semVer }}
+          files: arm/main.json
+          generate_release_notes: true
