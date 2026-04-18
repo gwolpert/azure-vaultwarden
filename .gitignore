@@ -9,6 +9,7 @@ main.json
 main.parameters.json
 metadata.json
 backup-protection.json
+bicep/modules/*.json
 docs/arm/
 
 # Backup files
