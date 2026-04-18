@@ -46,7 +46,7 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
         secureValue: adminToken
       }
     ]
-    scriptContent: loadTextContent('../../scripts/hash-admin-token.sh')
+    scriptContent: replace(loadTextContent('../../scripts/hash-admin-token.sh'), '{{PYTHON_SCRIPT}}', loadTextContent('../../scripts/hash-admin-token.py'))
   }
 }
 
