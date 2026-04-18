@@ -14,7 +14,7 @@ param location string
 var vnetName = '${baseName}-vnet'
 
 // Deploy Virtual Network with subnets for App Service and PostgreSQL
-module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
+module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
   name: '${deployment().name}-vnet'
   params: {
     name: vnetName
@@ -26,26 +26,12 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.1.8' = {
       {
         name: 'app-service-snet'
         addressPrefix: '10.0.0.0/24'
-        delegations: [
-          {
-            name: 'MicrosoftWebServerFarms'
-            properties: {
-              serviceName: 'Microsoft.Web/serverFarms'
-            }
-          }
-        ]
+        delegation: 'Microsoft.Web/serverFarms'
       }
       {
         name: 'postgresql-snet'
         addressPrefix: '10.0.1.0/24'
-        delegations: [
-          {
-            name: 'MicrosoftDBforPostgreSQL'
-            properties: {
-              serviceName: 'Microsoft.DBforPostgreSQL/flexibleServers'
-            }
-          }
-        ]
+        delegation: 'Microsoft.DBforPostgreSQL/flexibleServers'
       }
     ]
   }

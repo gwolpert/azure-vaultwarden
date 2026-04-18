@@ -39,7 +39,7 @@ param databaseUrlSecretUri string
 var appServiceName = '${baseName}-app'
 
 // Deploy App Service (Web App for Containers)
-module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
+module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
   name: '${deployment().name}-avm'
   params: {
     name: appServiceName

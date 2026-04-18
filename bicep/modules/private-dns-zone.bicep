@@ -8,7 +8,7 @@ targetScope = 'resourceGroup'
 param vnetResourceId string
 
 // Deploy Private DNS Zone for PostgreSQL Flexible Server
-module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.3.1' = {
+module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
   name: '${deployment().name}-private-dns-zone'
   params: {
     #disable-next-line no-hardcoded-env-urls
