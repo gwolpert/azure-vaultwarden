@@ -6,6 +6,7 @@ on:
     paths:
       - 'docs/**'
       - 'bicep/**'
+      - 'scripts/**'
       - 'GitVersion.yml'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -50,39 +51,7 @@ jobs:
           GITVERSION_MAJOR: ${{ steps.gitversion.outputs.major }}
           GITVERSION_MINOR: ${{ steps.gitversion.outputs.minor }}
           GITVERSION_PATCH: ${{ steps.gitversion.outputs.patch }}
-        run: |
-          FINAL_MAJOR=$GITVERSION_MAJOR
-          FINAL_MINOR=$GITVERSION_MINOR
-          FINAL_PATCH=$GITVERSION_PATCH
-
-          # Find the PR associated with the current commit using the GitHub API
-          COMMIT_SHA=$(git rev-parse HEAD)
-          PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/pulls" \
-            --jq '.[0].number' 2>/dev/null || echo "")
-
-          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
-            echo "Found PR #${PR_NUMBER}, checking labels..."
-            LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
-
-            if echo "$LABELS" | grep -q "version:major"; then
-              echo "Major version bump requested via PR label"
-              FINAL_MAJOR=$((GITVERSION_MAJOR + 1))
-              FINAL_MINOR=0
-              FINAL_PATCH=0
-            elif echo "$LABELS" | grep -q "version:minor"; then
-              echo "Minor version bump requested via PR label"
-              FINAL_MINOR=$((GITVERSION_MINOR + 1))
-              FINAL_PATCH=0
-            else
-              echo "No version bump label found, using default patch bump"
-            fi
-          else
-            echo "No associated PR found for commit ${COMMIT_SHA}, using GitVersion calculated version"
-          fi
-
-          SEMVER="${FINAL_MAJOR}.${FINAL_MINOR}.${FINAL_PATCH}"
-          echo "Calculated version: ${SEMVER}"
-          echo "semVer=${SEMVER}" >> "$GITHUB_OUTPUT"
+        run: ./scripts/determine-version.sh
 
   build:
     needs: version
@@ -92,14 +61,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Compile ARM template from Bicep
-        run: |
-          mkdir -p docs/arm
-          az bicep build --file bicep/main.bicep --outfile docs/arm/main.json
-          echo "ARM template compiled successfully"
+        run: ./scripts/compile-arm-template.sh
 
       - name: Upload ARM template artifact
         uses: actions/upload-artifact@v4
@@ -137,6 +102,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download ARM template artifact
         uses: actions/download-artifact@v4
         with:
@@ -147,14 +115,8 @@ jobs:
         id: check-tag
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="v${{ needs.version.outputs.semVer }}"
-          if gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Tag ${TAG} already exists, skipping release"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          VERSION_TAG: v${{ needs.version.outputs.semVer }}
+        run: ./scripts/check-tag-exists.sh
 
       - name: Create GitHub Release
         if: steps.check-tag.outputs.exists == 'false'
