@@ -47,7 +47,6 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     location: location
     skuName: 'Standard_B1ms'
     tier: 'Burstable'
-    version: '16'
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
     authConfig: {

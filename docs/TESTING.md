@@ -102,7 +102,7 @@ az postgres flexible-server show \
 
 Expected:
 - State: Ready
-- Version: 16 (or configured version)
+- Version: Current AVM default version
 - Public access: Disabled
 
 #### Verify Database Exists
