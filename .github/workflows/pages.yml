@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -23,6 +23,9 @@ jobs:
   version:
     name: Calculate Version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       semVer: ${{ steps.determine-version.outputs.semVer }}
     steps:
@@ -52,11 +55,12 @@ jobs:
           FINAL_MINOR=$GITVERSION_MINOR
           FINAL_PATCH=$GITVERSION_PATCH
 
-          # Try to find the merged PR number from the commit message
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-          PR_NUMBER=$(echo "$COMMIT_MSG" | sed -n 's/.*#\([0-9]\+\).*/\1/p' | head -1)
+          # Find the PR associated with the current commit using the GitHub API
+          COMMIT_SHA=$(git rev-parse HEAD)
+          PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/pulls" \
+            --jq '.[0].number' 2>/dev/null || echo "")
 
-          if [ -n "$PR_NUMBER" ]; then
+          if [ -n "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
             echo "Found PR #${PR_NUMBER}, checking labels..."
             LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null || echo "")
 
@@ -73,7 +77,7 @@ jobs:
               echo "No version bump label found, using default patch bump"
             fi
           else
-            echo "No PR number found in commit message, using GitVersion calculated version"
+            echo "No associated PR found for commit ${COMMIT_SHA}, using GitVersion calculated version"
           fi
 
           SEMVER="${FINAL_MAJOR}.${FINAL_MINOR}.${FINAL_PATCH}"
