@@ -1,3 +1,4 @@
+#!/bin/bash
 set -e
 python3 -m pip install --quiet 'argon2-cffi==23.1.0'
 python3 << 'PYEOF'
