@@ -51,7 +51,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
     authConfig: {
-      activeDirectoryAuth: 'Disabled'
+      activeDirectoryAuth: 'Enabled'
       passwordAuth: 'Enabled'
     }
     storageSizeGB: 32
