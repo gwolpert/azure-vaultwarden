@@ -50,6 +50,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     version: '16'
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorLoginPassword
+    passwordAuth: 'Enabled'
     storageSizeGB: 32
     delegatedSubnetResourceId: delegatedSubnetResourceId
     privateDnsZoneArmResourceId: privateDnsZoneResourceId
