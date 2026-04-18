@@ -158,7 +158,7 @@ module appService 'modules/app-service.bicep' = {
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag
     adminTokenHash: adminToken != '' ? hashAdminToken!.outputs.adminTokenHash : ''
-    databaseUrl: 'postgresql://${uriComponent(postgresqlAdminLogin)}:${uriComponent(postgresqlAdminPassword)}@${postgresql.outputs.fqdn}:5432/${postgresqlDatabaseName}?sslmode=require'
+    databaseUrl: 'postgresql://${uriComponent(postgresqlAdminLogin)}:${uriComponent(postgresqlAdminPassword)}@${postgresql.outputs.fqdn}:5432/${uriComponent(postgresqlDatabaseName)}?sslmode=require'
   }
 }
 
