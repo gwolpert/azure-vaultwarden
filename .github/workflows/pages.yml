@@ -51,7 +51,7 @@ jobs:
           GITVERSION_MAJOR: ${{ steps.gitversion.outputs.major }}
           GITVERSION_MINOR: ${{ steps.gitversion.outputs.minor }}
           GITVERSION_PATCH: ${{ steps.gitversion.outputs.patch }}
-        run: ./scripts/determine-version.sh
+        run: bash scripts/determine-version.sh
 
   build:
     needs: version
@@ -64,7 +64,7 @@ jobs:
         run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Compile ARM template from Bicep
-        run: ./scripts/compile-arm-template.sh
+        run: bash scripts/compile-arm-template.sh
 
       - name: Upload ARM template artifact
         uses: actions/upload-artifact@v4
@@ -116,7 +116,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_TAG: v${{ needs.version.outputs.semVer }}
-        run: ./scripts/check-tag-exists.sh
+        run: bash scripts/check-tag-exists.sh
 
       - name: Create GitHub Release
         if: steps.check-tag.outputs.exists == 'false'
