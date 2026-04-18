@@ -54,7 +54,7 @@ jobs:
 
           # Try to find the merged PR number from the commit message
           COMMIT_MSG=$(git log -1 --pretty=format:"%s")
-          PR_NUMBER=$(echo "$COMMIT_MSG" | grep -oP '#\K\d+' | head -1 || echo "")
+          PR_NUMBER=$(echo "$COMMIT_MSG" | sed -n 's/.*#\([0-9]\+\).*/\1/p' | head -1)
 
           if [ -n "$PR_NUMBER" ]; then
             echo "Found PR #${PR_NUMBER}, checking labels..."
@@ -139,10 +139,25 @@ jobs:
           name: arm-template
           path: arm
 
+      - name: Check if tag already exists
+        id: check-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ needs.version.outputs.semVer }}"
+          if gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already exists, skipping release"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
+        if: steps.check-tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.version.outputs.semVer }}
           name: v${{ needs.version.outputs.semVer }}
           files: arm/main.json
+          fail_on_unmatched_files: true
           generate_release_notes: true
