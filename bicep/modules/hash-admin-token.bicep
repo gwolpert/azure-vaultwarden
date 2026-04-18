@@ -71,3 +71,4 @@ resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
 }
 
 output adminTokenSecretUri string = adminTokenSecret.properties.secretUri
+output adminTokenHash string = hashScript.properties.outputs.hashedToken

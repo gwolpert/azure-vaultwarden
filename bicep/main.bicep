@@ -54,6 +54,8 @@ param postgresqlAdminPassword string
 
 // Variables
 var resourceGroupNameWithSuffix = '${resourceGroupName}-rg'
+var postgresqlAdminLogin = 'vaultwardenadmin'
+var postgresqlDatabaseName = 'vaultwarden'
 
 // Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
@@ -155,18 +157,8 @@ module appService 'modules/app-service.bicep' = {
     domainName: domainName
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag
-    adminTokenSecretUri: adminToken != '' ? hashAdminToken!.outputs.adminTokenSecretUri : ''
-    databaseUrlSecretUri: postgresql.outputs.databaseUrlSecretUri
-  }
-}
-
-// Grant App Service managed identity access to Key Vault secrets (always needed for DATABASE_URL)
-module keyVaultRoleAssignment 'modules/role-assignment.bicep' = {
-  scope: rg
-  name: 'keyvault-role-assignment-deployment'
-  params: {
-    keyVaultName: keyVault.outputs.name
-    principalId: appService.outputs.systemAssignedMIPrincipalId!
+    adminTokenHash: adminToken != '' ? hashAdminToken!.outputs.adminTokenHash : ''
+    databaseUrl: 'postgresql://${uriComponent(postgresqlAdminLogin)}:${uriComponent(postgresqlAdminPassword)}@${postgresql.outputs.fqdn}:5432/${postgresqlDatabaseName}?sslmode=require'
   }
 }
 

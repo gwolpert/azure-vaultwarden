@@ -28,11 +28,13 @@ param signupsAllowed bool
 @description('Vaultwarden container image tag')
 param vaultwardenImageTag string
 
-@description('Admin token configuration (URI to Key Vault secret)')
-param adminTokenSecretUri string = ''
+@description('Admin token hash for Vaultwarden admin panel (argon2id hash, empty to disable)')
+@secure()
+param adminTokenHash string = ''
 
-@description('Database URL configuration (URI to Key Vault secret)')
-param databaseUrlSecretUri string
+@description('Database connection URL for PostgreSQL')
+@secure()
+param databaseUrl string
 
 // Build the full App Service name using naming convention
 // Official abbreviation: 'app'
@@ -64,7 +66,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
         }
         {
           name: 'DATABASE_URL'
-          value: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
+          value: databaseUrl
         }
         {
           name: 'IP_HEADER'
@@ -74,10 +76,10 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.21.0' = {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
         }
-      ], adminTokenSecretUri != '' ? [
+      ], adminTokenHash != '' ? [
         {
           name: 'ADMIN_TOKEN'
-          value: '@Microsoft.KeyVault(SecretUri=${adminTokenSecretUri})'
+          value: adminTokenHash
         }
       ] : [])
     }
