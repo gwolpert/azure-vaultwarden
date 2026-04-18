@@ -132,11 +132,11 @@ az account set --subscription "<your-subscription-id>"
 # Deploy
 az deployment sub create \
   --name vaultwarden-deployment \
-  --location westeurope \
+  --location northeurope \
   --template-file bicep/main.bicep \
   --parameters \
     resourceGroupName="vaultwarden-dev" \
-    location="westeurope" \
+    location="northeurope" \
     environmentName="dev" \
     domainName="" \
     adminToken="" \
@@ -182,7 +182,7 @@ az group delete --name vaultwarden-dev-rg --yes --no-wait
 
 ## Cost Estimation
 
-Approximate monthly costs (West Europe region, B1 default):
+Approximate monthly costs (North Europe region, B1 default):
 
 | Resource | Estimated Cost |
 |----------|---------------|

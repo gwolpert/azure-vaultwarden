@@ -87,7 +87,7 @@ where the CAF abbreviation is used as a **suffix**. For example:
 
 ### Recommended Region
 
-The default recommended region is **West Europe** (`westeurope`).
+The default recommended region is **North Europe** (`northeurope`).
 
 ## Guidelines
 

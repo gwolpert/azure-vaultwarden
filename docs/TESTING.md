@@ -22,10 +22,10 @@ Expected: No errors, ARM template generated successfully
 ```bash
 az deployment sub what-if \
   --name vaultwarden-deployment \
-  --location westeurope \
+  --location northeurope \
   --template-file bicep/main.bicep \
   --parameters resourceGroupName="vaultwarden-dev" \
-  --parameters location="westeurope" \
+  --parameters location="northeurope" \
   --parameters environmentName="dev"
 ```
 

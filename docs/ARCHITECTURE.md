@@ -154,7 +154,7 @@ title: Architecture Overview
 
 ## Cost Breakdown
 
-### Monthly Cost Estimates (West Europe)
+### Monthly Cost Estimates (North Europe)
 
 | Resource | Configuration | Estimated Cost |
 |----------|--------------|----------------|

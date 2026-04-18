@@ -192,7 +192,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Description | Example Value |
 |--------------|-------------|---------------|
 | `RESOURCE_GROUP_NAME` | Resource group name | `vaultwarden-dev` |
-| `AZURE_LOCATION` | Azure region | `westeurope` |
+| `AZURE_LOCATION` | Azure region | `northeurope` |
 | `ENVIRONMENT_NAME` | Environment identifier | `dev` |
 | `DOMAIN_NAME` | Custom domain (optional) | `` (empty for auto-generated) |
 | `SIGNUPS_ALLOWED` | Allow user signups | `true` |
@@ -204,7 +204,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Value |
 |--------------|-------|
 | `RESOURCE_GROUP_NAME` | `vaultwarden-staging` |
-| `AZURE_LOCATION` | `westeurope` |
+| `AZURE_LOCATION` | `northeurope` |
 | `ENVIRONMENT_NAME` | `staging` |
 | `DOMAIN_NAME` | `https://vault-staging.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
@@ -216,7 +216,7 @@ For each environment, add the following **Variables**:
 | Variable Name | Value |
 |--------------|-------|
 | `RESOURCE_GROUP_NAME` | `vaultwarden-prod` |
-| `AZURE_LOCATION` | `westeurope` |
+| `AZURE_LOCATION` | `northeurope` |
 | `ENVIRONMENT_NAME` | `prod` |
 | `DOMAIN_NAME` | `https://vault.yourdomain.com` |
 | `SIGNUPS_ALLOWED` | `false` |
@@ -327,7 +327,7 @@ POSTGRESQL_ADMIN_PASSWORD: DevP@ssw0rd!2024
 **Variables:**
 ```
 RESOURCE_GROUP_NAME: vaultwarden-dev
-AZURE_LOCATION: westeurope
+AZURE_LOCATION: northeurope
 ENVIRONMENT_NAME: dev
 DOMAIN_NAME: (empty)
 SIGNUPS_ALLOWED: true
@@ -349,7 +349,7 @@ POSTGRESQL_ADMIN_PASSWORD: <strong-unique-password-from-password-manager>
 **Variables:**
 ```
 RESOURCE_GROUP_NAME: vaultwarden-prod
-AZURE_LOCATION: westeurope
+AZURE_LOCATION: northeurope
 ENVIRONMENT_NAME: prod
 DOMAIN_NAME: https://vault.example.com
 SIGNUPS_ALLOWED: false
@@ -462,10 +462,10 @@ Instead of storing secrets in GitHub, reference them from Azure Key Vault:
 ### Multi-Region Deployment
 
 Create separate environments for each region:
-- `dev-westeurope`
 - `dev-northeurope`
-- `prod-westeurope`
+- `dev-germanywestcentral`
 - `prod-northeurope`
+- `prod-germanywestcentral`
 
 ### Custom Workflows per Environment
 
