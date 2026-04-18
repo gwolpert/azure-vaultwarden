@@ -1,7 +1,8 @@
 // ========================================
 // Admin Token Hashing Module
 // ========================================
-// Uses a deployment script to hash the admin token with argon2id.
+// Uses a deployment script to hash the admin token with argon2id
+// and stores the hashed token directly in Key Vault.
 // This runs inside an Azure Container Instance during deployment,
 // ensuring the plaintext token is never stored in Key Vault.
 // Works with all deployment methods: GitHub Actions, Deploy to Azure button, and Azure CLI.
@@ -12,11 +13,19 @@ targetScope = 'resourceGroup'
 @secure()
 param adminToken string
 
+@description('The name of the Key Vault to store the hashed token in')
+param keyVaultName string
+
 @description('The Azure region for the deployment script resources')
 param location string
 
 @description('Force new hash generation on each deployment')
 param utcValue string = utcNow()
+
+// Reference the existing Key Vault to store the hashed admin token
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  name: keyVaultName
+}
 
 resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'hash-admin-token'
@@ -61,4 +70,13 @@ PYEOF
   }
 }
 
-output hashedToken string = hashScript.properties.outputs.hashedToken
+// Store the hashed admin token directly in Key Vault
+resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
+  parent: keyVault
+  name: 'vaultwarden-admin-token'
+  properties: {
+    value: hashScript.properties.outputs.hashedToken
+  }
+}
+
+output adminTokenSecretUri string = adminTokenSecret.properties.secretUri

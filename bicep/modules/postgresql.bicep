@@ -23,6 +23,9 @@ param administratorLogin string = 'vaultwardenadmin'
 @secure()
 param administratorLoginPassword string
 
+@description('The name of the Key Vault to store the database URL in')
+param keyVaultName string
+
 // Build the full PostgreSQL server name using naming convention
 // PostgreSQL Flexible Server: Must be 3-63 chars, lowercase letters, numbers, and hyphens
 // Pattern: {baseName}-psql
@@ -30,6 +33,11 @@ var postgresqlServerName = '${baseName}-psql'
 
 // Database name for Vaultwarden
 var databaseName = 'vaultwarden'
+
+// Reference the existing Key Vault to store the database URL
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  name: keyVaultName
+}
 
 // Deploy Azure Database for PostgreSQL Flexible Server using AVM
 module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.4.0' = {
@@ -61,12 +69,17 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
   }
 }
 
-// Build the connection string for Vaultwarden
+// Build the connection string for Vaultwarden and store directly in Key Vault
 // Format: postgresql://user:password@host:5432/dbname
-var connectionString = 'postgresql://${administratorLogin}:${administratorLoginPassword}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
+resource databaseUrlSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
+  parent: keyVault
+  name: 'vaultwarden-database-url'
+  properties: {
+    value: 'postgresql://${administratorLogin}:${administratorLoginPassword}@${postgresqlDeployment.outputs.fqdn}:5432/${databaseName}?sslmode=require'
+  }
+}
 
 output name string = postgresqlDeployment.outputs.name
 output resourceId string = postgresqlDeployment.outputs.resourceId
 output fqdn string = postgresqlDeployment.outputs.fqdn
-@secure()
-output connectionString string = connectionString
+output databaseUrlSecretUri string = databaseUrlSecret.properties.secretUri

@@ -95,6 +95,7 @@ module postgresql 'modules/postgresql.bicep' = {
     delegatedSubnetResourceId: vnet.outputs.postgresqlSubnetResourceId
     privateDnsZoneResourceId: privateDnsZone.outputs.resourceId
     administratorLoginPassword: postgresqlAdminPassword
+    keyVaultName: keyVault.outputs.name
   }
 }
 
@@ -129,25 +130,14 @@ module keyVault 'modules/key-vault.bicep' = {
   }
 }
 
-// Hash admin token with argon2id using a deployment script (only if provided)
+// Hash admin token with argon2id and store directly in Key Vault (only if provided)
 module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
   scope: rg
   name: 'hash-admin-token-deployment'
   params: {
     adminToken: adminToken
-    location: location
-  }
-}
-
-// Store secrets in Key Vault (database URL is always stored, admin token only if provided)
-module keyVaultSecrets 'modules/keyvault-secret.bicep' = {
-  scope: rg
-  name: 'keyvault-secrets-deployment'
-  params: {
     keyVaultName: keyVault.outputs.name
-    hasAdminToken: adminToken != ''
-    adminToken: adminToken != '' ? hashAdminToken!.outputs.hashedToken : ''
-    databaseUrl: postgresql.outputs.connectionString
+    location: location
   }
 }
 
@@ -164,8 +154,8 @@ module appService 'modules/app-service.bicep' = {
     domainName: domainName
     signupsAllowed: signupsAllowed
     vaultwardenImageTag: vaultwardenImageTag
-    adminTokenSecretUri: keyVaultSecrets.outputs.adminTokenSecretUri
-    databaseUrlSecretUri: keyVaultSecrets.outputs.databaseUrlSecretUri
+    adminTokenSecretUri: adminToken != '' ? hashAdminToken!.outputs.adminTokenSecretUri : ''
+    databaseUrlSecretUri: postgresql.outputs.databaseUrlSecretUri
   }
 }
 
