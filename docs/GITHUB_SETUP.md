@@ -167,6 +167,13 @@ For each environment (dev, staging, prod), add the following **Secrets**:
 | `ADMIN_TOKEN` | Vaultwarden admin panel token | `your-secure-admin-token` (or leave empty to disable) |
 | `POSTGRESQL_ADMIN_PASSWORD` | Password for the PostgreSQL administrator account | A strong password (min 8 chars, mixed case, numbers, special chars) |
 
+> **Note:** The `ADMIN_TOKEN` is automatically hashed using **argon2id** during Bicep deployment, regardless of the deployment method (GitHub Actions, Deploy to Azure button, or Azure CLI). The plaintext token you provide may exist in the system that initiates the deployment (for example, as a GitHub Secret or in your local CLI environment), but this deployment does not persist the plaintext in Azure Key Vault or deployment outputs — only the argon2id PHC-format hash is saved to Azure Key Vault. The PHC string is self-contained (it embeds the salt and parameters), so Vaultwarden can verify the admin password directly from the stored hash. A new hash with a fresh random salt is generated on each deployment. If you provide a pre-hashed token (starting with `$argon2`), it will be stored as-is.
+>
+> You can also generate the hash manually using the argon2 CLI:
+> ```bash
+> echo -n "MySecretPassword" | argon2 "$(openssl rand -base64 32)" -e -id -k 65540 -t 3 -p 4
+> ```
+
 ### Adding Secrets
 
 1. In the environment settings, scroll to "Environment secrets"
@@ -429,7 +436,7 @@ az provider register --namespace Microsoft.DBforPostgreSQL
 3. **Limit Deployment Branches**: Only allow specific branches to deploy to production
 4. **Rotate Secrets**: Regularly rotate admin tokens and service principal credentials
 5. **Audit Access**: Review who has access to environment secrets regularly
-6. **Use Strong Admin Tokens**: Generate using: `openssl rand -base64 32`
+6. **Use Strong Admin Tokens**: Generate using: `openssl rand -base64 32`. The token is automatically hashed with argon2id during deployment.
 7. **Separate Service Principals**: Consider using different service principals per environment
 
 ## Advanced Configuration
