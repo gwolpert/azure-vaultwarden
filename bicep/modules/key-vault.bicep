@@ -45,7 +45,7 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
       bypass: 'AzureServices'
       ipRules: ipRules
     }
-    diagnosticSettings: empty(logAnalyticsWorkspaceResourceId) ? null : [
+    diagnosticSettings: empty(logAnalyticsWorkspaceResourceId) ? [] : [
       {
         name: 'kv-diagnostics'
         workspaceResourceId: logAnalyticsWorkspaceResourceId

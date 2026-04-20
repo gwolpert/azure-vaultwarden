@@ -103,7 +103,7 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
           sourcePortRange: '*'
           destinationAddressPrefix: postgresqlSubnetAddressPrefix
           destinationPortRange: '*'
-          description: 'Deny any other traffic from the App Service subnet to the PostgreSQL subnet'
+          description: 'Defense-in-depth: deny any non-PostgreSQL traffic destined for the PostgreSQL subnet (the Allow rule above is the only path)'
         }
       }
     ]

@@ -34,7 +34,7 @@ param adminTokenSecretUri string = ''
 @description('Database URL configuration (URI to Key Vault secret)')
 param databaseUrlSecretUri string
 
-@description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. Empty = no IP restriction. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
+@description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
 param adminAllowedIpAddresses array = []
 
 // Build SCM IP restriction rules from the admin allow-list. When the list is empty
