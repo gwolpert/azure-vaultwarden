@@ -60,9 +60,11 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
     // sets defaultAction to 'Deny' and only the App Service subnet is allow-
     // listed via a Microsoft.Storage service endpoint.
     publicNetworkAccess: 'Enabled'
-    // Lock the data plane to the App Service subnet only. The "AzureServices,
-    // Logging, Metrics" bypass keeps diagnostic and platform telemetry flowing
-    // to Log Analytics without exposing the data plane to the public internet.
+    // Restrict the data plane so that only the App Service subnet (via service
+    // endpoint) and trusted Azure services can reach it. The "AzureServices"
+    // bypass allows ARM deployments and platform-level diagnostics to function;
+    // "Logging, Metrics" ensures Storage Analytics telemetry flows to Log
+    // Analytics. No public internet traffic is admitted.
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices, Logging, Metrics'

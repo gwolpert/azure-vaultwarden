@@ -137,7 +137,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           value: '${dataMountPath}/sends'
         }
         // Cap the total cumulative attachment storage per user (default
-        // 1000 MiB ≈ 1 GB) and per organisation (default 250 GiB). These are
+        // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These are
         // quotas on *all* attachments a user/org has, not on a single file.
         {
           name: 'USER_ATTACHMENT_LIMIT'
@@ -172,7 +172,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
       {
         name: 'azurestorageaccounts'
         properties: {
-          'vaultwarden-data': {
+          '${dataFileShareName}': {
             type: 'AzureFiles'
             accountName: storageAccountName
             shareName: dataFileShareName
