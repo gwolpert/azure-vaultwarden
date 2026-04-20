@@ -43,13 +43,13 @@ param attachmentsFileShareName string
 @description('Path inside the container where the attachments share is mounted (and what ATTACHMENTS_FOLDER points to).')
 param attachmentsMountPath string = '/data/attachments'
 
-@description('Per-user attachment storage limit in kilobytes. The default of 20480 KB (20 MB) caps the maximum file a user can upload.')
+@description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')
 @minValue(1)
-param userAttachmentLimitKB int = 20480
+param userAttachmentLimitKB int = 1024000
 
-@description('Per-organization attachment storage limit in kilobytes. The default of 20480 KB (20 MB) caps the maximum file an org member can upload.')
+@description('Per-organization total attachment storage limit in kilobytes. The default of 262144000 KB (250 GiB) caps the total attachment storage for an entire organization.')
 @minValue(1)
-param orgAttachmentLimitKB int = 20480
+param orgAttachmentLimitKB int = 262144000
 
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
 param adminAllowedIpAddresses array = []
@@ -128,10 +128,9 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           name: 'ATTACHMENTS_FOLDER'
           value: attachmentsMountPath
         }
-        // Caps each upload at the configured size (default 20 MB) by limiting
-        // the per-user / per-org total attachment quota. Vaultwarden does not
-        // expose a per-file size knob, so the storage quota doubles as the
-        // per-upload limit.
+        // Cap the total cumulative attachment storage per user (default
+        // 1000 MiB ≈ 1 GB) and per organisation (default 250 GiB). These are
+        // quotas on *all* attachments a user/org has, not on a single file.
         {
           name: 'USER_ATTACHMENT_LIMIT'
           value: string(userAttachmentLimitKB)

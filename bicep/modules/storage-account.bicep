@@ -24,10 +24,10 @@ param logAnalyticsWorkspaceResourceId string = ''
 @maxLength(63)
 param attachmentsFileShareName string = 'vaultwarden-attachments'
 
-@description('Quota (in GB) for the attachments file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments.')
+@description('Quota (in GB) for the attachments file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments. Sized for ~100 users × 1000 MiB each plus headroom.')
 @minValue(1)
 @maxValue(5120)
-param attachmentsFileShareQuotaGB int = 100
+param attachmentsFileShareQuotaGB int = 250
 
 // Build the full Storage Account name using naming convention.
 // Storage Account: must be 3-24 chars, lowercase letters and numbers only.
