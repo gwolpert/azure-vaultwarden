@@ -163,6 +163,8 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
             shareName: attachmentsFileShareName
             mountPath: attachmentsMountPath
             protocol: 'Smb'
+            // Storage accounts always have two access keys provisioned at
+            // creation time (key1 and key2), so keys[0] is always populated.
             accessKey: attachmentsStorageAccount.listKeys().keys[0].value
           }
         }

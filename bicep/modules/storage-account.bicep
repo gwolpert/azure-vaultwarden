@@ -50,6 +50,12 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
     allowSharedKeyAccess: true
+    // NOTE: Must be 'Enabled' for service-endpoint based virtualNetworkRules
+    // to be honored. Setting this to 'Disabled' would force the use of a
+    // private endpoint and would also block the App Service subnet — defeating
+    // the purpose. Public traffic is still denied because networkAcls below
+    // sets defaultAction to 'Deny' and only the App Service subnet is allow-
+    // listed via a Microsoft.Storage service endpoint.
     publicNetworkAccess: 'Enabled'
     // Lock the data plane to the App Service subnet only. The "AzureServices,
     // Logging, Metrics" bypass keeps diagnostic and platform telemetry flowing
