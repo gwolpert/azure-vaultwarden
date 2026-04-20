@@ -44,7 +44,7 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
     name: storageAccountName
     location: location
     kind: 'StorageV2'
-    skuName: 'Standard_LRS'
+    skuName: 'Standard_GRS'
     accessTier: 'Hot'
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
