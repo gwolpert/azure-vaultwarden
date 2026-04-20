@@ -211,7 +211,8 @@ title: Architecture Overview
 5. **Monitoring Setup**: Log Analytics Workspace deployed
 6. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
 7. **Key Vault**: Deployed for secrets management (admin token + database URL)
-8. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration and DATABASE_URL configured
+8. **Storage Account**: StorageV2 account with an Azure Files share is provisioned with `publicNetworkAccess` denied and a virtualNetworkRule restricting the data plane to the App Service subnet (via the `Microsoft.Storage` service endpoint). The share is mounted into the container at `/data/attachments` and Vaultwarden's `ATTACHMENTS_FOLDER`, `USER_ATTACHMENT_LIMIT` and `ORG_ATTACHMENT_LIMIT` (20 MB) point at it. Diagnostic metrics are forwarded to Log Analytics.
+9. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration and DATABASE_URL configured
 
 ### Post-Deployment
 1. Verify App Service health status

@@ -96,6 +96,20 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
         }
       }
       {
+        name: 'Allow-Storage-Outbound'
+        properties: {
+          priority: 110
+          access: 'Allow'
+          direction: 'Outbound'
+          protocol: 'Tcp'
+          sourceAddressPrefix: appServiceSubnetAddressPrefix
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'Storage'
+          destinationPortRange: '445'
+          description: 'Allow App Service to mount the Vaultwarden attachments Azure Files share over SMB. Traffic stays on the Azure backbone via the Microsoft.Storage service endpoint.'
+        }
+      }
+      {
         name: 'Deny-Postgres-Subnet-Outbound'
         properties: {
           priority: 200
@@ -173,8 +187,13 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
         // for App Service Key Vault references to resolve at runtime when the
         // vault's networkAcls.defaultAction is 'Deny' — the "AzureServices"
         // bypass does NOT cover App Service Key Vault references.
+        // Microsoft.Storage service endpoint so the same subnet can be added
+        // to the Storage Account firewall as a virtualNetworkRule. This is
+        // required for the App Service container to mount the attachments
+        // Azure Files share when the storage account denies public traffic.
         serviceEndpoints: [
           'Microsoft.KeyVault'
+          'Microsoft.Storage'
         ]
       }
       {

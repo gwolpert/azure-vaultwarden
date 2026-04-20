@@ -63,6 +63,7 @@ The deployment creates the following Azure resources:
 - **App Service Plan**: B1 (Basic) Linux plan with VNet integration (upgradable to Standard/Premium for auto-scaling and deployment slots)
 - **App Service**: Web App for Containers running Vaultwarden
 - **Key Vault**: Secure storage for secrets (admin token, database connection string)
+- **Storage Account**: StorageV2 account hosting an Azure Files share for Vaultwarden attachments. Public network access is denied; only the App Service subnet can reach the data plane (via a `Microsoft.Storage` service endpoint), and diagnostic metrics flow to Log Analytics. The container mounts the share at `/data/attachments` (`ATTACHMENTS_FOLDER`), and `USER_ATTACHMENT_LIMIT` / `ORG_ATTACHMENT_LIMIT` are set to 20480 KB so a user can upload at most a 20 MB attachment.
 
 ## Prerequisites
 
