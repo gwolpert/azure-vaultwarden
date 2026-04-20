@@ -36,6 +36,36 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Discover GitHub runner public IP
+        id: runner-ip
+        run: |
+          RUNNER_IP=$(curl -fsSL --retry 3 https://api.ipify.org)
+          if [ -z "$RUNNER_IP" ]; then
+            echo "Failed to determine runner public IP" >&2
+            exit 1
+          fi
+          echo "Runner public IP: $RUNNER_IP"
+          echo "ip=$RUNNER_IP" >> $GITHUB_OUTPUT
+          echo "cidr=${RUNNER_IP}/32" >> $GITHUB_OUTPUT
+
+      - name: Build Key Vault allow-list (runner + extras)
+        id: kv-allowlist
+        env:
+          EXTRA_IPS: ${{ vars.KEY_VAULT_ALLOWED_IPS }}
+          RUNNER_CIDR: ${{ steps.runner-ip.outputs.cidr }}
+        run: |
+          # Combine the runner IP with any operator-configured IPs (comma separated CIDRs).
+          # Emit a Bicep array literal: ['1.2.3.4/32','5.6.7.8/32']
+          IFS=',' read -ra EXTRAS <<< "${EXTRA_IPS:-}"
+          ITEMS="'${RUNNER_CIDR}'"
+          for ip in "${EXTRAS[@]}"; do
+            trimmed=$(echo "$ip" | xargs)
+            if [ -n "$trimmed" ]; then
+              ITEMS="${ITEMS},'${trimmed}'"
+            fi
+          done
+          echo "array=[${ITEMS}]" >> $GITHUB_OUTPUT
+
       - name: Deploy Bicep template
         uses: azure/arm-deploy@v2
         id: deploy
@@ -54,8 +84,22 @@ jobs:
             vaultwardenImageTag=${{ vars.VAULTWARDEN_IMAGE_TAG }}
             appServicePlanSkuName=${{ vars.APP_SERVICE_PLAN_SKU_NAME || 'B1' }}
             postgresqlAdminPassword=${{ secrets.POSTGRESQL_ADMIN_PASSWORD }}
+            keyVaultAllowedIpAddresses=${{ steps.kv-allowlist.outputs.array }}
+            adminAllowedIpAddresses=${{ vars.ADMIN_ALLOWED_IPS_BICEP_ARRAY || '[]' }}
           failOnStdErr: false
           deploymentName: vaultwarden-deployment-${{ github.run_number }}
+
+      - name: Remove runner IP from Key Vault allow-list
+        if: always() && steps.deploy.outputs.keyVaultName != ''
+        env:
+          KV_NAME: ${{ steps.deploy.outputs.keyVaultName }}
+          RUNNER_IP: ${{ steps.runner-ip.outputs.ip }}
+        run: |
+          echo "Removing runner IP $RUNNER_IP from Key Vault $KV_NAME network rules"
+          az keyvault network-rule remove \
+            --name "$KV_NAME" \
+            --ip-address "$RUNNER_IP" \
+            --only-show-errors || echo "Cleanup failed; remove $RUNNER_IP manually if it remains"
 
       - name: Display deployment outputs
         run: |
