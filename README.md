@@ -82,15 +82,15 @@ The deployment creates the following Azure resources:
 az login
 az account set --subscription "<your-subscription-id>"
 
+# Create the target resource group (skip if it already exists)
+az group create --name vaultwarden-dev-rg --location northeurope
+
 # Deploy
-az deployment sub create \
+az deployment group create \
   --name vaultwarden-deployment \
-  --location northeurope \
+  --resource-group vaultwarden-dev-rg \
   --template-file bicep/main.bicep \
   --parameters \
-    resourceGroupName="vaultwarden-dev" \
-    location="northeurope" \
-    environmentName="dev" \
     domainName="" \
     adminToken="" \
     postgresqlAdminPassword="<your-secure-password>" \

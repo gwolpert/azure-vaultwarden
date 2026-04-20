@@ -20,13 +20,11 @@ Expected: No errors, ARM template generated successfully
 
 #### What-If Analysis
 ```bash
-az deployment sub what-if \
+az deployment group what-if \
   --name vaultwarden-deployment \
-  --location northeurope \
+  --resource-group vaultwarden-dev-rg \
   --template-file bicep/main.bicep \
-  --parameters resourceGroupName="vaultwarden-dev" \
-  --parameters location="northeurope" \
-  --parameters environmentName="dev"
+  --parameters postgresqlAdminPassword="<your-secure-password>"
 ```
 
 Expected: Shows all resources that will be created without actually deploying
@@ -35,8 +33,6 @@ Expected: Shows all resources that will be created without actually deploying
 
 For GitHub Environments deployment, verify environment variables are configured:
 - [ ] Resource group name is set in GitHub Environment
-- [ ] Location is a valid Azure region
-- [ ] Environment name is dev/staging/prod
 - [ ] Image tag is specified
 
 For manual deployment, you can validate by running a what-if first (see above).

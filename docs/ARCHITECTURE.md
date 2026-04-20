@@ -15,10 +15,10 @@ title: Architecture Overview
 │  │                   Resource Group                            │ │
 │  │                                                              │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │              Virtual Network (10.0.0.0/16)           │  │ │
+│  │  │              Virtual Network (10.0.0.0/26)           │  │ │
 │  │  │                                                        │  │ │
 │  │  │  ┌──────────────────────────────────────────────┐   │  │ │
-│  │  │  │  app-service-snet (10.0.0.0/24)             │   │  │ │
+│  │  │  │  app-service-snet (10.0.0.0/27)             │   │  │ │
 │  │  │  │                                               │   │  │ │
 │  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
 │  │  │  │  │  App Service Plan (B1 Basic)      │     │   │  │ │
@@ -40,7 +40,7 @@ title: Architecture Overview
 │  │  │  └────────────────┼────────────────────────────┘   │  │ │
 │  │  │                   │ PostgreSQL (via VNet)           │  │ │
 │  │  │  ┌────────────────▼───────────────────────────┐   │  │ │
-│  │  │  │  postgresql-snet (10.0.1.0/24)             │   │  │ │
+│  │  │  │  postgresql-snet (10.0.0.32/28)            │   │  │ │
 │  │  │  │  - Delegated to PostgreSQL Flexible Server │   │  │ │
 │  │  │  │                                             │   │  │ │
 │  │  │  │  ┌─────────────────────────────────────┐  │   │  │ │
@@ -103,8 +103,8 @@ title: Architecture Overview
 
 ### Network Security
 - Virtual Network isolation with VNet integration
-- App Service subnet (`app-service-snet`) with service delegation (10.0.0.0/24)
-- PostgreSQL subnet (`postgresql-snet`) with service delegation for Flexible Server (10.0.1.0/24)
+- App Service subnet (`app-service-snet`) with service delegation (10.0.0.0/27)
+- PostgreSQL subnet (`postgresql-snet`) with service delegation for Flexible Server (10.0.0.32/28)
 - PostgreSQL Flexible Server accessible only via VNet integration (no public access)
 - Private DNS Zone resolves PostgreSQL server to private IP within VNet
 - HTTPS-only access with Azure-managed certificates

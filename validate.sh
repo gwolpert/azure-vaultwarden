@@ -129,7 +129,7 @@ check_bicep_template() {
             print_info "  Install Azure CLI and run 'az bicep install' for full validation"
             
             # Fallback to basic structure check
-            if grep -q "targetScope = 'subscription'" bicep/main.bicep && \
+            if grep -q "targetScope = 'resourceGroup'" bicep/main.bicep && \
                grep -q "param " bicep/main.bicep && \
                grep -q "module " bicep/main.bicep; then
                 print_pass "Bicep template has valid structure (basic check)"
@@ -281,7 +281,7 @@ print_summary() {
         echo ""
         echo "Next steps:"
         echo "1. Review parameters in bicep/main.bicep"
-        echo "2. Deploy with Azure CLI (az deployment sub create) or the Deploy to Azure button"
+        echo "2. Deploy with Azure CLI (az deployment group create) or the Deploy to Azure button"
         return 0
     else
         print_fail "Some critical checks failed. Please fix the issues above."

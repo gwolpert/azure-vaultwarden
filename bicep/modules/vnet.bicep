@@ -11,13 +11,13 @@ param baseName string
 param location string
 
 @description('CIDR for the entire virtual network')
-param vnetAddressPrefix string = '10.0.0.0/16'
+param vnetAddressPrefix string = '10.0.0.0/26'
 
 @description('CIDR for the App Service delegated subnet')
-param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
+param appServiceSubnetAddressPrefix string = '10.0.0.0/27'
 
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet')
-param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
+param postgresqlSubnetAddressPrefix string = '10.0.0.32/28'
 
 @description('TCP port used by PostgreSQL Flexible Server')
 param postgresqlPort int = 5432
@@ -106,7 +106,7 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
           sourcePortRange: '*'
           destinationAddressPrefix: 'Storage'
           destinationPortRange: '445'
-          description: 'Allow App Service to mount the Vaultwarden attachments Azure Files share over SMB. Traffic stays on the Azure backbone via the Microsoft.Storage service endpoint.'
+          description: 'Allow App Service to mount the attachments Azure Files share over SMB via the Microsoft.Storage service endpoint.'
         }
       }
       {
