@@ -142,8 +142,10 @@ az deployment sub create \
     adminToken="" \
     postgresqlAdminPassword="<your-secure-password>" \
     signupsAllowed=false \
-    vaultwardenImageTag="latest"
+    vaultwardenImageTag="1.35.7"
 ```
+
+> Vaultwarden image tags are pinned to a specific version. Bump only after reviewing the upstream release notes at [vaultwarden/releases](https://github.com/dani-garcia/vaultwarden/releases).
 
 ## Configuration
 
@@ -157,12 +159,22 @@ Parameters are configured through GitHub Environment Variables and Secrets. The 
 - **HTTPS** is enforced automatically with Azure-managed certificates.
 - **Secrets** are stored in Azure Key Vault, accessed via managed identity.
 - **PostgreSQL** is VNet-integrated with private access only (no public endpoint).
+- **Network Security Groups** lock the VNet down: only inbound `TCP/443` from the internet is allowed to the App Service subnet, and only `TCP/5432` from the App Service subnet is allowed to the PostgreSQL subnet.
+- **Customisable VNet address range**: `vnetAddressPrefix`, `appServiceSubnetAddressPrefix`, and `postgresqlSubnetAddressPrefix` parameters let you avoid conflicts when peering with other networks.
+- **Key Vault network isolation**: the vault denies all public traffic by default. Operator IPs can be allow-listed via the `keyVaultAllowedIpAddresses` parameter, and the GitHub Actions workflow injects/removes the runner's public IP automatically around each deployment. Trusted Azure services (App Service Key Vault references, ARM template deployments) keep working through the `AzureServices` bypass.
+- **Key Vault monitoring**: audit and policy evaluation logs plus all metrics are sent to the Log Analytics workspace.
+- **PostgreSQL monitoring**: server, query, and audit logs (`allLogs` category group) plus all metrics are sent to the Log Analytics workspace.
+- **Pinned Vaultwarden version**: the default `vaultwardenImageTag` is pinned to a specific upstream release (`1.35.7`) instead of `latest`. Update only after reading the [release notes](https://github.com/dani-garcia/vaultwarden/releases).
+- **Admin / SCM (Kudu) IP allow-list**: `adminAllowedIpAddresses` restricts the App Service management surface (Kudu / SCM site) to a list of operator CIDRs.
+  - **Limitation:** Azure App Service on Linux does **not** support per-URL-path IP restrictions (the `path` field is not part of the `IpSecurityRestriction` ARM schema as of API `2024-11-01`). The Vaultwarden `/admin` web route therefore relies on the argon2id-hashed `ADMIN_TOKEN`. For per-path IP restrictions, front the App Service with Azure Front Door + WAF and apply path-scoped rules there.
 
 See [Architecture Overview](docs/ARCHITECTURE.md) for full security details.
 
 ## Backup and Recovery
 
-Azure Database for PostgreSQL Flexible Server includes built-in automated backups with 7-day retention. No additional backup configuration is required.
+Azure Database for PostgreSQL Flexible Server is provisioned with **geo-redundant automated backups** and a **35-day retention period**. Backups are replicated to the Azure paired region so the database can be restored to a different geography for disaster-recovery scenarios. No additional backup configuration is required.
+
+> **Note:** geo-redundant backup is set at server creation time and cannot be toggled on an existing PostgreSQL Flexible Server — changing this on an already-deployed environment requires recreating the server (and migrating data).
 
 See [Architecture Overview](docs/ARCHITECTURE.md) for full details on backup and restore procedures.
 

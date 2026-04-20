@@ -34,6 +34,20 @@ param adminTokenSecretUri string = ''
 @description('Database URL configuration (URI to Key Vault secret)')
 param databaseUrlSecretUri string
 
+@description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
+param adminAllowedIpAddresses array = []
+
+// Build SCM IP restriction rules from the admin allow-list. When the list is empty
+// we leave SCM rules unset so the platform default (Allow) remains.
+var scmIpSecurityRestrictions = [for (ip, i) in adminAllowedIpAddresses: {
+  ipAddress: ip
+  action: 'Allow'
+  priority: 100 + i
+  name: 'AllowAdminIp${i}'
+  description: 'Allow access to Kudu/SCM admin surface'
+}]
+var hasAdminIpAllowList = !empty(adminAllowedIpAddresses)
+
 // Build the full App Service name using naming convention
 // Official abbreviation: 'app'
 var appServiceName = '${baseName}-app'
@@ -53,6 +67,9 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     siteConfig: {
       linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
       alwaysOn: true
+      scmIpSecurityRestrictionsUseMain: false
+      scmIpSecurityRestrictionsDefaultAction: hasAdminIpAllowList ? 'Deny' : 'Allow'
+      scmIpSecurityRestrictions: hasAdminIpAllowList ? scmIpSecurityRestrictions : null
       appSettings: concat([
         {
           name: 'DOMAIN'
