@@ -44,13 +44,16 @@ param postgresqlAdminPassword string
 @description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission on the deploying principal.')
 param enablePostgresqlLock bool = false
 
-@description('CIDR for the entire virtual network. Override to avoid conflicts when peering with other networks.')
-param vnetAddressPrefix string = '10.0.0.0/24'
+@description('One or more CIDRs for the virtual network address space. Override to avoid conflicts when peering with other networks. Use multiple prefixes when the subnet ranges are not contiguous.')
+param vnetAddressPrefixes array = [
+  '10.0.0.0/27'
+  '10.0.0.32/27'
+]
 
-@description('CIDR for the App Service delegated subnet. Must be inside vnetAddressPrefix.')
+@description('CIDR for the App Service delegated subnet. Must fall within one of the vnetAddressPrefixes ranges.')
 param appServiceSubnetAddressPrefix string = '10.0.0.0/27'
 
-@description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must be inside vnetAddressPrefix.')
+@description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must fall within one of the vnetAddressPrefixes ranges.')
 param postgresqlSubnetAddressPrefix string = '10.0.0.32/27'
 
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
@@ -67,7 +70,7 @@ module vnet 'modules/vnet.bicep' = {
   params: {
     baseName: baseName
     location: location
-    vnetAddressPrefix: vnetAddressPrefix
+    vnetAddressPrefixes: vnetAddressPrefixes
     appServiceSubnetAddressPrefix: appServiceSubnetAddressPrefix
     postgresqlSubnetAddressPrefix: postgresqlSubnetAddressPrefix
   }

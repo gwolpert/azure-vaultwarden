@@ -10,8 +10,11 @@ param baseName string
 @description('The Azure region where resources will be deployed')
 param location string
 
-@description('CIDR for the entire virtual network')
-param vnetAddressPrefix string = '10.0.0.0/26'
+@description('One or more CIDRs for the virtual network address space')
+param vnetAddressPrefixes array = [
+  '10.0.0.0/27'
+  '10.0.0.32/27'
+]
 
 @description('CIDR for the App Service delegated subnet')
 param appServiceSubnetAddressPrefix string = '10.0.0.0/27'
@@ -173,9 +176,7 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
   params: {
     name: vnetName
     location: location
-    addressPrefixes: [
-      vnetAddressPrefix
-    ]
+    addressPrefixes: vnetAddressPrefixes
     subnets: [
       {
         name: 'app-service-snet'
