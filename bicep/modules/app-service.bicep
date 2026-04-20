@@ -102,6 +102,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     diagnosticSettings: [
       {
         workspaceResourceId: logAnalyticsWorkspaceResourceId
+        logAnalyticsDestinationType: 'Dedicated'
         logCategoriesAndGroups: [
           {
             categoryGroup: 'allLogs'

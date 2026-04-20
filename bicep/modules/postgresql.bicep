@@ -80,6 +80,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
       {
         name: 'psql-diagnostics'
         workspaceResourceId: logAnalyticsWorkspaceResourceId
+        logAnalyticsDestinationType: 'Dedicated'
         logCategoriesAndGroups: [
           {
             categoryGroup: 'allLogs'
