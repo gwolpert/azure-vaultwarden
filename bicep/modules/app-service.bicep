@@ -51,6 +51,10 @@ param userAttachmentLimitKB int = 1024000
 @minValue(1)
 param orgAttachmentLimitKB int = 262144000
 
+@description('Per-user total Send storage limit in kilobytes. The default of 102400 KB (100 MiB) caps each user\'s cumulative Send file storage. Sends are ephemeral (auto-expire), so a fraction of the attachment budget is sufficient.')
+@minValue(1)
+param userSendLimitKB int = 102400
+
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
 param adminAllowedIpAddresses array = []
 
@@ -142,6 +146,13 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
         {
           name: 'ORG_ATTACHMENT_LIMIT'
           value: string(orgAttachmentLimitKB)
+        }
+        // Cap per-user Send file storage (default 100 MiB). Sends are
+        // ephemeral and auto-expire, so a smaller budget than attachments
+        // is appropriate.
+        {
+          name: 'USER_SEND_LIMIT'
+          value: string(userSendLimitKB)
         }
       ], adminTokenSecretUri != '' ? [
         {
