@@ -34,6 +34,27 @@ param adminTokenSecretUri string = ''
 @description('Database URL configuration (URI to Key Vault secret)')
 param databaseUrlSecretUri string
 
+@description('Name of the Storage Account hosting the Vaultwarden data file share. The account must live in the same resource group as this App Service.')
+param storageAccountName string
+
+@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments and sends).')
+param dataFileShareName string
+
+@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments and sends as subdirectories under this path.')
+param dataMountPath string = '/data'
+
+@description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')
+@minValue(1)
+param userAttachmentLimitKB int = 1024000
+
+@description('Per-organization total attachment storage limit in kilobytes. The default of 262144000 KB (250 GiB) caps the total attachment storage for an entire organization.')
+@minValue(1)
+param orgAttachmentLimitKB int = 262144000
+
+@description('Per-user total Send storage limit in kilobytes. The default of 102400 KB (100 MiB) caps each user\'s cumulative Send file storage. Sends are ephemeral (auto-expire), so a fraction of the attachment budget is sufficient.')
+@minValue(1)
+param userSendLimitKB int = 102400
+
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
 param adminAllowedIpAddresses array = []
 
@@ -51,6 +72,13 @@ var hasAdminIpAllowList = !empty(adminAllowedIpAddresses)
 // Build the full App Service name using naming convention
 // Official abbreviation: 'app'
 var appServiceName = '${baseName}-app'
+
+// Reference the existing storage account so we can read its primary access key
+// for the Azure Files SMB mount. The Web Apps `azurestorageaccounts` siteConfig
+// requires the raw access key — Key Vault references are not supported there.
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: storageAccountName
+}
 
 // Deploy App Service (Web App for Containers)
 module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
@@ -98,6 +126,34 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
         }
+        // Persist Vaultwarden attachments and sends on the Azure Files share
+        // mounted at dataMountPath instead of the ephemeral container disk.
+        {
+          name: 'ATTACHMENTS_FOLDER'
+          value: '${dataMountPath}/attachments'
+        }
+        {
+          name: 'SENDS_FOLDER'
+          value: '${dataMountPath}/sends'
+        }
+        // Cap the total cumulative attachment storage per user (default
+        // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These are
+        // quotas on *all* attachments a user/org has, not on a single file.
+        {
+          name: 'USER_ATTACHMENT_LIMIT'
+          value: string(userAttachmentLimitKB)
+        }
+        {
+          name: 'ORG_ATTACHMENT_LIMIT'
+          value: string(orgAttachmentLimitKB)
+        }
+        // Cap per-user Send file storage (default 100 MiB). Sends are
+        // ephemeral and auto-expire, so a smaller budget than attachments
+        // is appropriate.
+        {
+          name: 'USER_SEND_LIMIT'
+          value: string(userSendLimitKB)
+        }
       ], adminTokenSecretUri != '' ? [
         {
           name: 'ADMIN_TOKEN'
@@ -106,6 +162,28 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
       ] : [])
     }
     httpsOnly: true
+    // Mount the data Azure Files share into the container so Vaultwarden
+    // writes ATTACHMENTS_FOLDER and SENDS_FOLDER to durable, VNet-restricted
+    // storage instead of the ephemeral container disk. The Web Apps
+    // `azurestorageaccounts` config does not accept Key Vault references,
+    // so the access key is read directly from the storage account using
+    // listKeys() at deploy time.
+    configs: [
+      {
+        name: 'azurestorageaccounts'
+        properties: {
+          '${dataFileShareName}': {
+            type: 'AzureFiles'
+            accountName: storageAccountName
+            shareName: dataFileShareName
+            mountPath: dataMountPath
+            protocol: 'Smb'
+            // Select the access key by name so we don't depend on array order.
+            accessKey: filter(storageAccount.listKeys().keys, k => k.keyName == 'key1')[0].value
+          }
+        }
+      }
+    ]
     diagnosticSettings: [
       {
         workspaceResourceId: logAnalyticsWorkspaceResourceId
