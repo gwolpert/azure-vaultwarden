@@ -45,13 +45,13 @@ param postgresqlAdminPassword string
 param enablePostgresqlLock bool = false
 
 @description('CIDR for the entire virtual network. Override to avoid conflicts when peering with other networks.')
-param vnetAddressPrefix string = '10.0.0.0/26'
+param vnetAddressPrefix string = '10.0.0.0/24'
 
 @description('CIDR for the App Service delegated subnet. Must be inside vnetAddressPrefix.')
 param appServiceSubnetAddressPrefix string = '10.0.0.0/27'
 
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must be inside vnetAddressPrefix.')
-param postgresqlSubnetAddressPrefix string = '10.0.0.32/28'
+param postgresqlSubnetAddressPrefix string = '10.0.0.32/27'
 
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
 param adminAllowedIpAddresses array = []
