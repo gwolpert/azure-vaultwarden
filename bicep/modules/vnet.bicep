@@ -11,13 +11,13 @@ param baseName string
 param location string
 
 @description('CIDR for the entire virtual network')
-param vnetAddressPrefix string = '10.0.0.0/26'
+param vnetAddressPrefix string = '10.0.0.0/16'
 
 @description('CIDR for the App Service delegated subnet')
-param appServiceSubnetAddressPrefix string = '10.0.0.0/27'
+param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
 
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet')
-param postgresqlSubnetAddressPrefix string = '10.0.0.32/28'
+param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
 
 @description('TCP port used by PostgreSQL Flexible Server')
 param postgresqlPort int = 5432
