@@ -105,61 +105,6 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
       scmIpSecurityRestrictionsUseMain: false
       scmIpSecurityRestrictionsDefaultAction: hasAdminIpAllowList ? 'Deny' : 'Allow'
       scmIpSecurityRestrictions: hasAdminIpAllowList ? scmIpSecurityRestrictions : null
-      appSettings: concat([
-        {
-          name: 'DOMAIN'
-          value: domainName != '' ? domainName : 'https://${appServiceName}.azurewebsites.net'
-        }
-        {
-          name: 'SIGNUPS_ALLOWED'
-          value: string(signupsAllowed)
-        }
-        {
-          name: 'DATABASE_URL'
-          value: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
-        }
-        {
-          name: 'IP_HEADER'
-          value: 'X-Client-IP'
-        }
-        {
-          name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
-          value: 'false'
-        }
-        // Persist Vaultwarden attachments and sends on the Azure Files share
-        // mounted at dataMountPath instead of the ephemeral container disk.
-        {
-          name: 'ATTACHMENTS_FOLDER'
-          value: '${dataMountPath}/attachments'
-        }
-        {
-          name: 'SENDS_FOLDER'
-          value: '${dataMountPath}/sends'
-        }
-        // Cap the total cumulative attachment storage per user (default
-        // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These are
-        // quotas on *all* attachments a user/org has, not on a single file.
-        {
-          name: 'USER_ATTACHMENT_LIMIT'
-          value: string(userAttachmentLimitKB)
-        }
-        {
-          name: 'ORG_ATTACHMENT_LIMIT'
-          value: string(orgAttachmentLimitKB)
-        }
-        // Cap per-user Send file storage (default 100 MiB). Sends are
-        // ephemeral and auto-expire, so a smaller budget than attachments
-        // is appropriate.
-        {
-          name: 'USER_SEND_LIMIT'
-          value: string(userSendLimitKB)
-        }
-      ], adminTokenSecretUri != '' ? [
-        {
-          name: 'ADMIN_TOKEN'
-          value: '@Microsoft.KeyVault(SecretUri=${adminTokenSecretUri})'
-        }
-      ] : [])
     }
     httpsOnly: true
     // Mount the data Azure Files share into the container so Vaultwarden
@@ -169,6 +114,38 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     // so the access key is read directly from the storage account using
     // listKeys() at deploy time.
     configs: [
+      {
+        // Manage the Vaultwarden app settings via the dedicated `appsettings`
+        // sub-resource with `retainCurrentAppSettings: true` so that any
+        // environment variables added out-of-band (Azure Portal, CLI, ARM,
+        // future Bicep deployments) are preserved. Values declared here
+        // override matching keys; everything else is left untouched.
+        name: 'appsettings'
+        retainCurrentAppSettings: true
+        properties: union({
+          DOMAIN: domainName != '' ? domainName : 'https://${appServiceName}.azurewebsites.net'
+          SIGNUPS_ALLOWED: string(signupsAllowed)
+          DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
+          IP_HEADER: 'X-Client-IP'
+          WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
+          // Persist Vaultwarden attachments and sends on the Azure Files share
+          // mounted at dataMountPath instead of the ephemeral container disk.
+          ATTACHMENTS_FOLDER: '${dataMountPath}/attachments'
+          SENDS_FOLDER: '${dataMountPath}/sends'
+          // Cap the total cumulative attachment storage per user (default
+          // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These
+          // are quotas on *all* attachments a user/org has, not on a single
+          // file.
+          USER_ATTACHMENT_LIMIT: string(userAttachmentLimitKB)
+          ORG_ATTACHMENT_LIMIT: string(orgAttachmentLimitKB)
+          // Cap per-user Send file storage (default 100 MiB). Sends are
+          // ephemeral and auto-expire, so a smaller budget than attachments
+          // is appropriate.
+          USER_SEND_LIMIT: string(userSendLimitKB)
+        }, adminTokenSecretUri != '' ? {
+          ADMIN_TOKEN: '@Microsoft.KeyVault(SecretUri=${adminTokenSecretUri})'
+        } : {})
+      }
       {
         name: 'azurestorageaccounts'
         properties: {

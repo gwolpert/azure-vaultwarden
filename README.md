@@ -82,15 +82,15 @@ The deployment creates the following Azure resources:
 az login
 az account set --subscription "<your-subscription-id>"
 
+# Create the target resource group (skip if it already exists)
+az group create --name vaultwarden-dev-rg --location northeurope
+
 # Deploy
-az deployment sub create \
+az deployment group create \
   --name vaultwarden-deployment \
-  --location northeurope \
+  --resource-group vaultwarden-dev-rg \
   --template-file bicep/main.bicep \
   --parameters \
-    resourceGroupName="vaultwarden-dev" \
-    location="northeurope" \
-    environmentName="dev" \
     domainName="" \
     adminToken="" \
     postgresqlAdminPassword="<your-secure-password>" \
@@ -102,7 +102,7 @@ az deployment sub create \
 
 ### Deploy with the ARM Template ("Deploy to Azure" button)
 
-Click the **Deploy to Azure** button at the top of this README to deploy the published ARM template through the Azure Portal. You will be prompted for the same parameters as the Bicep deployment (resource group name, location, PostgreSQL admin password, etc.).
+Click the **Deploy to Azure** button at the top of this README to deploy the published ARM template through the Azure Portal. The portal asks you to pick (or create) the **subscription** and **resource group** — the deployment region is inherited from the resource group, so there is no separate `location` parameter. The remaining template parameters are the same ones documented in `bicep/main.bicep` (`baseName`, `postgresqlAdminPassword`, `domainName`, `adminToken`, `signupsAllowed`, `vaultwardenImageTag`, `appServicePlanSkuName`, the VNet/subnet CIDRs, and `adminAllowedIpAddresses`). Only `postgresqlAdminPassword` is required.
 
 ### Access Your Vaultwarden Instance
 

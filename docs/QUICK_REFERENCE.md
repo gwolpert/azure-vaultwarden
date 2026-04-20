@@ -12,14 +12,11 @@ Common commands and workflows for managing Vaultwarden on Azure.
 ### Deploy with Azure CLI
 
 ```bash
-az deployment sub create \
+az deployment group create \
   --name vaultwarden-deployment \
-  --location northeurope \
+  --resource-group vaultwarden-dev-rg \
   --template-file bicep/main.bicep \
   --parameters \
-    resourceGroupName="vaultwarden-dev" \
-    location="northeurope" \
-    environmentName="dev" \
     postgresqlAdminPassword="<your-secure-password>"
 ```
 

@@ -31,7 +31,7 @@ Deploy directly to Azure with one click:
 ### 2. Azure CLI with Bicep (Recommended for Production)
 - Uses `bicep/main.bicep` with Azure Verified Modules
 - Best for production, scripted/repeatable deployments
-- See the [GitHub repository](https://github.com/gwolpert/azure-vaultwarden) README for the `az deployment sub create` command and full parameter list
+- See the [GitHub repository](https://github.com/gwolpert/azure-vaultwarden) README for the `az deployment group create` command and full parameter list
 
 ## Source Code
 

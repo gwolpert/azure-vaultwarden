@@ -13,9 +13,6 @@ param location string
 @description('Resource ID of the Log Analytics Workspace to send Key Vault audit logs and metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-@description('IPv4 addresses or CIDR ranges that are allowed to reach the Key Vault data plane. Trusted Azure services keep working through the AzureServices bypass. Leave empty to deny all public IPs.')
-param allowedIpAddresses array = []
-
 @description('Resource IDs of VNet subnets that are allowed to reach the Key Vault data plane via a Microsoft.KeyVault service endpoint. Required for App Service Key Vault references when the vault denies public traffic, because those references do not use the trusted-services bypass.')
 param allowedSubnetResourceIds array = []
 
@@ -26,10 +23,6 @@ param allowedSubnetResourceIds array = []
 // Example: vaultwarden-dev -> vaultwardendevkv (16 chars)
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
 var keyVaultName = '${replace(baseName, '-', '')}kv'
-
-var ipRules = [for ip in allowedIpAddresses: {
-  value: ip
-}]
 
 var virtualNetworkRules = [for subnetId in allowedSubnetResourceIds: {
   id: subnetId
@@ -50,7 +43,6 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'
-      ipRules: ipRules
       virtualNetworkRules: virtualNetworkRules
     }
     diagnosticSettings: empty(logAnalyticsWorkspaceResourceId) ? [] : [

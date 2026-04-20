@@ -20,13 +20,11 @@ Expected: No errors, ARM template generated successfully
 
 #### What-If Analysis
 ```bash
-az deployment sub what-if \
+az deployment group what-if \
   --name vaultwarden-deployment \
-  --location northeurope \
+  --resource-group vaultwarden-dev-rg \
   --template-file bicep/main.bicep \
-  --parameters resourceGroupName="vaultwarden-dev" \
-  --parameters location="northeurope" \
-  --parameters environmentName="dev"
+  --parameters postgresqlAdminPassword="<your-secure-password>"
 ```
 
 Expected: Shows all resources that will be created without actually deploying
@@ -35,8 +33,6 @@ Expected: Shows all resources that will be created without actually deploying
 
 For GitHub Environments deployment, verify environment variables are configured:
 - [ ] Resource group name is set in GitHub Environment
-- [ ] Location is a valid Azure region
-- [ ] Environment name is dev/staging/prod
 - [ ] Image tag is specified
 
 For manual deployment, you can validate by running a what-if first (see above).
@@ -50,7 +46,7 @@ For manual deployment, you can validate by running a what-if first (see above).
 az group show --name vaultwarden-dev-rg
 ```
 
-Expected: Resource group exists with correct tags
+Expected: Resource group exists (it is selected/created at deploy time and is no longer tagged by the template)
 
 #### List All Resources
 ```bash
@@ -76,7 +72,7 @@ az network vnet show \
 ```
 
 Expected:
-- Address space: 10.0.0.0/16
+- Address space: 10.0.0.0/26
 - Subnets: app-service-snet, postgresql-snet
 
 #### Check Subnet Configuration
@@ -88,7 +84,7 @@ az network vnet subnet show \
   --query "{name:name, addressPrefix:addressPrefix}"
 ```
 
-Expected: Subnet 10.0.0.0/24
+Expected: Subnet 10.0.0.0/27 (the postgresql-snet subnet uses 10.0.0.32/28)
 
 ### 3. PostgreSQL Verification
 
@@ -539,8 +535,8 @@ telnet $VAULTWARDEN_URL 443
 Use this checklist to verify your deployment:
 
 ### Infrastructure
-- [ ] Resource group created
-- [ ] Virtual network deployed with correct address space
+- [ ] Resource group selected/created prior to deployment
+- [ ] Virtual network deployed with correct address space (10.0.0.0/26)
 - [ ] Subnet configured for App Service VNet integration (app-service-snet)
 - [ ] PostgreSQL subnet configured with delegation for Flexible Server (postgresql-snet)
 - [ ] Azure Database for PostgreSQL Flexible Server deployed and ready
