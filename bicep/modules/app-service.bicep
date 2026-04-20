@@ -67,6 +67,13 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     siteConfig: {
       linuxFxVersion: 'DOCKER|vaultwarden/server:${vaultwardenImageTag}'
       alwaysOn: true
+      // Route all outbound traffic through the VNet integration. Required so
+      // Key Vault reference resolution (ADMIN_TOKEN, DATABASE_URL) exits via
+      // the App Service subnet and matches the Microsoft.KeyVault service
+      // endpoint rule on the Key Vault firewall. Without this, Key Vault
+      // references fail at runtime with "site was denied access to Key
+      // Vault reference's vault".
+      vnetRouteAllEnabled: true
       scmIpSecurityRestrictionsUseMain: false
       scmIpSecurityRestrictionsDefaultAction: hasAdminIpAllowList ? 'Deny' : 'Allow'
       scmIpSecurityRestrictions: hasAdminIpAllowList ? scmIpSecurityRestrictions : null

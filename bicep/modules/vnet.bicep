@@ -168,6 +168,14 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
         addressPrefix: appServiceSubnetAddressPrefix
         delegation: 'Microsoft.Web/serverFarms'
         networkSecurityGroupResourceId: appServiceNsg.outputs.resourceId
+        // Microsoft.KeyVault service endpoint so the VNet subnet can be added
+        // to the Key Vault firewall as a virtualNetworkRule. This is required
+        // for App Service Key Vault references to resolve at runtime when the
+        // vault's networkAcls.defaultAction is 'Deny' — the "AzureServices"
+        // bypass does NOT cover App Service Key Vault references.
+        serviceEndpoints: [
+          'Microsoft.KeyVault'
+        ]
       }
       {
         name: 'postgresql-snet'

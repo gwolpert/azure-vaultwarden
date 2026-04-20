@@ -152,6 +152,13 @@ module keyVault 'modules/key-vault.bicep' = {
     location: location
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     allowedIpAddresses: keyVaultAllowedIpAddresses
+    // Grant the App Service subnet network-level access to the vault via its
+    // Microsoft.KeyVault service endpoint. This is required for App Service
+    // Key Vault references to resolve at runtime, because those references
+    // do not use the "AzureServices" trusted-services bypass.
+    allowedSubnetResourceIds: [
+      vnet.outputs.appServiceSubnetResourceId
+    ]
   }
 }
 
