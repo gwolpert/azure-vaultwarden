@@ -28,8 +28,11 @@ var appServiceNsgName = '${baseName}-app-snet-nsg'
 var postgresqlNsgName = '${baseName}-psql-snet-nsg'
 
 // Network Security Group for the App Service subnet
-//   Inbound: only HTTPS (443) from the internet
-//   Outbound: only PostgreSQL (5432) to the database subnet (plus required Azure platform traffic)
+//   Inbound: only HTTPS (443) from the internet (+ AzureLoadBalancer health probes); deny-all otherwise.
+//   Outbound: PostgreSQL (5432) is restricted to the database subnet only — any other traffic destined
+//   for the database subnet is denied. Outbound traffic to the rest of the internet/Azure (Key Vault,
+//   MCR, Azure metadata, DNS, etc.) is intentionally left to the platform default rules so the
+//   container can pull images and the app can reach its dependencies.
 module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = {
   name: '${deployment().name}-app-snet-nsg'
   params: {
