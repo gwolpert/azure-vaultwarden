@@ -118,6 +118,7 @@ module postgresql 'modules/postgresql.bicep' = {
     administratorLoginPassword: postgresqlAdminPassword
     keyVaultName: keyVault.outputs.name
     enablePostgresqlLock: enablePostgresqlLock
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
   }
 }
 
