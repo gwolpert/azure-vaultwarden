@@ -1,7 +1,9 @@
 // ========================================
 // Storage Account Module
 // ========================================
-// Hosts the Azure Files share that backs the Vaultwarden ATTACHMENTS_FOLDER.
+// Hosts the Azure Files share that backs persistent Vaultwarden data
+// (ATTACHMENTS_FOLDER and SENDS_FOLDER).  The share is mounted at /data
+// inside the container so both /data/attachments and /data/sends are durable.
 // The account is locked down to the App Service subnet via a Microsoft.Storage
 // service endpoint.  The public endpoint is enabled (required for service-
 // endpoint rules) but the storage firewall denies all other traffic by default.
@@ -20,15 +22,15 @@ param appServiceSubnetResourceId string
 @description('Resource ID of the Log Analytics Workspace to send Storage diagnostic metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-@description('Name of the Azure Files share used for Vaultwarden attachments. Must be 3-63 lowercase alphanumeric/hyphen characters.')
+@description('Name of the Azure Files share used for persistent Vaultwarden data (attachments and sends). Must be 3-63 lowercase alphanumeric/hyphen characters.')
 @minLength(3)
 @maxLength(63)
-param attachmentsFileShareName string = 'vaultwarden-attachments'
+param dataFileShareName string = 'vaultwarden-data'
 
-@description('Quota (in GB) for the attachments file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments. Sized for ~100 users × 1000 MiB each plus headroom.')
+@description('Quota (in GB) for the data file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments and sends combined. Sized for ~100 users × 1000 MiB attachments each plus headroom; Send files are ephemeral and typically consume only a small fraction (~10 %) of the total.')
 @minValue(1)
 @maxValue(5120)
-param attachmentsFileShareQuotaGB int = 250
+param dataFileShareQuotaGB int = 250
 
 // Build the full Storage Account name using naming convention.
 // Storage Account: must be 3-24 chars, lowercase letters and numbers only.
@@ -72,8 +74,8 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
         }
       ]
     }
-    // File service hosting the attachments share. Soft-delete on shares gives
-    // us 7-day recovery for accidentally deleted attachments.
+    // File service hosting the data share. Soft-delete on shares gives
+    // us 7-day recovery for accidentally deleted data.
     fileServices: {
       shareDeleteRetentionPolicy: {
         enabled: true
@@ -98,10 +100,10 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
       ]
       shares: [
         {
-          name: attachmentsFileShareName
+          name: dataFileShareName
           accessTier: 'Hot'
           enabledProtocols: 'SMB'
-          shareQuota: attachmentsFileShareQuotaGB
+          shareQuota: dataFileShareQuotaGB
         }
       ]
     }
@@ -123,4 +125,4 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
 
 output name string = storageAccountDeployment.outputs.name
 output resourceId string = storageAccountDeployment.outputs.resourceId
-output attachmentsFileShareName string = attachmentsFileShareName
+output dataFileShareName string = dataFileShareName

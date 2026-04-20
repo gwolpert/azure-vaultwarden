@@ -174,7 +174,7 @@ module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
   }
 }
 
-// Deploy Storage Account hosting the Azure Files share for Vaultwarden attachments
+// Deploy Storage Account hosting the Azure Files share for persistent Vaultwarden data (attachments and sends)
 module storageAccount 'modules/storage-account.bicep' = {
   scope: rg
   name: 'storage-account-deployment'
@@ -202,8 +202,8 @@ module appService 'modules/app-service.bicep' = {
     adminTokenSecretUri: adminToken != '' ? hashAdminToken!.outputs.adminTokenSecretUri : ''
     databaseUrlSecretUri: postgresql.outputs.databaseUrlSecretUri
     adminAllowedIpAddresses: adminAllowedIpAddresses
-    attachmentsStorageAccountName: storageAccount.outputs.name
-    attachmentsFileShareName: storageAccount.outputs.attachmentsFileShareName
+    storageAccountName: storageAccount.outputs.name
+    dataFileShareName: storageAccount.outputs.dataFileShareName
   }
 }
 
@@ -226,4 +226,4 @@ output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.outputs.resourceId
 output keyVaultName string = keyVault.outputs.name
 output postgresqlServerName string = postgresql.outputs.name
 output storageAccountName string = storageAccount.outputs.name
-output attachmentsFileShareName string = storageAccount.outputs.attachmentsFileShareName
+output dataFileShareName string = storageAccount.outputs.dataFileShareName

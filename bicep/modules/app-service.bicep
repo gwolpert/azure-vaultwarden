@@ -34,14 +34,14 @@ param adminTokenSecretUri string = ''
 @description('Database URL configuration (URI to Key Vault secret)')
 param databaseUrlSecretUri string
 
-@description('Name of the Storage Account hosting the Vaultwarden attachments file share. The account must live in the same resource group as this App Service.')
-param attachmentsStorageAccountName string
+@description('Name of the Storage Account hosting the Vaultwarden data file share. The account must live in the same resource group as this App Service.')
+param storageAccountName string
 
-@description('Name of the file share inside the storage account that holds Vaultwarden attachments.')
-param attachmentsFileShareName string
+@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments and sends).')
+param dataFileShareName string
 
-@description('Path inside the container where the attachments share is mounted (and what ATTACHMENTS_FOLDER points to).')
-param attachmentsMountPath string = '/data/attachments'
+@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments and sends as subdirectories under this path.')
+param dataMountPath string = '/data'
 
 @description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')
 @minValue(1)
@@ -72,8 +72,8 @@ var appServiceName = '${baseName}-app'
 // Reference the existing storage account so we can read its primary access key
 // for the Azure Files SMB mount. The Web Apps `azurestorageaccounts` siteConfig
 // requires the raw access key — Key Vault references are not supported there.
-resource attachmentsStorageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
-  name: attachmentsStorageAccountName
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: storageAccountName
 }
 
 // Deploy App Service (Web App for Containers)
@@ -122,11 +122,15 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'
           value: 'false'
         }
-        // Persist Vaultwarden attachments on the Azure Files share mounted at
-        // attachmentsMountPath instead of the ephemeral container disk.
+        // Persist Vaultwarden attachments and sends on the Azure Files share
+        // mounted at dataMountPath instead of the ephemeral container disk.
         {
           name: 'ATTACHMENTS_FOLDER'
-          value: attachmentsMountPath
+          value: '${dataMountPath}/attachments'
+        }
+        {
+          name: 'SENDS_FOLDER'
+          value: '${dataMountPath}/sends'
         }
         // Cap the total cumulative attachment storage per user (default
         // 1000 MiB ≈ 1 GB) and per organisation (default 250 GiB). These are
@@ -147,23 +151,24 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
       ] : [])
     }
     httpsOnly: true
-    // Mount the attachments Azure Files share into the container so Vaultwarden
-    // writes ATTACHMENTS_FOLDER to durable, VNet-restricted storage instead of
-    // the ephemeral container disk. The Web Apps `azurestorageaccounts` config
-    // does not accept Key Vault references, so the access key is read directly
-    // from the storage account using listKeys() at deploy time.
+    // Mount the data Azure Files share into the container so Vaultwarden
+    // writes ATTACHMENTS_FOLDER and SENDS_FOLDER to durable, VNet-restricted
+    // storage instead of the ephemeral container disk. The Web Apps
+    // `azurestorageaccounts` config does not accept Key Vault references,
+    // so the access key is read directly from the storage account using
+    // listKeys() at deploy time.
     configs: [
       {
         name: 'azurestorageaccounts'
         properties: {
-          'vaultwarden-attachments': {
+          'vaultwarden-data': {
             type: 'AzureFiles'
-            accountName: attachmentsStorageAccountName
-            shareName: attachmentsFileShareName
-            mountPath: attachmentsMountPath
+            accountName: storageAccountName
+            shareName: dataFileShareName
+            mountPath: dataMountPath
             protocol: 'Smb'
             // Select the access key by name so we don't depend on array order.
-            accessKey: filter(attachmentsStorageAccount.listKeys().keys, k => k.keyName == 'key1')[0].value
+            accessKey: filter(storageAccount.listKeys().keys, k => k.keyName == 'key1')[0].value
           }
         }
       }

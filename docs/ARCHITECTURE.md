@@ -211,7 +211,7 @@ title: Architecture Overview
 5. **Monitoring Setup**: Log Analytics Workspace deployed
 6. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
 7. **Key Vault**: Deployed for secrets management (admin token + database URL)
-8. **Storage Account**: StorageV2 account with an Azure Files share is provisioned with geo-redundant storage (GRS) for cross-region data replication, the public endpoint enabled with a firewall `defaultAction` of `Deny`, and a `virtualNetworkRule` restricting the data plane to the App Service subnet (via the `Microsoft.Storage` service endpoint). The share is mounted into the container at `/data/attachments` and Vaultwarden's `ATTACHMENTS_FOLDER`, `USER_ATTACHMENT_LIMIT` (1000 MiB per user) and `ORG_ATTACHMENT_LIMIT` (250 GiB per org) point at it. Diagnostic metrics are forwarded to Log Analytics.
+8. **Storage Account**: StorageV2 account with an Azure Files share is provisioned with geo-redundant storage (GRS) for cross-region data replication, the public endpoint enabled with a firewall `defaultAction` of `Deny`, and a `virtualNetworkRule` restricting the data plane to the App Service subnet (via the `Microsoft.Storage` service endpoint). The share is mounted into the container at `/data` so that both `ATTACHMENTS_FOLDER` (`/data/attachments`) and `SENDS_FOLDER` (`/data/sends`) are persisted to durable storage. `USER_ATTACHMENT_LIMIT` (1000 MiB per user) and `ORG_ATTACHMENT_LIMIT` (250 GiB per org) cap attachment sizes. Send files are ephemeral and typically consume only a small fraction of the total quota. Diagnostic metrics are forwarded to Log Analytics.
 9. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration and DATABASE_URL configured
 
 ### Post-Deployment
@@ -290,7 +290,7 @@ AppServiceHTTPLogs
 - **RPO (Recovery Point Objective)**: Near-zero data loss (continuous backup with transaction log archiving)
 - **Data Protection**: Optional resource lock prevents accidental deletion of PostgreSQL server
 - **Geo-redundant Backup**: Available as a configuration option for cross-region protection
-- **Geo-redundant Storage**: Attachment data in Azure Files is replicated to the paired region (Standard_GRS)
+- **Geo-redundant Storage**: Attachment and Send file data in Azure Files is replicated to the paired region (Standard_GRS)
 - **Backup Retention**: 7 days default (configurable up to 35 days)
 
 ### Backup Monitoring
