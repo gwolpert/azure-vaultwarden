@@ -3,7 +3,8 @@
 // ========================================
 // Hosts the Azure Files share that backs the Vaultwarden ATTACHMENTS_FOLDER.
 // The account is locked down to the App Service subnet via a Microsoft.Storage
-// service endpoint and has public network access denied for everything else.
+// service endpoint.  The public endpoint is enabled (required for service-
+// endpoint rules) but the storage firewall denies all other traffic by default.
 
 targetScope = 'resourceGroup'
 

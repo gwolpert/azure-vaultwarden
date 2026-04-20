@@ -63,7 +63,7 @@ The deployment creates the following Azure resources:
 - **App Service Plan**: B1 (Basic) Linux plan with VNet integration (upgradable to Standard/Premium for auto-scaling and deployment slots)
 - **App Service**: Web App for Containers running Vaultwarden
 - **Key Vault**: Secure storage for secrets (admin token, database connection string)
-- **Storage Account**: StorageV2 account hosting an Azure Files share for Vaultwarden attachments. Provisioned with **geo-redundant storage (GRS)** — data is replicated to the Azure paired region for disaster recovery. Public network access is denied; only the App Service subnet can reach the data plane (via a `Microsoft.Storage` service endpoint), and diagnostic metrics flow to Log Analytics. The container mounts the share at `/data/attachments` (`ATTACHMENTS_FOLDER`), with `USER_ATTACHMENT_LIMIT` set to 1000 MiB per user and `ORG_ATTACHMENT_LIMIT` set to 250 GiB per organization. The file share quota defaults to 250 GB.
+- **Storage Account**: StorageV2 account hosting an Azure Files share for Vaultwarden attachments. Provisioned with **geo-redundant storage (GRS)** — data is replicated to the Azure paired region for disaster recovery. The public endpoint is enabled but the storage firewall denies all traffic by default; only the App Service subnet is allow-listed via a `Microsoft.Storage` service endpoint, and diagnostic metrics flow to Log Analytics. The container mounts the share at `/data/attachments` (`ATTACHMENTS_FOLDER`), with `USER_ATTACHMENT_LIMIT` set to 1000 MiB per user and `ORG_ATTACHMENT_LIMIT` set to 250 GiB per organization. The file share quota defaults to 250 GB.
 
 ## Prerequisites
 
