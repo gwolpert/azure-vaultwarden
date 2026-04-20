@@ -152,36 +152,17 @@ check_bicep_template() {
 # Check GitHub workflows
 check_github_workflows() {
     print_header "Checking GitHub Workflows"
-    
-    if [ -f ".github/workflows/deploy.yml" ]; then
-        print_pass "Deploy workflow exists"
-        
-        # Check for required elements in workflow
-        if grep -q "workflow_dispatch" .github/workflows/deploy.yml; then
-            print_pass "  Manual trigger configured"
-        else
-            print_fail "  Manual trigger not configured"
-        fi
-        
-        if grep -q "environment:" .github/workflows/deploy.yml; then
-            print_pass "  Environment support configured"
-        else
-            print_fail "  Environment support not configured"
-        fi
-        
-        if grep -q "azure/login@v2" .github/workflows/deploy.yml; then
-            print_pass "  Azure login action configured"
-        else
-            print_fail "  Azure login action not found"
-        fi
-        
-        if grep -q "azure/arm-deploy@v2" .github/workflows/deploy.yml; then
-            print_pass "  ARM deploy action configured"
-        else
-            print_fail "  ARM deploy action not found"
-        fi
+
+    if [ -f ".github/workflows/validate-bicep.yml" ]; then
+        print_pass "Bicep validation workflow exists"
     else
-        print_fail "Deploy workflow not found"
+        print_warn "Bicep validation workflow not found"
+    fi
+
+    if [ -f ".github/workflows/pages.yml" ]; then
+        print_pass "GitHub Pages workflow exists (publishes ARM template for one-click deploy)"
+    else
+        print_warn "GitHub Pages workflow not found"
     fi
 }
 
@@ -189,7 +170,7 @@ check_github_workflows() {
 check_documentation() {
     print_header "Checking Documentation"
     
-    local docs=("README.md" "docs/GITHUB_SETUP.md" "docs/ARCHITECTURE.md" "docs/BACKUP_PROTECTION.md" "docs/TESTING.md" "docs/QUICK_REFERENCE.md")
+    local docs=("README.md" "docs/ARCHITECTURE.md" "docs/BACKUP_PROTECTION.md" "docs/TESTING.md" "docs/QUICK_REFERENCE.md")
     
     for doc in "${docs[@]}"; do
         if [ -f "$doc" ]; then
@@ -206,7 +187,6 @@ check_file_structure() {
     
     local required_files=(
         "bicep/main.bicep"
-        ".github/workflows/deploy.yml"
         "README.md"
     )
     
@@ -300,9 +280,8 @@ print_summary() {
         print_pass "All critical checks passed! ✨"
         echo ""
         echo "Next steps:"
-        echo "1. Set up GitHub Environments (see docs/GITHUB_SETUP.md)"
-        echo "2. Configure secrets and variables in GitHub"
-        echo "3. Run the 'Deploy Vaultwarden to Azure' workflow"
+        echo "1. Review parameters in bicep/main.bicep"
+        echo "2. Deploy with Azure CLI (az deployment sub create) or the Deploy to Azure button"
         return 0
     else
         print_fail "Some critical checks failed. Please fix the issues above."

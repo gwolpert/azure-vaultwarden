@@ -49,6 +49,7 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
       {
         name: 'kv-diagnostics'
         workspaceResourceId: logAnalyticsWorkspaceResourceId
+        logAnalyticsDestinationType: 'Dedicated'
         logCategoriesAndGroups: [
           {
             categoryGroup: 'audit'

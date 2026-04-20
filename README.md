@@ -2,7 +2,7 @@
 
 This repository contains Bicep templates for deploying [Vaultwarden](https://github.com/dani-garcia/vaultwarden) (an unofficial Bitwarden-compatible server) on Azure App Service with all necessary supporting infrastructure.
 
-**Deployment is managed through GitHub Actions with GitHub Environments** for secure and reproducible deployments across dev, staging, and production environments.
+**Deployment is performed with the Azure CLI or the published ARM template** (e.g. via the "Deploy to Azure" button) for simple, reproducible infrastructure rollouts.
 
 ## Quick Deploy
 
@@ -11,7 +11,7 @@ Deploy directly to Azure with one click:
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgwolpert.github.io%2Fazure-vaultwarden%2Farm%2Fmain.json)
 [![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fgwolpert.github.io%2Fazure-vaultwarden%2Farm%2Fmain.json)
 
-**Note:** The "Deploy to Azure" button uses the ARM template compiled from Bicep and hosted on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/). For production deployments, we recommend using GitHub Actions with the Bicep templates and Azure Verified Modules.
+**Note:** The "Deploy to Azure" button uses the ARM template compiled from Bicep and hosted on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/). The template is automatically compiled from `bicep/main.bicep` and published to GitHub Pages.
 
 ## Deployment Methods
 
@@ -20,23 +20,19 @@ This repository supports two deployment approaches:
 ### 1. One-Click Deploy (Quick Start)
 - **File:** ARM template compiled from Bicep (hosted on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/arm/main.json))
 - **Best for:** Quick testing, demos, personal use
-- Uses direct Azure resource definitions
 - Deploy with the button above or via Azure Portal
 - Template is automatically compiled from `bicep/main.bicep` and published to GitHub Pages
 
-### 2. GitHub Actions with Bicep (Recommended for Production)
+### 2. Azure CLI with Bicep (Recommended for Production)
 - **Files:** `bicep/main.bicep` (using Azure Verified Modules)
-- **Best for:** Production, team environments, CI/CD
-- Environment-specific configurations
-- Approval workflows for production
-- More maintainable and follows Azure best practices
-- See [GitHub Setup Guide](docs/GITHUB_SETUP.md) for details
+- **Best for:** Production, scripted/repeatable deployments
+- Full control over parameters, naming, and per-environment configuration
+- Uses the Azure Verified Modules and follows Azure best practices
 
 ## Documentation
 
 Full documentation is available on [GitHub Pages](https://gwolpert.github.io/azure-vaultwarden/).
 
-- **[GitHub Setup Guide](docs/GITHUB_SETUP.md)** - GitHub Environments, secrets, and variables configuration
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Architecture, security, scaling, and cost details
 - **[Backup and Recovery](docs/BACKUP_PROTECTION.md)** - PostgreSQL backup and restore procedures
 - **[Testing Guide](docs/TESTING.md)** - Post-deployment verification procedures
@@ -53,7 +49,6 @@ Before deploying, run the validation script to check your setup:
 This will check:
 - Prerequisites (Azure CLI, Bicep, Git)
 - File structure and Bicep templates
-- GitHub workflow configuration
 - Documentation completeness
 - Azure resource providers (if logged in)
 
@@ -75,54 +70,11 @@ The deployment creates the following Azure resources:
 - Azure CLI installed ([Install guide](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli))
 - Bicep CLI installed (comes with Azure CLI 2.20.0+)
 - Appropriate permissions to create resources in your Azure subscription (including the `Microsoft.DBforPostgreSQL` resource provider registered)
-- Service principal with **Contributor** and **User Access Administrator** roles (for GitHub Actions deployment) or **Owner** role (which includes both)
+- An identity with **Contributor** and **User Access Administrator** roles (or **Owner**, which includes both) on the target subscription. The User Access Administrator role is required because the deployment grants the App Service's managed identity access to Key Vault secrets.
 
 ## Quick Start
 
-### Deployment Method: GitHub Actions (Recommended)
-
-This repository uses GitHub Actions with GitHub Environments for deployment. This approach provides:
-- Environment-specific configuration management
-- Secure secrets handling
-- Approval workflows for production
-- Deployment history and rollback capabilities
-
-### 1. Set Up GitHub Environments
-
-Follow the detailed guide in [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) to:
-1. Create Azure service principal
-2. Configure GitHub Environments (dev, staging, prod)
-3. Set up secrets and variables for each environment
-
-### 2. Deploy via GitHub Actions
-
-#### Option A: Manual Deployment
-1. Go to your repository's "Actions" tab
-2. Select "Deploy Vaultwarden to Azure" workflow
-3. Click "Run workflow"
-4. Select the environment (dev/staging/prod)
-5. Click "Run workflow"
-
-#### Option B: Automatic Deployment
-Push changes to the `main` branch:
-```bash
-git add .
-git commit -m "Update configuration"
-git push origin main
-```
-
-The workflow automatically deploys to the `dev` environment.
-
-### 3. Access Your Vaultwarden Instance
-
-After deployment completes:
-1. Check the GitHub Actions workflow summary
-2. Find the "Vaultwarden URL" in the deployment outputs
-3. Visit the URL in your browser
-
-### Alternative: Manual Deployment via Azure CLI
-
-If you prefer not to use GitHub Actions, you can deploy manually:
+### Deploy with Azure CLI
 
 ```bash
 # Login to Azure
@@ -147,21 +99,31 @@ az deployment sub create \
 
 > Vaultwarden image tags are pinned to a specific version. Bump only after reviewing the upstream release notes at [vaultwarden/releases](https://github.com/dani-garcia/vaultwarden/releases).
 
+### Deploy with the ARM Template ("Deploy to Azure" button)
+
+Click the **Deploy to Azure** button at the top of this README to deploy the published ARM template through the Azure Portal. You will be prompted for the same parameters as the Bicep deployment (resource group name, location, PostgreSQL admin password, etc.).
+
+### Access Your Vaultwarden Instance
+
+After deployment completes:
+1. Note the `vaultwardenUrl` value from the deployment outputs (visible in the CLI output or the Azure Portal deployment view)
+2. Visit the URL in your browser
+
 ## Configuration
 
-Parameters are configured through GitHub Environment Variables and Secrets. The `POSTGRESQL_ADMIN_PASSWORD` secret is required for database authentication. See [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for complete configuration details including secrets, variables, and per-environment settings.
+All deployment inputs are passed as parameters to the Bicep/ARM template. The `postgresqlAdminPassword` parameter is required for database authentication. See `bicep/main.bicep` for the full list of available parameters and their descriptions.
 
 ## Security
 
-- **Admin panel** is disabled by default. Enable it by setting the `ADMIN_TOKEN` secret and redeploying.
-- **Admin token hashing**: The `ADMIN_TOKEN` is automatically hashed using **argon2id** during Bicep deployment before being stored in Azure Key Vault. This ensures the plaintext token is never persisted — only the PHC-format hash is stored. This works across all deployment methods (GitHub Actions, Deploy to Azure button, and Azure CLI).
-- **User signups** are disabled by default. Enable via the `SIGNUPS_ALLOWED` variable.
+- **Admin panel** is disabled by default. Enable it by providing an `adminToken` parameter and redeploying.
+- **Admin token hashing**: The `adminToken` is automatically hashed using **argon2id** during Bicep deployment before being stored in Azure Key Vault. This ensures the plaintext token is never persisted — only the PHC-format hash is stored. This works across all deployment methods (Deploy to Azure button and Azure CLI).
+- **User signups** are disabled by default. Enable via the `signupsAllowed` parameter.
 - **HTTPS** is enforced automatically with Azure-managed certificates.
 - **Secrets** are stored in Azure Key Vault, accessed via managed identity.
 - **PostgreSQL** is VNet-integrated with private access only (no public endpoint).
 - **Network Security Groups** lock the VNet down: only inbound `TCP/443` from the internet is allowed to the App Service subnet, and only `TCP/5432` from the App Service subnet is allowed to the PostgreSQL subnet.
 - **Customisable VNet address range**: `vnetAddressPrefix`, `appServiceSubnetAddressPrefix`, and `postgresqlSubnetAddressPrefix` parameters let you avoid conflicts when peering with other networks.
-- **Key Vault network isolation**: the vault denies all public traffic by default. Operator IPs can be allow-listed via the `keyVaultAllowedIpAddresses` parameter, and the GitHub Actions workflow injects/removes the runner's public IP automatically around each deployment. Trusted Azure services (App Service Key Vault references, ARM template deployments) keep working through the `AzureServices` bypass.
+- **Key Vault network isolation**: the vault denies all public IP traffic. There is no public allow-list — only trusted Azure services (App Service Key Vault references, ARM template deployments, deployment scripts) reach the vault through the `AzureServices` bypass, which is sufficient for both the Bicep/ARM deployment and runtime secret retrieval by the App Service.
 - **Key Vault monitoring**: audit and policy evaluation logs plus all metrics are sent to the Log Analytics workspace.
 - **PostgreSQL monitoring**: server, query, and audit logs (`allLogs` category group) plus all metrics are sent to the Log Analytics workspace.
 - **Pinned Vaultwarden version**: the default `vaultwardenImageTag` is pinned to a specific upstream release (`1.35.7`) instead of `latest`. Update only after reading the [release notes](https://github.com/dani-garcia/vaultwarden/releases).
@@ -180,9 +142,8 @@ See [Architecture Overview](docs/ARCHITECTURE.md) for full details on backup and
 
 ## Updating Vaultwarden
 
-1. Update the `VAULTWARDEN_IMAGE_TAG` variable in your GitHub Environment
-2. Run the "Deploy Vaultwarden to Azure" workflow
-3. Select the environment to update
+1. Update the `vaultwardenImageTag` parameter to the desired upstream release
+2. Re-run the deployment (Azure CLI or the Deploy to Azure button)
 
 ## Cleanup
 

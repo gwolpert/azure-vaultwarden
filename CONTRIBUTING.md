@@ -50,7 +50,7 @@ Before submitting a PR, run the validation script:
 ./validate.sh
 ```
 
-This checks Bicep templates, file structure, and workflow configuration.
+This checks Bicep templates, file structure, and supporting workflow configuration.
 
 ## Bicep Conventions
 
