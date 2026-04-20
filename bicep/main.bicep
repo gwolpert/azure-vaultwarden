@@ -64,9 +64,6 @@ param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must be inside vnetAddressPrefix.')
 param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
 
-@description('IPv4 addresses or CIDR ranges allowed to reach the Key Vault data plane. Trusted Azure services (e.g. App Service Key Vault references, ARM template deployments) keep working through the AzureServices bypass. Pass the CI/CD runner public IP from your pipeline to allow the deployment to manage secrets, then remove it after deploy.')
-param keyVaultAllowedIpAddresses array = []
-
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
 param adminAllowedIpAddresses array = []
 
@@ -151,7 +148,6 @@ module keyVault 'modules/key-vault.bicep' = {
     baseName: resourceGroupName
     location: location
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
-    allowedIpAddresses: keyVaultAllowedIpAddresses
   }
 }
 

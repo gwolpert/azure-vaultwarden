@@ -23,4 +23,4 @@ What actually happened.
 **Environment**
 - OS: 
 - Azure CLI version: 
-- Deployment method: [e.g., GitHub Actions / Manual CLI / One-Click Deploy]
+- Deployment method: [e.g., Azure CLI / One-Click Deploy]

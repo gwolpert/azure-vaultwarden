@@ -7,21 +7,28 @@ title: Quick Reference
 
 Common commands and workflows for managing Vaultwarden on Azure.
 
-## GitHub Actions Workflows
+## Deployment
 
-### Deploy to Development
-1. Go to Actions > "Deploy Vaultwarden to Azure"
-2. Run workflow > Select `dev` environment
-3. Wait for completion (~5-10 minutes)
+### Deploy with Azure CLI
 
-### Deploy to Production
-1. Go to Actions > "Deploy Vaultwarden to Azure"
-2. Run workflow > Select `prod` environment
-3. Approve deployment (if protection rules enabled)
-4. Wait for completion
+```bash
+az deployment sub create \
+  --name vaultwarden-deployment \
+  --location northeurope \
+  --template-file bicep/main.bicep \
+  --parameters \
+    resourceGroupName="vaultwarden-dev" \
+    location="northeurope" \
+    environmentName="dev" \
+    postgresqlAdminPassword="<your-secure-password>"
+```
+
+### Deploy with the ARM template
+
+Click the **Deploy to Azure** button in the [README](https://github.com/gwolpert/azure-vaultwarden#quick-deploy) to deploy the published ARM template through the Azure Portal.
 
 ### Cleanup Environment
-**Note:** There is no automated destroy workflow. Resources must be manually deleted through Azure Portal or CLI for safety.
+**Note:** Resources must be manually deleted through Azure Portal or CLI for safety.
 
 ```bash
 # Via Azure CLI
@@ -164,12 +171,6 @@ The client does not have permission to perform action 'Microsoft.Authorization/r
 # Get your subscription ID
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
-# For a service principal (e.g., GitHub Actions)
-az role assignment create \
-  --assignee "<service-principal-object-id>" \
-  --role "User Access Administrator" \
-  --scope /subscriptions/$SUBSCRIPTION_ID
-
 # For your user account
 az role assignment create \
   --assignee "$(az ad signed-in-user show --query id -o tsv)" \
@@ -182,8 +183,6 @@ After assigning the role, redeploy the template.
 **Alternative:** If your organization's policy doesn't allow User Access Administrator role, you can:
 1. Pre-create the role assignment manually before deployment
 2. Ask an administrator with Owner role to run the deployment
-
-See [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) for complete service principal configuration.
 
 ### Container Won't Start
 ```bash
@@ -247,8 +246,7 @@ openssl rand -base64 32
 
 ### Rotate Admin Token
 1. Generate new token: `openssl rand -base64 32`
-2. Update GitHub Environment secret `ADMIN_TOKEN`
-3. Redeploy via GitHub Actions
+2. Pass the new value as the `adminToken` parameter and redeploy
 
 ### Check Security Settings
 ```bash

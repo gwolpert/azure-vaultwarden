@@ -16,7 +16,6 @@ Deploy directly to Azure with one click:
 
 ## Documentation
 
-- [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) — GitHub Environments, secrets, and variables configuration
 - [Architecture Overview]({% link ARCHITECTURE.md %}) — Architecture, security, scaling, and cost details
 - [Backup and Recovery]({% link BACKUP_PROTECTION.md %}) — PostgreSQL backup and restore procedures
 - [Testing Guide]({% link TESTING.md %}) — Post-deployment verification procedures
@@ -29,11 +28,10 @@ Deploy directly to Azure with one click:
 - Best for quick testing, demos, and personal use
 - Deploy with the button above or via Azure Portal
 
-### 2. GitHub Actions with Bicep (Recommended for Production)
+### 2. Azure CLI with Bicep (Recommended for Production)
 - Uses `bicep/main.bicep` with Azure Verified Modules
-- Best for production, team environments, and CI/CD
-- Environment-specific configurations and approval workflows
-- See [GitHub Setup Guide]({% link GITHUB_SETUP.md %}) for details
+- Best for production, scripted/repeatable deployments
+- See the [GitHub repository](https://github.com/gwolpert/azure-vaultwarden) README for the `az deployment sub create` command and full parameter list
 
 ## Source Code
 
