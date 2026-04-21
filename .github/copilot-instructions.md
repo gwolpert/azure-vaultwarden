@@ -86,7 +86,7 @@ If no AVM module exists for a resource type, use native Bicep resource declarati
 
 ### Code Structure
 
-- ✅ **Declare** parameters at top of file with `@sys.description()` decorators
+- ✅ **Declare** parameters at top of file with `@description()` decorators
 - ✅ **Specify** `@minLength()` and `@maxLength()` for naming parameters
 - ✅ **Use** `@allowed()` decorator sparingly to avoid blocking valid deployments
 - ✅ **Set** default values safe for test environments (low-cost SKUs)
@@ -114,7 +114,7 @@ If no AVM module exists for a resource type, use native Bicep resource declarati
 ### Security
 
 - ❌ **Never** include secrets or keys in outputs
-- ✅ **Use** resource properties directly in outputs (e.g., `storageAccount.outputs.primaryBlobEndpoint`)
+- ✅ **Use** resource properties directly in outputs for native resources (e.g., `storageAccount.properties.primaryEndpoints`) or module outputs via dot notation (e.g., `storageAccount.outputs.primaryBlobEndpoint`)
 - ✅ **Enable** managed identities where possible
 - ✅ **Disable** public access when network isolation is enabled
 
@@ -127,7 +127,7 @@ If no AVM module exists for a resource type, use native Bicep resource declarati
 ### Documentation
 
 - ✅ **Include** helpful `//` comments for complex logic
-- ✅ **Use** `@sys.description()` on all parameters with clear explanations
+- ✅ **Use** `@description()` on all parameters with clear explanations
 - ✅ **Document** non-obvious design decisions
 
 ## Validation Requirements
@@ -141,12 +141,15 @@ After any changes to Bicep files, run the following commands to ensure all files
 az bicep upgrade
 
 # Build and validate changed Bicep files
-az bicep build --file main.bicep
+az bicep build --file bicep/main.bicep
+
+# Or run the full validation script
+./validate.sh
 ```
 
 ### Bicep Parameter Files
 
-- ✅ **Always** update accompanying `*.bicepparam` files when modifying `*.bicep` files
+- ✅ **If** the repo uses `*.bicepparam` files, update them when modifying `*.bicep` files
 - ✅ **Validate** parameter files match current parameter definitions
 - ✅ **Test** deployments with parameter files before committing
 
@@ -165,7 +168,7 @@ When working with Bicep:
 1. Check for existing AVM modules before creating resources
 2. Use official module examples as starting points
 3. Run `az bicep build` after all changes
-4. Update accompanying `.bicepparam` files
+4. Update accompanying `.bicepparam` files if the repo uses them
 5. Document customizations or deviations from examples
 
 ## Troubleshooting
@@ -175,7 +178,7 @@ When working with Bicep:
 1. **Module Version**: Always specify exact version in module reference
 2. **Missing Dependencies**: Ensure resources are created before dependent modules
 3. **Validation Failures**: Run `az bicep build` to identify syntax/type errors
-4. **Parameter Files**: Ensure `.bicepparam` files are updated when parameters change
+4. **Parameter Files**: If the repo uses `.bicepparam` files, ensure they are updated when parameters change
 
 ### Support Resources
 
@@ -191,8 +194,8 @@ Before submitting any Bicep code:
 - [ ] AVM modules used where available
 - [ ] Module versions are pinned
 - [ ] Code builds successfully (`az bicep build`)
-- [ ] Accompanying `.bicepparam` files updated
-- [ ] `@sys.description()` on all parameters
+- [ ] Accompanying `.bicepparam` files updated (if applicable)
+- [ ] `@description()` on all parameters
 - [ ] Symbolic names used for references
 - [ ] No secrets in outputs
 - [ ] Types imported/defined where appropriate
@@ -212,9 +215,9 @@ Before submitting any Bicep code:
 
 ## Structure and Declaration
 
-- Always declare parameters at the top of files with @sys.description() decorators
+- Always declare parameters at the top of files with @description() decorators
 - Use latest stable API versions for all resources
-- Use descriptive @sys.description() decorators for all parameters
+- Use descriptive @description() decorators for all parameters
 - Specify minimum and maximum character length for naming parameters
 
 ## Parameters
