@@ -2,11 +2,12 @@
 // Storage Account Module
 // ========================================
 // Hosts the Azure Files share that backs persistent Vaultwarden data
-// (ATTACHMENTS_FOLDER and SENDS_FOLDER).  The share is mounted at /data
+// (ATTACHMENTS_FOLDER and SENDS_FOLDER). The share is mounted at /data
 // inside the container so both /data/attachments and /data/sends are durable.
-// The account is locked down to the App Service subnet via a Microsoft.Storage
-// service endpoint.  The public endpoint is enabled (required for service-
-// endpoint rules) but the storage firewall denies all other traffic by default.
+// The account is locked down: public network access is disabled and the only
+// data-plane path is a Files private endpoint deployed into the application
+// VNet's private-endpoints subnet, with DNS resolved through the linked
+// privatelink.file.<storage-suffix> Private DNS Zone.
 
 targetScope = 'resourceGroup'
 
@@ -16,8 +17,11 @@ param baseName string
 @description('The Azure region where resources will be deployed')
 param location string
 
-@description('Resource ID of the App Service subnet that is allowed to reach the storage account data plane via the Microsoft.Storage service endpoint.')
-param appServiceSubnetResourceId string
+@description('Resource ID of the subnet that will host the Storage Account private endpoint NIC. Required because public access to the storage data plane is disabled.')
+param privateEndpointSubnetResourceId string
+
+@description('Resource ID of the privatelink.file.<storage-suffix> Private DNS Zone linked to the consuming VNet. Used to register the Storage Files private endpoint so callers inside the VNet resolve the account to its private IP.')
+param privateDnsZoneResourceId string
 
 @description('Resource ID of the Log Analytics Workspace to send Storage diagnostic metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
@@ -53,29 +57,32 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
     allowSharedKeyAccess: true
-    // NOTE: Must be 'Enabled' for service-endpoint based virtualNetworkRules
-    // to be honored. Setting this to 'Disabled' would force the use of a
-    // private endpoint and would also block the App Service subnet — defeating
-    // the purpose. Public traffic is still denied because networkAcls below
-    // sets defaultAction to 'Deny' and only the App Service subnet is allow-
-    // listed via a Microsoft.Storage service endpoint.
-    publicNetworkAccess: 'Enabled'
-    // Restrict the data plane so that only the App Service subnet (via service
-    // endpoint) and trusted Azure services can reach it. The "AzureServices"
-    // bypass allows ARM deployments and platform-level diagnostics to function;
-    // "Logging, Metrics" ensures Storage Analytics telemetry flows to Log
-    // Analytics. No public internet traffic is admitted.
+    // Public network access is disabled. The only data-plane path into the
+    // account is the Files private endpoint deployed below into the
+    // private-endpoints subnet of the application VNet. The "AzureServices"
+    // bypass still allows trusted Azure platform services (e.g. ARM
+    // deployments and diagnostic pipelines) to function.
+    publicNetworkAccess: 'Disabled'
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices, Logging, Metrics'
       ipRules: []
-      virtualNetworkRules: [
-        {
-          id: appServiceSubnetResourceId
-          action: 'Allow'
-        }
-      ]
+      virtualNetworkRules: []
     }
+    privateEndpoints: [
+      {
+        name: '${storageAccountName}-file-pe'
+        service: 'file'
+        subnetResourceId: privateEndpointSubnetResourceId
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: privateDnsZoneResourceId
+            }
+          ]
+        }
+      }
+    ]
     // File service hosting the data share. Soft-delete on shares gives
     // us 7-day recovery for accidentally deleted data.
     fileServices: {

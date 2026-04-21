@@ -13,8 +13,11 @@ param location string
 @description('Resource ID of the Log Analytics Workspace to send Key Vault audit logs and metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-@description('Resource IDs of VNet subnets that are allowed to reach the Key Vault data plane via a Microsoft.KeyVault service endpoint. Required for App Service Key Vault references when the vault denies public traffic, because those references do not use the trusted-services bypass.')
-param allowedSubnetResourceIds array = []
+@description('Resource ID of the subnet that will host the Key Vault private endpoint NIC. Required because public access to the vault data plane is disabled.')
+param privateEndpointSubnetResourceId string
+
+@description('Resource ID of the privatelink.vaultcore.azure.net Private DNS Zone linked to the consuming VNet. Used to register the Key Vault private endpoint so callers inside the VNet resolve the vault to its private IP.')
+param privateDnsZoneResourceId string
 
 // Build the full Key Vault name using naming convention
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
@@ -24,11 +27,11 @@ param allowedSubnetResourceIds array = []
 // Max base name: 22 chars (e.g., vaultwarden-production = 21 chars -> vaultwardenproductionkv = 23 chars)
 var keyVaultName = '${replace(baseName, '-', '')}kv'
 
-var virtualNetworkRules = [for subnetId in allowedSubnetResourceIds: {
-  id: subnetId
-}]
-
-// Deploy Key Vault for secrets management
+// Deploy Key Vault for secrets management.
+// Public network access is disabled; the only data-plane path into the vault
+// is the private endpoint deployed below into the private-endpoints subnet of
+// the application VNet. The "AzureServices" bypass still allows trusted
+// Azure platform services to reach the vault when needed.
 module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
   name: '${deployment().name}-key-vault'
   params: {
@@ -39,12 +42,25 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
     enableVaultForDeployment: false
     enableVaultForDiskEncryption: false
     enableVaultForTemplateDeployment: true
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'
-      virtualNetworkRules: virtualNetworkRules
     }
+    privateEndpoints: [
+      {
+        name: '${keyVaultName}-pe'
+        service: 'vault'
+        subnetResourceId: privateEndpointSubnetResourceId
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: privateDnsZoneResourceId
+            }
+          ]
+        }
+      }
+    ]
     diagnosticSettings: empty(logAnalyticsWorkspaceResourceId) ? [] : [
       {
         name: 'kv-diagnostics'
