@@ -11,13 +11,16 @@ param baseName string
 param location string
 
 @description('CIDR for the entire virtual network')
-param vnetAddressPrefix string = '10.0.0.0/16'
+param vnetAddressPrefix string = '10.101.0.0/24'
 
 @description('CIDR for the App Service delegated subnet')
-param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
+param appServiceSubnetAddressPrefix string = '10.101.0.0/26'
 
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet')
-param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
+param postgresqlSubnetAddressPrefix string = '10.101.0.64/26'
+
+@description('CIDR for the subnet hosting private endpoints (Key Vault, Storage Account, etc.). Must be inside vnetAddressPrefix and not overlap with the other subnets.')
+param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 
 @description('TCP port used by PostgreSQL Flexible Server')
 param postgresqlPort int = 5432
@@ -104,9 +107,9 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
           protocol: 'Tcp'
           sourceAddressPrefix: appServiceSubnetAddressPrefix
           sourcePortRange: '*'
-          destinationAddressPrefix: 'Storage'
+          destinationAddressPrefix: privateEndpointsSubnetAddressPrefix
           destinationPortRange: '445'
-          description: 'Allow App Service to mount the attachments Azure Files share over SMB via the Microsoft.Storage service endpoint.'
+          description: 'Allow App Service to mount the data Azure Files share over SMB via the Storage Account private endpoint in the private-endpoints subnet.'
         }
       }
       {
@@ -182,25 +185,24 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
         addressPrefix: appServiceSubnetAddressPrefix
         delegation: 'Microsoft.Web/serverFarms'
         networkSecurityGroupResourceId: appServiceNsg.outputs.resourceId
-        // Microsoft.KeyVault service endpoint so the VNet subnet can be added
-        // to the Key Vault firewall as a virtualNetworkRule. This is required
-        // for App Service Key Vault references to resolve at runtime when the
-        // vault's networkAcls.defaultAction is 'Deny' — the "AzureServices"
-        // bypass does NOT cover App Service Key Vault references.
-        // Microsoft.Storage service endpoint so the same subnet can be added
-        // to the Storage Account firewall as a virtualNetworkRule. This is
-        // required for the App Service container to mount the attachments
-        // Azure Files share when the storage account denies public traffic.
-        serviceEndpoints: [
-          'Microsoft.KeyVault'
-          'Microsoft.Storage'
-        ]
+        // Key Vault and Storage Account are reached over private endpoints
+        // deployed into the dedicated private-endpoints-snet, so this subnet
+        // no longer needs Microsoft.KeyVault / Microsoft.Storage service
+        // endpoints. Resolution happens via the private DNS zones linked to
+        // this VNet.
       }
       {
         name: 'postgresql-snet'
         addressPrefix: postgresqlSubnetAddressPrefix
         delegation: 'Microsoft.DBforPostgreSQL/flexibleServers'
         networkSecurityGroupResourceId: postgresqlNsg.outputs.resourceId
+      }
+      {
+        name: 'private-endpoints-snet'
+        addressPrefix: privateEndpointsSubnetAddressPrefix
+        // Disable network policies so private endpoint NICs can be created
+        // in this subnet (Azure currently requires this for PEs).
+        privateEndpointNetworkPolicies: 'Disabled'
       }
     ]
   }
@@ -209,7 +211,11 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
 output name string = vnetDeployment.outputs.name
 output resourceId string = vnetDeployment.outputs.resourceId
 output subnetResourceIds array = vnetDeployment.outputs.subnetResourceIds
-output appServiceSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[0]
-output postgresqlSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[1]
+// Resolve subnet resource IDs deterministically by name rather than by their position
+// in the AVM module's `subnetResourceIds` array. Reordering or adding subnets above
+// must not silently rewire downstream modules to the wrong subnet.
+output appServiceSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'app-service-snet')
+output postgresqlSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'postgresql-snet')
+output privateEndpointsSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'private-endpoints-snet')
 output appServiceNsgResourceId string = appServiceNsg.outputs.resourceId
 output postgresqlNsgResourceId string = postgresqlNsg.outputs.resourceId
