@@ -2,8 +2,9 @@
 // Storage Account Module
 // ========================================
 // Hosts the Azure Files share that backs persistent Vaultwarden data
-// (ATTACHMENTS_FOLDER and SENDS_FOLDER). The share is mounted at /data
-// inside the container so both /data/attachments and /data/sends are durable.
+// (ATTACHMENTS_FOLDER, SENDS_FOLDER, ICON_CACHE_FOLDER, and TEMPLATES_FOLDER).
+// The share is mounted at /data inside the container so /data/attachments,
+// /data/sends, /data/icon_cache, and /data/templates are durable.
 // The account is locked down: public network access is disabled and the only
 // data-plane path is a Files private endpoint deployed into the application
 // VNet's private-endpoints subnet, with DNS resolved through the linked
@@ -26,7 +27,7 @@ param privateDnsZoneResourceId string
 @description('Resource ID of the Log Analytics Workspace to send Storage diagnostic metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-@description('Name of the Azure Files share used for persistent Vaultwarden data (attachments and sends). Must be 3-63 lowercase alphanumeric/hyphen characters.')
+@description('Name of the Azure Files share used for persistent Vaultwarden data (attachments, sends, icon cache, and Handlebars templates). Must be 3-63 lowercase alphanumeric/hyphen characters.')
 @minLength(3)
 @maxLength(63)
 param dataFileShareName string = 'vaultwarden-data'

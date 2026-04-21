@@ -108,8 +108,9 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     }
     httpsOnly: true
     // Mount the data Azure Files share into the container so Vaultwarden
-    // writes ATTACHMENTS_FOLDER and SENDS_FOLDER to durable, VNet-restricted
-    // storage instead of the ephemeral container disk. The Web Apps
+    // writes ATTACHMENTS_FOLDER, SENDS_FOLDER, ICON_CACHE_FOLDER, and
+    // TEMPLATES_FOLDER to durable, VNet-restricted storage instead of the
+    // ephemeral container disk. The Web Apps
     // `azurestorageaccounts` config does not accept Key Vault references,
     // so the access key is read directly from the storage account using
     // listKeys() at deploy time.
@@ -128,10 +129,16 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
           IP_HEADER: 'X-Client-IP'
           WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
-          // Persist Vaultwarden attachments and sends on the Azure Files share
-          // mounted at dataMountPath instead of the ephemeral container disk.
+          // Persist Vaultwarden attachments, sends, icon cache, and Handlebars
+          // templates on the Azure Files share mounted at dataMountPath instead
+          // of the ephemeral container disk. Offloading the icon cache avoids
+          // re-downloading favicons after every container restart, and the
+          // templates folder allows operators to override the bundled
+          // Handlebars templates without rebuilding the image.
           ATTACHMENTS_FOLDER: '${dataMountPath}/attachments'
           SENDS_FOLDER: '${dataMountPath}/sends'
+          ICON_CACHE_FOLDER: '${dataMountPath}/icon_cache'
+          TEMPLATES_FOLDER: '${dataMountPath}/templates'
           // Cap the total cumulative attachment storage per user (default
           // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These
           // are quotas on *all* attachments a user/org has, not on a single
