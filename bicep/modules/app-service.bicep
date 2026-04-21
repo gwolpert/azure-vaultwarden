@@ -109,7 +109,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     httpsOnly: true
     // Mount the data Azure Files share into the container so Vaultwarden
     // writes ATTACHMENTS_FOLDER, SENDS_FOLDER, ICON_CACHE_FOLDER, and
-    // TEMPLATES_FOLDER to durable, VNet-restricted storage instead of the
+    // RSA_KEY_FILENAME to durable, VNet-restricted storage instead of the
     // ephemeral container disk. The Web Apps
     // `azurestorageaccounts` config does not accept Key Vault references,
     // so the access key is read directly from the storage account using
@@ -129,16 +129,21 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
           IP_HEADER: 'X-Client-IP'
           WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
-          // Persist Vaultwarden attachments, sends, icon cache, and Handlebars
-          // templates on the Azure Files share mounted at dataMountPath instead
-          // of the ephemeral container disk. Offloading the icon cache avoids
-          // re-downloading favicons after every container restart, and the
-          // templates folder allows operators to override the bundled
-          // Handlebars templates without rebuilding the image.
+          // Persist Vaultwarden attachments, sends, the favicon cache, and the
+          // generated JWT RSA keypair on the Azure Files share mounted at
+          // dataMountPath instead of the ephemeral container disk. Offloading
+          // the icon cache avoids re-downloading favicons after every container
+          // restart, and persisting the RSA key keeps existing client sessions
+          // valid across restarts/redeploys (Vaultwarden auto-generates a new
+          // keypair when the file is missing, which would otherwise invalidate
+          // every issued JWT). TEMPLATES_FOLDER is intentionally NOT moved
+          // here: upstream Vaultwarden requires it to be a local path.
           ATTACHMENTS_FOLDER: '${dataMountPath}/attachments'
           SENDS_FOLDER: '${dataMountPath}/sends'
           ICON_CACHE_FOLDER: '${dataMountPath}/icon_cache'
-          TEMPLATES_FOLDER: '${dataMountPath}/templates'
+          // RSA_KEY_FILENAME is a path *prefix*; Vaultwarden appends `.pem`
+          // and `.pub.pem` to produce the private and public key files.
+          RSA_KEY_FILENAME: '${dataMountPath}/rsa_key'
           // Cap the total cumulative attachment storage per user (default
           // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These
           // are quotas on *all* attachments a user/org has, not on a single
