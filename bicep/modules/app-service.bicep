@@ -37,10 +37,10 @@ param databaseUrlSecretUri string
 @description('Name of the Storage Account hosting the Vaultwarden data file share. The account must live in the same resource group as this App Service.')
 param storageAccountName string
 
-@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments and sends).')
+@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments, sends, favicon cache, and the JWT RSA signing keypair).')
 param dataFileShareName string
 
-@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments and sends as subdirectories under this path.')
+@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments, sends, the favicon cache, and the JWT RSA keypair as subdirectories/files under this path. TEMPLATES_FOLDER is intentionally left on the local container disk because upstream Vaultwarden requires it to be a local path.')
 param dataMountPath string = '/data'
 
 @description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')
@@ -108,8 +108,9 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
     }
     httpsOnly: true
     // Mount the data Azure Files share into the container so Vaultwarden
-    // writes ATTACHMENTS_FOLDER and SENDS_FOLDER to durable, VNet-restricted
-    // storage instead of the ephemeral container disk. The Web Apps
+    // writes ATTACHMENTS_FOLDER, SENDS_FOLDER, ICON_CACHE_FOLDER, and
+    // RSA_KEY_FILENAME to durable, VNet-restricted storage instead of the
+    // ephemeral container disk. The Web Apps
     // `azurestorageaccounts` config does not accept Key Vault references,
     // so the access key is read directly from the storage account using
     // listKeys() at deploy time.
@@ -128,10 +129,21 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
           DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${databaseUrlSecretUri})'
           IP_HEADER: 'X-Client-IP'
           WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'false'
-          // Persist Vaultwarden attachments and sends on the Azure Files share
-          // mounted at dataMountPath instead of the ephemeral container disk.
+          // Persist Vaultwarden attachments, sends, the favicon cache, and the
+          // generated JWT RSA keypair on the Azure Files share mounted at
+          // dataMountPath instead of the ephemeral container disk. Offloading
+          // the icon cache avoids re-downloading favicons after every container
+          // restart, and persisting the RSA key keeps existing client sessions
+          // valid across restarts/redeploys (Vaultwarden auto-generates a new
+          // keypair when the file is missing, which would otherwise invalidate
+          // every issued JWT). TEMPLATES_FOLDER is intentionally NOT moved
+          // here: upstream Vaultwarden requires it to be a local path.
           ATTACHMENTS_FOLDER: '${dataMountPath}/attachments'
           SENDS_FOLDER: '${dataMountPath}/sends'
+          ICON_CACHE_FOLDER: '${dataMountPath}/icon_cache'
+          // RSA_KEY_FILENAME is a path *prefix*; Vaultwarden appends `.pem`
+          // and `.pub.pem` to produce the private and public key files.
+          RSA_KEY_FILENAME: '${dataMountPath}/rsa_key'
           // Cap the total cumulative attachment storage per user (default
           // 1000 MiB ≈ 1 GB) and per organization (default 250 GiB). These
           // are quotas on *all* attachments a user/org has, not on a single

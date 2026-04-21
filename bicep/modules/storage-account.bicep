@@ -2,8 +2,12 @@
 // Storage Account Module
 // ========================================
 // Hosts the Azure Files share that backs persistent Vaultwarden data
-// (ATTACHMENTS_FOLDER and SENDS_FOLDER). The share is mounted at /data
-// inside the container so both /data/attachments and /data/sends are durable.
+// (ATTACHMENTS_FOLDER, SENDS_FOLDER, ICON_CACHE_FOLDER, and the JWT
+// RSA_KEY_FILENAME keypair). The share is mounted at /data inside the
+// container so /data/attachments, /data/sends, /data/icon_cache, and
+// /data/rsa_key.{pem,pub.pem} are durable. TEMPLATES_FOLDER is intentionally
+// kept on the local container disk because upstream Vaultwarden requires it
+// to be a local path.
 // The account is locked down: public network access is disabled and the only
 // data-plane path is a Files private endpoint deployed into the application
 // VNet's private-endpoints subnet, with DNS resolved through the linked
@@ -26,12 +30,12 @@ param privateDnsZoneResourceId string
 @description('Resource ID of the Log Analytics Workspace to send Storage diagnostic metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-@description('Name of the Azure Files share used for persistent Vaultwarden data (attachments and sends). Must be 3-63 lowercase alphanumeric/hyphen characters.')
+@description('Name of the Azure Files share used for persistent Vaultwarden data (attachments, sends, favicon cache, and the JWT RSA keypair). Must be 3-63 lowercase alphanumeric/hyphen characters.')
 @minLength(3)
 @maxLength(63)
 param dataFileShareName string = 'vaultwarden-data'
 
-@description('Quota (in GB) for the data file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments and sends combined. Sized for ~100 users × 1000 MiB attachments each plus headroom; Send files are ephemeral and typically consume only a small fraction (~10 %) of the total.')
+@description('Quota (in GB) for the data file share. Must be between 1 and 5120 (standard) — controls maximum total storage for all persistent Vaultwarden data on the share (attachments, sends, favicon cache, and the JWT RSA keypair). Sized for ~100 users × 1000 MiB attachments each plus headroom; sends, the favicon cache, and the RSA keypair typically consume only a small fraction of the total.')
 @minValue(1)
 @maxValue(5120)
 param dataFileShareQuotaGB int = 250
