@@ -212,9 +212,9 @@ Before submitting any Bicep code:
 
 ## Structure and Declaration
 
-- Always declare parameters at the top of files with @description decorators
+- Always declare parameters at the top of files with @sys.description() decorators
 - Use latest stable API versions for all resources
-- Use descriptive @description decorators for all parameters
+- Use descriptive @sys.description() decorators for all parameters
 - Specify minimum and maximum character length for naming parameters
 
 ## Parameters
