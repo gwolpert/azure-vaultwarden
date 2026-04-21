@@ -44,17 +44,17 @@ param postgresqlAdminPassword string
 @description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission on the deploying principal.')
 param enablePostgresqlLock bool = false
 
-@description('CIDR for the entire virtual network. Override to avoid conflicts when peering with other networks.')
-param vnetAddressPrefix string = '10.0.0.0/16'
+@description('CIDR for the entire virtual network. Override to avoid conflicts when peering with other networks. Default is a /24 carved into four /26 subnets (the fourth /26, 10.101.0.192/26, is left unallocated for future use).')
+param vnetAddressPrefix string = '10.101.0.0/24'
 
-@description('CIDR for the App Service delegated subnet. Must be inside vnetAddressPrefix.')
-param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
+@description('CIDR for the App Service delegated subnet. Must be inside vnetAddressPrefix. /26 gives 59 usable IPs (5 reserved by Azure) which supports plan scale-out and slot swaps.')
+param appServiceSubnetAddressPrefix string = '10.101.0.0/26'
 
-@description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must be inside vnetAddressPrefix.')
-param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
+@description('CIDR for the PostgreSQL Flexible Server delegated subnet. Must be inside vnetAddressPrefix. Azure requires /28 minimum; /26 is well above that.')
+param postgresqlSubnetAddressPrefix string = '10.101.0.64/26'
 
-@description('CIDR for the subnet hosting private endpoints (Key Vault, Storage Account, etc.). Must be inside vnetAddressPrefix.')
-param privateEndpointsSubnetAddressPrefix string = '10.0.2.0/24'
+@description('CIDR for the subnet hosting private endpoints (Key Vault, Storage Account, etc.). Must be inside vnetAddressPrefix. Each private endpoint consumes 1 IP.')
+param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
 param adminAllowedIpAddresses array = []

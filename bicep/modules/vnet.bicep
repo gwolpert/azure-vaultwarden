@@ -11,16 +11,16 @@ param baseName string
 param location string
 
 @description('CIDR for the entire virtual network')
-param vnetAddressPrefix string = '10.0.0.0/16'
+param vnetAddressPrefix string = '10.101.0.0/24'
 
 @description('CIDR for the App Service delegated subnet')
-param appServiceSubnetAddressPrefix string = '10.0.0.0/24'
+param appServiceSubnetAddressPrefix string = '10.101.0.0/26'
 
 @description('CIDR for the PostgreSQL Flexible Server delegated subnet')
-param postgresqlSubnetAddressPrefix string = '10.0.1.0/24'
+param postgresqlSubnetAddressPrefix string = '10.101.0.64/26'
 
 @description('CIDR for the subnet hosting private endpoints (Key Vault, Storage Account, etc.). Must be inside vnetAddressPrefix and not overlap with the other subnets.')
-param privateEndpointsSubnetAddressPrefix string = '10.0.2.0/24'
+param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 
 @description('TCP port used by PostgreSQL Flexible Server')
 param postgresqlPort int = 5432
