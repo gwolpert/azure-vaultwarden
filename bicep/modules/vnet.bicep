@@ -108,8 +108,11 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
           sourceAddressPrefix: appServiceSubnetAddressPrefix
           sourcePortRange: '*'
           destinationAddressPrefix: privateEndpointsSubnetAddressPrefix
-          destinationPortRange: '445'
-          description: 'Allow App Service to mount the data Azure Files share over SMB via the Storage Account private endpoint in the private-endpoints subnet.'
+          destinationPortRanges: [
+            '80'
+            '445'
+          ]
+          description: 'Allow App Service to mount the data Azure Files share via the Storage Account private endpoint in the private-endpoints subnet. Per the official BYOS-on-Linux documentation, the mount requires both TCP 80 (used by the platform mount-validation/health-check path) and TCP 445 (SMB) outbound; omitting port 80 causes the mount to fail with "Permission was denied".'
         }
       }
       {
