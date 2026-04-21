@@ -72,6 +72,9 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
     privateEndpoints: [
       {
         name: '${storageAccountName}-file-pe'
+        // Override the auto-generated NIC name (which would otherwise be
+        // '<peName>.nic.<guid>') so it follows the project's naming convention.
+        customNetworkInterfaceName: '${storageAccountName}-file-pe-nic'
         service: 'file'
         subnetResourceId: privateEndpointSubnetResourceId
         privateDnsZoneGroup: {

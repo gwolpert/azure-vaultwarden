@@ -50,6 +50,9 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
     privateEndpoints: [
       {
         name: '${keyVaultName}-pe'
+        // Override the auto-generated NIC name (which would otherwise be
+        // '<peName>.nic.<guid>') so it follows the project's naming convention.
+        customNetworkInterfaceName: '${keyVaultName}-pe-nic'
         service: 'vault'
         subnetResourceId: privateEndpointSubnetResourceId
         privateDnsZoneGroup: {
