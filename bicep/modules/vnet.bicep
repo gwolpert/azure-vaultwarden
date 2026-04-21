@@ -211,8 +211,11 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
 output name string = vnetDeployment.outputs.name
 output resourceId string = vnetDeployment.outputs.resourceId
 output subnetResourceIds array = vnetDeployment.outputs.subnetResourceIds
-output appServiceSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[0]
-output postgresqlSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[1]
-output privateEndpointsSubnetResourceId string = vnetDeployment.outputs.subnetResourceIds[2]
+// Resolve subnet resource IDs deterministically by name rather than by their position
+// in the AVM module's `subnetResourceIds` array. Reordering or adding subnets above
+// must not silently rewire downstream modules to the wrong subnet.
+output appServiceSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'app-service-snet')
+output postgresqlSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'postgresql-snet')
+output privateEndpointsSubnetResourceId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, 'private-endpoints-snet')
 output appServiceNsgResourceId string = appServiceNsg.outputs.resourceId
 output postgresqlNsgResourceId string = postgresqlNsg.outputs.resourceId

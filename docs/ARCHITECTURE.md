@@ -15,10 +15,10 @@ title: Architecture Overview
 │  │                   Resource Group                            │ │
 │  │                                                              │ │
 │  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │              Virtual Network (10.0.0.0/26)           │  │ │
+│  │  │              Virtual Network (10.101.0.0/24)         │  │ │
 │  │  │                                                        │  │ │
 │  │  │  ┌──────────────────────────────────────────────┐   │  │ │
-│  │  │  │  app-service-snet (10.0.0.0/27)             │   │  │ │
+│  │  │  │  app-service-snet (10.101.0.0/26)           │   │  │ │
 │  │  │  │                                               │   │  │ │
 │  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
 │  │  │  │  │  App Service Plan (B1 Basic)      │     │   │  │ │
@@ -40,7 +40,7 @@ title: Architecture Overview
 │  │  │  └────────────────┼────────────────────────────┘   │  │ │
 │  │  │                   │ PostgreSQL (via VNet)           │  │ │
 │  │  │  ┌────────────────▼───────────────────────────┐   │  │ │
-│  │  │  │  postgresql-snet (10.0.0.32/28)            │   │  │ │
+│  │  │  │  postgresql-snet (10.101.0.64/26)          │   │  │ │
 │  │  │  │  - Delegated to PostgreSQL Flexible Server │   │  │ │
 │  │  │  │                                             │   │  │ │
 │  │  │  │  ┌─────────────────────────────────────┐  │   │  │ │
@@ -57,15 +57,26 @@ title: Architecture Overview
 │  │  └─────────────────────────────────────────────────────┘  │ │
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
-│  │  │        Private DNS Zone                            │    │ │
+│  │  │        private-endpoints-snet (10.101.0.128/26)    │    │ │
+│  │  │        - Hosts private endpoints for Key Vault     │    │ │
+│  │  │          and the Storage Account file share        │    │ │
+│  │  │        - privateEndpointNetworkPolicies: Disabled  │    │ │
+│  │  └────────────────────────────────────────────────────┘    │ │
+│  │                                                              │ │
+│  │  ┌────────────────────────────────────────────────────┐    │ │
+│  │  │        Private DNS Zones (linked to VNet)          │    │ │
 │  │  │        - privatelink.postgres.database.azure.com   │    │ │
-│  │  │        - Linked to VNet                            │    │ │
-│  │  │        - Resolves PostgreSQL server to private IP  │    │ │
+│  │  │        - privatelink.vaultcore.azure.net           │    │ │
+│  │  │        - privatelink.file.<storage-suffix>         │    │ │
+│  │  │        - Resolve each service to its private IP    │    │ │
 │  │  └────────────────────────────────────────────────────┘    │ │
 │  │                                                              │ │
 │  │  ┌────────────────────────────────────────────────────┐    │ │
 │  │  │        Azure Key Vault                             │    │ │
 │  │  │        - Admin token + Database URL secrets        │────┼─┘
+│  │  │        - publicNetworkAccess: Disabled             │      
+│  │  │        - Reached via private endpoint in           │      
+│  │  │          private-endpoints-snet                    │      
 │  │  │        - RBAC enabled                              │      
 │  │  │        - System-assigned identity access           │      
 │  │  └────────────────────────────────────────────────────┘      
@@ -103,10 +114,12 @@ title: Architecture Overview
 
 ### Network Security
 - Virtual Network isolation with VNet integration
-- App Service subnet (`app-service-snet`) with service delegation (10.0.0.0/27)
-- PostgreSQL subnet (`postgresql-snet`) with service delegation for Flexible Server (10.0.0.32/28)
+- App Service subnet (`app-service-snet`) with service delegation (10.101.0.0/26)
+- PostgreSQL subnet (`postgresql-snet`) with service delegation for Flexible Server (10.101.0.64/26)
+- Private endpoints subnet (`private-endpoints-snet`, 10.101.0.128/26) hosting the Key Vault and Storage Account file private endpoints, with `privateEndpointNetworkPolicies: 'Disabled'`
 - PostgreSQL Flexible Server accessible only via VNet integration (no public access)
-- Private DNS Zone resolves PostgreSQL server to private IP within VNet
+- Key Vault and Storage Account have `publicNetworkAccess: 'Disabled'` and are reached over the VNet through private endpoints
+- Private DNS Zones linked to the VNet resolve each service (`privatelink.postgres.database.azure.com`, `privatelink.vaultcore.azure.net`, `privatelink.file.<storage-suffix>`) to its private IP
 - HTTPS-only access with Azure-managed certificates
 - App Service inbound private endpoints (for private access to the web app) require Premium tiers; connecting to PostgreSQL Flexible Server via VNet integration is supported from Basic (B1) and above
 
@@ -161,10 +174,11 @@ title: Architecture Overview
 | App Service Plan (B1) | 1 core, 1.75GB RAM, Linux | $13-15 |
 | PostgreSQL Flexible Server | Burstable B1MS, 1 vCore, 2 GB RAM, 32 GB storage | $12-15 |
 | Log Analytics | ~10GB/month logs | $2-10 |
-| Virtual Network | Two subnets, no additional charges | Free |
-| Private DNS Zone | privatelink.postgres.database.azure.com | < $1 |
+| Virtual Network | Three subnets (app service, PostgreSQL, private endpoints), no additional charges | Free |
+| Private DNS Zones | privatelink for PostgreSQL, Key Vault, and Storage Files | < $1 |
+| Private Endpoints | Key Vault + Storage Account file share | ~$15 |
 | Key Vault | Operations-based pricing | < $1 |
-| **Total** | | **$28-42/month** |
+| **Total** | | **$43-57/month** |
 
 **B1 Features (Default)**:
 - ✅ Full VNet integration support
@@ -205,13 +219,13 @@ title: Architecture Overview
 
 ### Deployment Steps
 1. **Resource Group Creation**: Subscription-scoped deployment creates resource group
-2. **Network Setup**: Virtual Network with two subnets (app service + PostgreSQL) provisioned
-3. **Private DNS Zone**: DNS zone `privatelink.postgres.database.azure.com` created and linked to VNet
+2. **Network Setup**: Virtual Network with three subnets (`app-service-snet`, `postgresql-snet`, `private-endpoints-snet`) provisioned
+3. **Private DNS Zones**: `privatelink.postgres.database.azure.com`, `privatelink.vaultcore.azure.net`, and `privatelink.file.<storage-suffix>` created and linked to the VNet
 4. **Database Provisioning**: Azure Database for PostgreSQL Flexible Server deployed in the delegated subnet with VNet integration
 5. **Monitoring Setup**: Log Analytics Workspace deployed
 6. **App Service Plan**: B1 Basic Linux plan created (can be upgraded to Standard/Premium for auto-scaling)
-7. **Key Vault**: Deployed for secrets management (admin token + database URL)
-8. **Storage Account**: StorageV2 account with an Azure Files share is provisioned with geo-redundant storage (GRS) for cross-region data replication, the public endpoint enabled with a firewall `defaultAction` of `Deny`, and a `virtualNetworkRule` restricting the data plane to the App Service subnet (via the `Microsoft.Storage` service endpoint). The share is mounted into the container at `/data` so that both `ATTACHMENTS_FOLDER` (`/data/attachments`) and `SENDS_FOLDER` (`/data/sends`) are persisted to durable storage. `USER_ATTACHMENT_LIMIT` (1000 MiB per user), `ORG_ATTACHMENT_LIMIT` (250 GiB per org), and `USER_SEND_LIMIT` (100 MiB per user) cap storage sizes. Diagnostic metrics are forwarded to Log Analytics.
+7. **Key Vault**: Deployed for secrets management (admin token + database URL) with `publicNetworkAccess: 'Disabled'` and a `vault` private endpoint in `private-endpoints-snet`, wired to the Key Vault private DNS zone
+8. **Storage Account**: StorageV2 account with an Azure Files share is provisioned with geo-redundant storage (GRS) for cross-region data replication. `publicNetworkAccess` is `Disabled`; the App Service reaches the file share over the VNet through a `file` private endpoint in `private-endpoints-snet`, with name resolution via the linked `privatelink.file.<storage-suffix>` private DNS zone. The share is mounted into the container at `/data` so that both `ATTACHMENTS_FOLDER` (`/data/attachments`) and `SENDS_FOLDER` (`/data/sends`) are persisted to durable storage. `USER_ATTACHMENT_LIMIT` (1000 MiB per user), `ORG_ATTACHMENT_LIMIT` (250 GiB per org), and `USER_SEND_LIMIT` (100 MiB per user) cap storage sizes. Diagnostic metrics are forwarded to Log Analytics.
 9. **Application Deployment**: Vaultwarden container deployed on App Service with VNet integration and DATABASE_URL configured
 
 ### Post-Deployment
