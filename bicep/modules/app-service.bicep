@@ -37,10 +37,10 @@ param databaseUrlSecretUri string
 @description('Name of the Storage Account hosting the Vaultwarden data file share. The account must live in the same resource group as this App Service.')
 param storageAccountName string
 
-@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments and sends).')
+@description('Name of the file share inside the storage account that holds persistent Vaultwarden data (attachments, sends, favicon cache, and the JWT RSA signing keypair).')
 param dataFileShareName string
 
-@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments and sends as subdirectories under this path.')
+@description('Path inside the container where the data share is mounted. Vaultwarden stores attachments, sends, the favicon cache, and the JWT RSA keypair as subdirectories/files under this path. TEMPLATES_FOLDER is intentionally left on the local container disk because upstream Vaultwarden requires it to be a local path.')
 param dataMountPath string = '/data'
 
 @description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')

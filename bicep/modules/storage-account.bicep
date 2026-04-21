@@ -35,7 +35,7 @@ param logAnalyticsWorkspaceResourceId string = ''
 @maxLength(63)
 param dataFileShareName string = 'vaultwarden-data'
 
-@description('Quota (in GB) for the data file share. Must be between 1 and 5120 (standard) — controls maximum total storage for attachments and sends combined. Sized for ~100 users × 1000 MiB attachments each plus headroom; Send files are ephemeral and typically consume only a small fraction (~10 %) of the total.')
+@description('Quota (in GB) for the data file share. Must be between 1 and 5120 (standard) — controls maximum total storage for all persistent Vaultwarden data on the share (attachments, sends, favicon cache, and the JWT RSA keypair). Sized for ~100 users × 1000 MiB attachments each plus headroom; sends, the favicon cache, and the RSA keypair typically consume only a small fraction of the total.')
 @minValue(1)
 @maxValue(5120)
 param dataFileShareQuotaGB int = 250
