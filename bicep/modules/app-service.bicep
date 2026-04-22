@@ -41,6 +41,7 @@ param storageAccountName string
 param dataFileShareName string
 
 @description('Path inside the container where the data share is mounted. Vaultwarden stores attachments, sends, the favicon cache, and the JWT RSA keypair as subdirectories/files under this path. TEMPLATES_FOLDER is intentionally left on the local container disk because upstream Vaultwarden requires it to be a local path.')
+@minLength(2)
 param dataMountPath string = '/data'
 
 @description('Per-user total attachment storage limit in kilobytes. The default of 1024000 KB (1000 MiB) caps each user\'s cumulative attachment storage.')
@@ -57,6 +58,9 @@ param userSendLimitKB int = 102400
 
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin surface. Empty = no IP restriction. See README for the /admin web-route limitation.')
 param adminAllowedIpAddresses array = []
+
+@description('Resource tags applied to the App Service.')
+param tags object = {}
 
 // Build SCM IP restriction rules from the admin allow-list. When the list is empty
 // we leave SCM rules unset so the platform default (Allow) remains.
@@ -86,6 +90,7 @@ module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
   params: {
     name: appServiceName
     location: location
+    tags: tags
     kind: 'app,linux,container'
     serverFarmResourceId: appServicePlanResourceId
     managedIdentities: {

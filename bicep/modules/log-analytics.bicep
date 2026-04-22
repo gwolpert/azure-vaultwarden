@@ -10,6 +10,9 @@ param baseName string
 @description('The Azure region where resources will be deployed')
 param location string
 
+@description('Resource tags applied to the Log Analytics Workspace.')
+param tags object = {}
+
 // Build the full Log Analytics Workspace name using naming convention
 // Pattern: {baseName}-log
 var logAnalyticsWorkspaceName = '${baseName}-log'
@@ -20,6 +23,7 @@ module logAnalyticsDeployment 'br/public:avm/res/operational-insights/workspace:
   params: {
     name: logAnalyticsWorkspaceName
     location: location
+    tags: tags
   }
 }
 

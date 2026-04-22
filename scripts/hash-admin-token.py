@@ -8,7 +8,7 @@ if token.startswith('$argon2'):
 else:
     hasher = argon2.PasswordHasher(
         time_cost=3,
-        memory_cost=65540,
+        memory_cost=65536,
         parallelism=4,
         type=argon2.Type.ID
     )
