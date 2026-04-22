@@ -54,12 +54,15 @@ az resource list --resource-group vaultwarden-dev-rg --output table
 ```
 
 Expected resources:
-- [ ] Virtual Network
+- [ ] Virtual Network (with `app-service-snet`, `postgresql-snet`, `private-endpoints-snet`)
+- [ ] Network Security Groups (App Service subnet + PostgreSQL subnet)
 - [ ] Azure Database for PostgreSQL Flexible Server
 - [ ] Log Analytics Workspace
 - [ ] App Service Plan
 - [ ] App Service (Web App)
-- [ ] Key Vault
+- [ ] Key Vault (with `vault` private endpoint and NIC)
+- [ ] Storage Account (with `file` private endpoint and NIC)
+- [ ] Private DNS Zones (`privatelink.postgres.database.azure.com`, `privatelink.vaultcore.azure.net`, `privatelink.file.<storage-suffix>`)
 
 ### 2. Network Configuration Verification
 
@@ -72,8 +75,8 @@ az network vnet show \
 ```
 
 Expected:
-- Address space: 10.0.0.0/26
-- Subnets: app-service-snet, postgresql-snet
+- Address space: 10.101.0.0/24
+- Subnets: app-service-snet, postgresql-snet, private-endpoints-snet
 
 #### Check Subnet Configuration
 ```bash
@@ -84,7 +87,7 @@ az network vnet subnet show \
   --query "{name:name, addressPrefix:addressPrefix}"
 ```
 
-Expected: Subnet 10.0.0.0/27 (the postgresql-snet subnet uses 10.0.0.32/28)
+Expected: Subnet 10.101.0.0/26 (postgresql-snet uses 10.101.0.64/26; private-endpoints-snet uses 10.101.0.128/26)
 
 ### 3. PostgreSQL Verification
 
@@ -147,7 +150,7 @@ az webapp config show \
 ```
 
 Verify:
-- [ ] linuxFxVersion: DOCKER|vaultwarden/server:latest
+- [ ] linuxFxVersion: `DOCKER|vaultwarden/server:<pinned-tag>` (matches the `vaultwardenImageTag` parameter, default `1.35.7`)
 - [ ] alwaysOn: true
 - [ ] httpsOnly: true
 
@@ -467,7 +470,8 @@ az postgres flexible-server show \
 ```
 
 Expected:
-- Backup retention days: 7 (or configured value)
+- Backup retention days: 35 (the deployed default)
+- Geo-redundant backup: Enabled
 - Earliest restore date: Should be populated
 
 ### 2. Point-in-Time Restore Test (Non-Production Only)
@@ -536,11 +540,15 @@ Use this checklist to verify your deployment:
 
 ### Infrastructure
 - [ ] Resource group selected/created prior to deployment
-- [ ] Virtual network deployed with correct address space (10.0.0.0/26)
-- [ ] Subnet configured for App Service VNet integration (app-service-snet)
-- [ ] PostgreSQL subnet configured with delegation for Flexible Server (postgresql-snet)
+- [ ] Virtual network deployed with correct address space (10.101.0.0/24)
+- [ ] Subnet configured for App Service VNet integration (app-service-snet, 10.101.0.0/26)
+- [ ] PostgreSQL subnet configured with delegation for Flexible Server (postgresql-snet, 10.101.0.64/26)
+- [ ] Private endpoints subnet configured (private-endpoints-snet, 10.101.0.128/26)
 - [ ] Azure Database for PostgreSQL Flexible Server deployed and ready
 - [ ] PostgreSQL database "vaultwarden" created
+- [ ] Storage Account deployed (Standard_GRS, public access disabled, Files private endpoint)
+- [ ] Key Vault deployed (public access disabled, vault private endpoint)
+- [ ] Private DNS Zones linked to the VNet (postgres, vaultcore, file)
 - [ ] Log Analytics workspace deployed
 
 ### Application

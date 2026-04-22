@@ -160,13 +160,15 @@ Approximate monthly costs (North Europe region, B1 default):
 
 | Resource | Estimated Cost |
 |----------|---------------|
-| App Service Plan (B1) | ~$13-15 |
-| PostgreSQL Flexible Server (B1MS) | ~$12-15 |
-| Log Analytics | ~$2-10 |
-| Virtual Network | Free |
-| Key Vault | < $1 |
-| Private DNS Zone | < $1 |
-| **Total** | **~$28-42/month** |
+| App Service Plan (B1 Linux) | ~$13-15 |
+| PostgreSQL Flexible Server (B1MS, 32 GB, 35-day GRS backup) | ~$15-25 |
+| Storage Account (GRS Hot Files, 250 GB share quota; billed on actual usage) | ~$2-15 |
+| Private Endpoints (Key Vault + Storage Files) | ~$15 |
+| Log Analytics (pay-as-you-go ingestion) | ~$2-10 |
+| Private DNS Zones (×3) | ~$1.50 |
+| Key Vault (operations-based) | < $1 |
+| Virtual Network + NSGs | Free |
+| **Total** | **~$50-80/month** |
 
 See [Architecture Overview](docs/ARCHITECTURE.md) for upgrade options and detailed cost breakdown.
 

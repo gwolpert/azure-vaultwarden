@@ -49,7 +49,7 @@ title: Architecture Overview
 │  │  │  │  │  - Burstable B1MS (1 vCore, 2 GB)  │  │   │  │ │
 │  │  │  │  │  - SSL enforced                     │  │   │  │ │
 │  │  │  │  │  - VNet integrated (private access) │  │   │  │ │
-│  │  │  │  │  - Built-in backup (7-day retention)│  │   │  │ │
+│  │  │  │  │  - 35-day GRS automated backups     │  │   │  │ │
 │  │  │  │  │  - Optional CanNotDelete lock       │  │   │  │ │
 │  │  │  │  └─────────────────────────────────────┘  │   │  │ │
 │  │  │  └─────────────────────────────────────────────┘   │  │ │
@@ -106,7 +106,7 @@ title: Architecture Overview
 3. **Secrets Management**: App Service uses its system-assigned managed identity to retrieve admin token and database URL from Key Vault
 4. **Data Storage**: App Service connects to Azure Database for PostgreSQL Flexible Server via VNet integration → delegated PostgreSQL subnet
 5. **DNS Resolution**: Private DNS Zone (`privatelink.postgres.database.azure.com`) resolves PostgreSQL server to its private IP within the VNet
-6. **Backup Protection**: PostgreSQL Flexible Server built-in backup with 7-day retention (configurable up to 35 days) and point-in-time restore
+6. **Backup Protection**: PostgreSQL Flexible Server built-in backup with **35-day retention** and geo-redundant replication to the Azure paired region; point-in-time restore
 7. **Monitoring**: All logs and metrics are sent to Log Analytics Workspace
 8. **Networking**: App Service is integrated with Virtual Network; PostgreSQL Flexible Server is accessible only via VNet integration (no public access)
 
@@ -130,7 +130,7 @@ title: Architecture Overview
   - Encrypted data at rest (Azure-managed encryption)
   - Encrypted data in transit (TLS 1.2+)
   - Optional **CanNotDelete** resource lock to prevent accidental deletion (requires `Microsoft.Authorization/locks/write` permission)
-- Built-in automated backups with 7-day retention (configurable up to 35 days)
+- Built-in automated backups with **35-day retention** and geo-redundant replication to the Azure paired region
 - Point-in-time restore capability
 
 ### Application Security
@@ -171,14 +171,15 @@ title: Architecture Overview
 
 | Resource | Configuration | Estimated Cost |
 |----------|--------------|----------------|
-| App Service Plan (B1) | 1 core, 1.75GB RAM, Linux | $13-15 |
-| PostgreSQL Flexible Server | Burstable B1MS, 1 vCore, 2 GB RAM, 32 GB storage | $12-15 |
-| Log Analytics | ~10GB/month logs | $2-10 |
-| Virtual Network | Three subnets (app service, PostgreSQL, private endpoints), no additional charges | Free |
-| Private DNS Zones | privatelink for PostgreSQL, Key Vault, and Storage Files | < $1 |
-| Private Endpoints | Key Vault + Storage Account file share | ~$15 |
+| App Service Plan (B1) | 1 core, 1.75 GB RAM, Linux | $13-15 |
+| PostgreSQL Flexible Server | Burstable B1MS, 1 vCore, 2 GB RAM, 32 GB storage, 35-day GRS backup | $15-25 |
+| Storage Account | Standard_GRS Hot Files, 250 GB share quota (billed on actual usage) | $2-15 |
+| Private Endpoints | Key Vault + Storage Account Files (×2) | ~$15 |
+| Log Analytics | Pay-as-you-go ingestion (~10 GB/month) | $2-10 |
+| Virtual Network | Three subnets (app service, PostgreSQL, private endpoints), NSGs included | Free |
+| Private DNS Zones | privatelink for PostgreSQL, Key Vault, and Storage Files (×3) | ~$1.50 |
 | Key Vault | Operations-based pricing | < $1 |
-| **Total** | | **$43-57/month** |
+| **Total** | | **$50-80/month** |
 
 **B1 Features (Default)**:
 - ✅ Full VNet integration support
@@ -194,7 +195,8 @@ title: Architecture Overview
 - **Premium (P1v3, P2v3, P3v3)**: Enhanced performance, up to 30 instances, more cores and memory (~$100-400/month)
 
 **Backup & Protection Features**:
-- ✅ PostgreSQL built-in backup with 7-day retention (configurable up to 35 days)
+- ✅ PostgreSQL built-in backup with **35-day retention** (the service maximum)
+- ✅ Geo-redundant backup replicated to the Azure paired region (set at server creation, immutable)
 - ✅ Point-in-time restore for data protection
 - ✅ Optional PostgreSQL server lock prevents accidental deletion (enable via `enablePostgresqlLock` parameter)
 - ✅ Compliance-ready backup solution
@@ -208,7 +210,7 @@ title: Architecture Overview
 4. Use lifecycle policies for Log Analytics to manage log retention
 5. Use shared Log Analytics workspace across multiple projects
 6. Reserved instances available for 1-3 year commitments (30-55% savings)
-7. Adjust PostgreSQL backup retention period based on compliance requirements
+7. Adjust PostgreSQL backup retention period (1-35 days) based on compliance requirements; the default is the maximum 35 days
 
 ## Deployment Process
 
@@ -275,7 +277,8 @@ AppServiceHTTPLogs
 ### Backup Strategy
 1. **PostgreSQL Built-in Backup**: Azure Database for PostgreSQL Flexible Server provides automated backups
    - **Schedule**: Continuous automated backups (snapshots + transaction logs)
-   - **Retention**: 7 days by default (configurable up to 35 days)
+   - **Retention**: **35 days** (the service maximum), configured at deployment
+   - **Geo-redundancy**: **Enabled** — backups are replicated to the Azure paired region (set at server creation, immutable)
    - **Point-in-Time Restore**: Restore to any second within the retention period
    - **Setup**: Automatically enabled on PostgreSQL Flexible Server at deployment
    - **Operation**: Fully automatic with no manual intervention required
@@ -303,9 +306,9 @@ AppServiceHTTPLogs
 - **RTO (Recovery Time Objective)**: < 1 hour with point-in-time restore
 - **RPO (Recovery Point Objective)**: Near-zero data loss (continuous backup with transaction log archiving)
 - **Data Protection**: Optional resource lock prevents accidental deletion of PostgreSQL server
-- **Geo-redundant Backup**: Available as a configuration option for cross-region protection
-- **Geo-redundant Storage**: Attachment and Send file data in Azure Files is replicated to the paired region (Standard_GRS)
-- **Backup Retention**: 7 days default (configurable up to 35 days)
+- **Geo-redundant PostgreSQL Backup**: Enabled by default — backups replicated to the Azure paired region for cross-region recovery
+- **Geo-redundant Storage**: Attachment, Send, favicon-cache, and JWT-signing-key data in Azure Files is replicated to the paired region (Standard_GRS)
+- **Backup Retention**: 35 days (the service maximum)
 
 ### Backup Monitoring
 - Monitor PostgreSQL server health and backup status through Azure Portal
@@ -379,7 +382,7 @@ az webapp ssh --name <app-name> --resource-group <rg-name>
 - [ ] Disable signups or use invite-only mode
 - [ ] Configure custom domain with valid SSL certificate
 - [ ] Set up Azure Monitor alerts
-- [x] Configure backup automation (PostgreSQL built-in backup with 7-day retention)
+- [x] Configure backup automation (PostgreSQL built-in geo-redundant backup with 35-day retention)
 - [ ] Enable PostgreSQL server lock to prevent accidental deletion (set `enablePostgresqlLock=true`; requires `Microsoft.Authorization/locks/write` permission)
 - [x] Enable VNet integration for PostgreSQL Flexible Server (no public access)
 - [ ] Review and restrict network access
@@ -399,7 +402,7 @@ az webapp ssh --name <app-name> --resource-group <rg-name>
 - Audit logs: Available through Log Analytics
 - Access control: Azure RBAC for resource management
 - Network isolation: VNET integration available
-- Backup and recovery: Automated daily backups with configurable retention
+- Backup and recovery: Continuous automated backups with 35-day geo-redundant retention
 - Data protection: Optional resource locks prevent accidental resource deletion
 
 ## Updates and Maintenance
