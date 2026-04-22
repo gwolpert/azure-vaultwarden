@@ -59,7 +59,7 @@ param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
 param adminAllowedIpAddresses array = []
 
-@description('Resource tags applied to every resource created by this template. Useful for cost reporting, ownership, and governance. Merged into per-module tag inputs.')
+@description('Resource tags forwarded to taggable resources created by this template. Useful for cost reporting, ownership, and governance. Some resources created by the template may not support tags.')
 param tags object = {}
 
 // Variables
