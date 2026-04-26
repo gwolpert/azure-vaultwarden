@@ -24,6 +24,9 @@ param location string
 ])
 param skuName string
 
+@description('Resource tags applied to the App Service Plan.')
+param tags object = {}
+
 // Build the full App Service Plan name using naming convention
 // Official abbreviation: 'asp'
 var appServicePlanName = '${baseName}-asp'
@@ -34,6 +37,7 @@ module appServicePlanDeployment 'br/public:avm/res/web/serverfarm:0.7.0' = {
   params: {
     name: appServicePlanName
     location: location
+    tags: tags
     skuName: skuName
     skuCapacity: 1  // Sets initial instance count to 1. Auto-scaling is only available on Standard (S1+) and Premium tiers; the default B1 (Basic) plan does not support auto-scaling. Manual scaling of instance count is possible on all tiers.
     kind: 'linux'

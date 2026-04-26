@@ -19,8 +19,10 @@ param privateDnsZoneResourceId string
 @description('Administrator login name for the PostgreSQL server')
 param administratorLogin string = 'vaultwardenadmin'
 
-@description('Administrator login password for the PostgreSQL server')
+@description('Administrator login password for the PostgreSQL server. Must satisfy Azure Database for PostgreSQL Flexible Server complexity rules: 8-128 characters containing characters from at least three of: uppercase, lowercase, digits, non-alphanumeric.')
 @secure()
+@minLength(8)
+@maxLength(128)
 param administratorLoginPassword string
 
 @description('The name of the Key Vault to store the database URL in')
@@ -31,6 +33,9 @@ param enablePostgresqlLock bool = false
 
 @description('Resource ID of the Log Analytics Workspace to send PostgreSQL diagnostic logs and metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
+
+@description('Resource tags applied to the PostgreSQL Flexible Server.')
+param tags object = {}
 
 // Build the full PostgreSQL server name using naming convention
 // PostgreSQL Flexible Server: Must be 3-63 chars, lowercase letters, numbers, and hyphens
@@ -51,6 +56,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
   params: {
     name: postgresqlServerName
     location: location
+    tags: tags
     skuName: 'Standard_B1ms'
     tier: 'Burstable'
     administratorLogin: administratorLogin

@@ -30,6 +30,9 @@ param privateDnsZoneResourceId string
 @description('Resource ID of the Log Analytics Workspace to send Storage diagnostic metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
+@description('Resource tags applied to the Storage Account.')
+param tags object = {}
+
 @description('Name of the Azure Files share used for persistent Vaultwarden data (attachments, sends, favicon cache, and the JWT RSA keypair). Must be 3-63 lowercase alphanumeric/hyphen characters.')
 @minLength(3)
 @maxLength(63)
@@ -54,6 +57,7 @@ module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.
   params: {
     name: storageAccountName
     location: location
+    tags: tags
     kind: 'StorageV2'
     skuName: 'Standard_GRS'
     accessTier: 'Hot'

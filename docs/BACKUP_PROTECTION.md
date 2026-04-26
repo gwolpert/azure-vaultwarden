@@ -13,10 +13,10 @@ Azure Database for PostgreSQL Flexible Server provides **built-in automated back
 
 ### Backup Features
 
-- **Automatic daily backups**: Full snapshots taken automatically
-- **Point-in-time restore (PITR)**: Restore to any point within the retention period
-- **7-day retention**: Default backup retention period (configurable up to 35 days)
-- **Geo-redundant backup**: Available as an upgrade option for disaster recovery
+- **Continuous automated backups**: Full snapshots plus transaction-log archival
+- **Point-in-time restore (PITR)**: Restore to any second within the retention period
+- **35-day retention**: Default backup retention period (the maximum offered by the service)
+- **Geo-redundant backup**: Enabled by default — backups are replicated to the Azure paired region for cross-region disaster recovery
 - **No manual setup required**: Backups are managed entirely by Azure
 
 ## Backup Configuration
@@ -25,10 +25,12 @@ The PostgreSQL Flexible Server is deployed with the following backup settings:
 
 | Setting | Value |
 |---------|-------|
-| **Backup retention** | 7 days |
-| **Backup type** | Automated full + incremental |
-| **Point-in-time restore** | Supported (within retention period) |
-| **Geo-redundancy** | Disabled (can be enabled for DR) |
+| **Backup retention** | 35 days |
+| **Backup type** | Automated snapshots + continuous transaction-log archival |
+| **Point-in-time restore** | Supported (any second within the retention period) |
+| **Geo-redundancy** | Enabled (replicated to the Azure paired region) |
+
+> **Note:** Geo-redundant backup is set at server creation time and cannot be toggled on an existing PostgreSQL Flexible Server — changing it requires recreating the server (and migrating data).
 
 ## Recovery Procedures
 

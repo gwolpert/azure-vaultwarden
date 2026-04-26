@@ -59,6 +59,9 @@ param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 @description('IPv4 addresses or CIDR ranges allowed to reach the App Service SCM (Kudu) admin/management surface. The Vaultwarden /admin web route is protected separately by the argon2id-hashed ADMIN_TOKEN; per-URL-path IP restrictions are not supported by Azure App Service on Linux.')
 param adminAllowedIpAddresses array = []
 
+@description('Resource tags forwarded to taggable resources created by this template. Useful for cost reporting, ownership, and governance. Some resources created by the template may not support tags.')
+param tags object = {}
+
 // Variables
 // Inherit the deployment region from the target resource group so callers
 // only need to pick the resource group when deploying.
@@ -74,6 +77,7 @@ module vnet 'modules/vnet.bicep' = {
     appServiceSubnetAddressPrefix: appServiceSubnetAddressPrefix
     postgresqlSubnetAddressPrefix: postgresqlSubnetAddressPrefix
     privateEndpointsSubnetAddressPrefix: privateEndpointsSubnetAddressPrefix
+    tags: tags
   }
 }
 
@@ -84,6 +88,7 @@ module postgresqlPrivateDnsZone 'modules/private-dns-zone.bicep' = {
     #disable-next-line no-hardcoded-env-urls
     zoneName: 'privatelink.postgres.database.azure.com'
     vnetResourceId: vnet.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -94,6 +99,7 @@ module keyVaultPrivateDnsZone 'modules/private-dns-zone.bicep' = {
     #disable-next-line no-hardcoded-env-urls
     zoneName: 'privatelink.vaultcore.azure.net'
     vnetResourceId: vnet.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -103,6 +109,7 @@ module storageFilePrivateDnsZone 'modules/private-dns-zone.bicep' = {
   params: {
     zoneName: 'privatelink.file.${environment().suffixes.storage}'
     vnetResourceId: vnet.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -118,6 +125,7 @@ module postgresql 'modules/postgresql.bicep' = {
     keyVaultName: keyVault.outputs.name
     enablePostgresqlLock: enablePostgresqlLock
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -127,6 +135,7 @@ module logAnalyticsWorkspace 'modules/log-analytics.bicep' = {
   params: {
     baseName: baseName
     location: location
+    tags: tags
   }
 }
 
@@ -137,6 +146,7 @@ module appServicePlan 'modules/app-service-plan.bicep' = {
     baseName: baseName
     location: location
     skuName: appServicePlanSkuName
+    tags: tags
   }
 }
 
@@ -151,6 +161,7 @@ module keyVault 'modules/key-vault.bicep' = {
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     privateEndpointSubnetResourceId: vnet.outputs.privateEndpointsSubnetResourceId
     privateDnsZoneResourceId: keyVaultPrivateDnsZone.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -162,6 +173,7 @@ module hashAdminToken 'modules/hash-admin-token.bicep' = if (adminToken != '') {
     adminToken: adminToken
     keyVaultName: keyVault.outputs.name
     location: location
+    tags: tags
   }
 }
 
@@ -177,6 +189,7 @@ module storageAccount 'modules/storage-account.bicep' = {
     privateEndpointSubnetResourceId: vnet.outputs.privateEndpointsSubnetResourceId
     privateDnsZoneResourceId: storageFilePrivateDnsZone.outputs.resourceId
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
+    tags: tags
   }
 }
 
@@ -197,6 +210,7 @@ module appService 'modules/app-service.bicep' = {
     adminAllowedIpAddresses: adminAllowedIpAddresses
     storageAccountName: storageAccount.outputs.name
     dataFileShareName: storageAccount.outputs.dataFileShareName
+    tags: tags
   }
 }
 

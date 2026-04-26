@@ -13,6 +13,9 @@ param zoneName string
 @description('The resource ID of the Virtual Network to link the DNS zone to')
 param vnetResourceId string
 
+@description('Resource tags applied to the Private DNS Zone.')
+param tags object = {}
+
 // Deploy a Private DNS Zone and link it to the supplied virtual network so
 // records resolved from inside the VNet point at the private endpoint IPs.
 module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
@@ -20,6 +23,7 @@ module privateDnsZoneDeployment 'br/public:avm/res/network/private-dns-zone:0.8.
   params: {
     name: zoneName
     location: 'global'
+    tags: tags
     virtualNetworkLinks: [
       {
         virtualNetworkResourceId: vnetResourceId

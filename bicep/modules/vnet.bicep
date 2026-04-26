@@ -25,6 +25,9 @@ param privateEndpointsSubnetAddressPrefix string = '10.101.0.128/26'
 @description('TCP port used by PostgreSQL Flexible Server')
 param postgresqlPort int = 5432
 
+@description('Resource tags applied to the VNet and its NSGs.')
+param tags object = {}
+
 // Build the full VNet name using naming convention
 var vnetName = '${baseName}-vnet'
 var appServiceNsgName = '${baseName}-app-snet-nsg'
@@ -41,6 +44,7 @@ module appServiceNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
   params: {
     name: appServiceNsgName
     location: location
+    tags: tags
     securityRules: [
       {
         name: 'Allow-HTTPS-Inbound'
@@ -137,6 +141,7 @@ module postgresqlNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
   params: {
     name: postgresqlNsgName
     location: location
+    tags: tags
     securityRules: [
       {
         name: 'Allow-Postgres-From-AppService'
@@ -176,6 +181,7 @@ module vnetDeployment 'br/public:avm/res/network/virtual-network:0.8.0' = {
   params: {
     name: vnetName
     location: location
+    tags: tags
     addressPrefixes: [
       vnetAddressPrefix
     ]

@@ -19,6 +19,9 @@ param privateEndpointSubnetResourceId string
 @description('Resource ID of the privatelink.vaultcore.azure.net Private DNS Zone linked to the consuming VNet. Used to register the Key Vault private endpoint so callers inside the VNet resolve the vault to its private IP.')
 param privateDnsZoneResourceId string
 
+@description('Resource tags applied to the Key Vault.')
+param tags object = {}
+
 // Build the full Key Vault name using naming convention
 // Key Vault: Must be 3-24 chars, alphanumeric and hyphens allowed
 // Official abbreviation: 'kv'
@@ -37,11 +40,21 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
   params: {
     name: keyVaultName
     location: location
+    tags: tags
     sku: 'standard'
     enableRbacAuthorization: true
     enableVaultForDeployment: false
     enableVaultForDiskEncryption: false
-    enableVaultForTemplateDeployment: true
+    // Runtime resolution of `@Microsoft.KeyVault(...)` references uses the App
+    // Service's managed identity (Key Vault Secrets User RBAC role), not the
+    // legacy "deployment" access policy path, so this flag adds no value here
+    // and is left disabled to minimize the data-plane attack surface.
+    enableVaultForTemplateDeployment: false
+    // Soft delete is on by default; purge protection guards Vaultwarden's
+    // database connection string and admin-token secrets against accidental
+    // (or malicious) hard-delete during the soft-delete window. NOTE: this
+    // is a one-way switch — once enabled it cannot be disabled on the vault.
+    enablePurgeProtection: true
     publicNetworkAccess: 'Disabled'
     networkAcls: {
       defaultAction: 'Deny'
@@ -70,9 +83,6 @@ module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
         workspaceResourceId: logAnalyticsWorkspaceResourceId
         logAnalyticsDestinationType: 'Dedicated'
         logCategoriesAndGroups: [
-          {
-            categoryGroup: 'audit'
-          }
           {
             categoryGroup: 'allLogs'
           }

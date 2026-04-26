@@ -22,6 +22,9 @@ param keyVaultName string
 @description('The Azure region for the deployment script resources')
 param location string
 
+@description('Resource tags applied to the deployment script resources.')
+param tags object = {}
+
 @description('Force new hash generation on each deployment')
 param utcValue string = utcNow()
 
@@ -36,9 +39,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
 resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: '${baseName}-hash-token-script'
   location: location
+  tags: tags
   kind: 'AzureCLI'
   properties: {
-    azCliVersion: '2.63.0'
+    azCliVersion: '2.69.0'
     retentionInterval: 'PT1H'
     timeout: 'PT10M'
     cleanupPreference: 'Always'
