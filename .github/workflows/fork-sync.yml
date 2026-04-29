@@ -19,6 +19,6 @@ jobs:
           base: main
           head: sync-fork
           merge_method: squash
-          auto_approve: true
+          #auto_approve: true
           pr_title: "Sync Fork"
           pr_message: "This PR was created by the fork-sync GitHub Action to keep the fork up to date with the upstream repository."
