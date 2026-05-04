@@ -41,6 +41,9 @@ param appServicePlanSkuName string = 'B1'
 @secure()
 param postgresqlAdminPassword string
 
+@description('PostgreSQL major version to pin for new deployments (e.g. \'18\'). Leave empty to let Azure choose (or preserve the existing version on redeployments).')
+param postgresqlVersion string = ''
+
 @description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission on the deploying principal.')
 param enablePostgresqlLock bool = false
 
@@ -123,6 +126,7 @@ module postgresql 'modules/postgresql.bicep' = {
     privateDnsZoneResourceId: postgresqlPrivateDnsZone.outputs.resourceId
     administratorLoginPassword: postgresqlAdminPassword
     keyVaultName: keyVault.outputs.name
+    postgresqlVersion: postgresqlVersion
     enablePostgresqlLock: enablePostgresqlLock
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     tags: tags
