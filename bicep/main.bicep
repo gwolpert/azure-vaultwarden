@@ -21,7 +21,7 @@ param adminToken string = ''
 param signupsAllowed bool = false
 
 @description('Vaultwarden container image tag. Pinned to a specific version by default; bump only after reviewing the upstream release notes at https://github.com/dani-garcia/vaultwarden/releases.')
-param vaultwardenImageTag string = '1.35.7'
+param vaultwardenImageTag string = '1.36.0'
 
 @description('App Service Plan SKU (default: B1 for cost-effectiveness with VNet support. Options: B1, B2, B3, S1, S2, S3, P1v3, P2v3, P3v3)')
 @allowed([
