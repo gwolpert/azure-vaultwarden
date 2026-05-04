@@ -21,7 +21,7 @@ param adminToken string = ''
 param signupsAllowed bool = false
 
 @description('Vaultwarden container image tag. Pinned to a specific version by default; bump only after reviewing the upstream release notes at https://github.com/dani-garcia/vaultwarden/releases.')
-param vaultwardenImageTag string = '1.35.7'
+param vaultwardenImageTag string = '1.36.0'
 
 @description('App Service Plan SKU (default: B1 for cost-effectiveness with VNet support. Options: B1, B2, B3, S1, S2, S3, P1v3, P2v3, P3v3)')
 @allowed([
@@ -40,6 +40,9 @@ param appServicePlanSkuName string = 'B1'
 @description('PostgreSQL administrator login password')
 @secure()
 param postgresqlAdminPassword string
+
+@description('PostgreSQL major version to pin for new deployments (e.g. \'18\'). Leave empty to let Azure choose (or preserve the existing version on redeployments).')
+param postgresqlVersion string = ''
 
 @description('Enable a CanNotDelete lock on the PostgreSQL server. Requires Microsoft.Authorization/locks/write permission on the deploying principal.')
 param enablePostgresqlLock bool = false
@@ -123,6 +126,7 @@ module postgresql 'modules/postgresql.bicep' = {
     privateDnsZoneResourceId: postgresqlPrivateDnsZone.outputs.resourceId
     administratorLoginPassword: postgresqlAdminPassword
     keyVaultName: keyVault.outputs.name
+    postgresqlVersion: postgresqlVersion
     enablePostgresqlLock: enablePostgresqlLock
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.outputs.resourceId
     tags: tags

@@ -34,6 +34,9 @@ param enablePostgresqlLock bool = false
 @description('Resource ID of the Log Analytics Workspace to send PostgreSQL diagnostic logs and metrics to. Leave empty to disable monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
+@description('PostgreSQL major version. Set explicitly for new deployments to pin the engine version (e.g. \'18\'). Leave empty to preserve the existing server version on redeployments.')
+param postgresqlVersion string = ''
+
 @description('Resource tags applied to the PostgreSQL Flexible Server.')
 param tags object = {}
 
@@ -57,6 +60,7 @@ module postgresqlDeployment 'br/public:avm/res/db-for-postgre-sql/flexible-serve
     name: postgresqlServerName
     location: location
     tags: tags
+    version: !empty(postgresqlVersion) ? postgresqlVersion : null
     skuName: 'Standard_B1ms'
     tier: 'Burstable'
     administratorLogin: administratorLogin
