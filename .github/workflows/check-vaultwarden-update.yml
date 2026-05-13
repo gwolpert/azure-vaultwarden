@@ -6,6 +6,10 @@ on:
     - cron: '0 8 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: "vaultwarden-update"
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -72,8 +76,11 @@ jobs:
           # Update the default version in bicep/main.bicep
           sed -i "s/param vaultwardenImageTag string = '${CURRENT_VERSION}'/param vaultwardenImageTag string = '${LATEST_VERSION}'/" bicep/main.bicep
 
-          # Verify the change was applied
-          grep "vaultwardenImageTag" bicep/main.bicep
+          # Verify the change was actually applied
+          if ! grep -q "param vaultwardenImageTag string = '${LATEST_VERSION}'" bicep/main.bicep; then
+            echo "::error::sed replacement failed — vaultwardenImageTag was not updated to ${LATEST_VERSION} in bicep/main.bicep"
+            exit 1
+          fi
 
       - name: Create pull request
         if: steps.check.outputs.update_available == 'true'
@@ -93,6 +100,11 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           git add bicep/main.bicep
           git commit -m "chore: bump vaultwarden image tag to ${LATEST_VERSION}"
+
+          # Delete stale remote branch if it exists (e.g., from a previously closed PR)
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" > /dev/null 2>&1; then
+            git push origin --delete "$BRANCH_NAME"
+          fi
           git push --set-upstream origin "$BRANCH_NAME"
 
           # Build PR body
@@ -118,8 +130,8 @@ jobs:
             echo ""
             echo "## Checklist"
             echo ""
-            echo "- [x] I have tested my changes locally (e.g., ran \`./validate.sh\`)"
-            echo "- [x] I have updated documentation if needed"
+            echo "- [ ] I have tested my changes locally (e.g., ran \`./validate.sh\`)"
+            echo "- [ ] I have updated documentation if needed"
             echo "- [x] My changes follow the existing code style"
           } > /tmp/pr_body.md
 
