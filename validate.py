@@ -91,9 +91,9 @@ def check_prerequisites():
 
     # Bicep
     if _has_cmd("az"):
-        rc, out, _ = _run_quiet(["az", "bicep", "version"])
+        rc, out, err = _run_quiet(["az", "bicep", "version"])
         if rc == 0:
-            m = re.search(r"Bicep CLI version (\S+)", out + _run_quiet(["az", "bicep", "version"])[1])
+            m = re.search(r"Bicep CLI version (\S+)", out + err)
             ver = m.group(1) if m else "unknown"
             print_pass(f"Bicep CLI available (version {ver})")
         else:
