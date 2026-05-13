@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'bicep/**'
-      - 'validate.sh'
+      - 'validate.py'
       - '.github/workflows/validate-bicep.yml'
 
 jobs:
@@ -24,6 +24,4 @@ jobs:
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Run validation script
-        run: |
-          chmod +x validate.sh
-          ./validate.sh
+        run: python validate.py

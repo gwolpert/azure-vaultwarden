@@ -28,14 +28,14 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./scripts/check-vaultwarden-update.sh
+        run: python scripts/check_vaultwarden_update.py
 
       - name: Update vaultwarden version
         if: steps.check.outputs.update_available == 'true'
         env:
           CURRENT_VERSION: ${{ steps.check.outputs.current }}
           LATEST_VERSION: ${{ steps.check.outputs.latest }}
-        run: ./scripts/update-vaultwarden-version.sh
+        run: python scripts/update_vaultwarden_version.py
 
       - name: Create pull request
         if: steps.check.outputs.update_available == 'true'
@@ -44,4 +44,4 @@ jobs:
           CURRENT_VERSION: ${{ steps.check.outputs.current }}
           LATEST_VERSION: ${{ steps.check.outputs.latest }}
           RELEASE_URL: ${{ steps.check.outputs.release_url }}
-        run: ./scripts/create-vaultwarden-pr.sh
+        run: python scripts/create_vaultwarden_pr.py
