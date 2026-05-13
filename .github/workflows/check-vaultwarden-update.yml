@@ -32,6 +32,11 @@ jobs:
           # Get the currently pinned version from bicep/main.bicep
           CURRENT_VERSION=$(grep -oP "param vaultwardenImageTag string = '\K[^']+" bicep/main.bicep)
 
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "::error::Failed to extract current vaultwardenImageTag from bicep/main.bicep"
+            exit 1
+          fi
+
           echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
           echo "latest=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
 
