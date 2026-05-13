@@ -1,0 +1,47 @@
+name: Check Vaultwarden Updates
+
+on:
+  schedule:
+    # Run daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: "vaultwarden-update"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check-update:
+    name: Check for Vaultwarden Updates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for new vaultwarden release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/check-vaultwarden-update.sh
+
+      - name: Update vaultwarden version
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          CURRENT_VERSION: ${{ steps.check.outputs.current }}
+          LATEST_VERSION: ${{ steps.check.outputs.latest }}
+        run: ./scripts/update-vaultwarden-version.sh
+
+      - name: Create pull request
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_VERSION: ${{ steps.check.outputs.current }}
+          LATEST_VERSION: ${{ steps.check.outputs.latest }}
+          RELEASE_URL: ${{ steps.check.outputs.release_url }}
+        run: ./scripts/create-vaultwarden-pr.sh
