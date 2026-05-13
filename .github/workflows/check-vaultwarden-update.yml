@@ -1,0 +1,126 @@
+name: Check Vaultwarden Updates
+
+on:
+  schedule:
+    # Run daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-update:
+    name: Check for Vaultwarden Updates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for new vaultwarden release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the latest release from vaultwarden upstream
+          LATEST_RELEASE=$(gh api repos/dani-garcia/vaultwarden/releases/latest --jq '.tag_name')
+          LATEST_VERSION="${LATEST_RELEASE#v}"  # Strip leading 'v' if present
+
+          # Get the currently pinned version from bicep/main.bicep
+          CURRENT_VERSION=$(grep -oP "param vaultwardenImageTag string = '\K[^']+" bicep/main.bicep)
+
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
+            echo "update_available=false" >> "$GITHUB_OUTPUT"
+            echo "Already on latest version ($CURRENT_VERSION). No update needed."
+          else
+            # Check if a PR already exists for this version
+            EXISTING_PR=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "automated/vaultwarden-${LATEST_VERSION}" --json number --jq '.[0].number // empty')
+            if [ -n "$EXISTING_PR" ]; then
+              echo "update_available=false" >> "$GITHUB_OUTPUT"
+              echo "PR #${EXISTING_PR} already exists for version ${LATEST_VERSION}. Skipping."
+            else
+              echo "update_available=true" >> "$GITHUB_OUTPUT"
+              echo "New version available: $CURRENT_VERSION -> $LATEST_VERSION"
+
+              # Fetch the release body for the PR description
+              RELEASE_URL=$(gh api repos/dani-garcia/vaultwarden/releases/latest --jq '.html_url')
+              RELEASE_BODY=$(gh api repos/dani-garcia/vaultwarden/releases/latest --jq '.body')
+              echo "release_url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
+
+              # Write multi-line release body to a file for later use
+              echo "$RELEASE_BODY" > /tmp/release_body.md
+            fi
+          fi
+
+      - name: Update vaultwarden version
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          CURRENT_VERSION: ${{ steps.check.outputs.current }}
+          LATEST_VERSION: ${{ steps.check.outputs.latest }}
+        run: |
+          # Update the default version in bicep/main.bicep
+          sed -i "s/param vaultwardenImageTag string = '${CURRENT_VERSION}'/param vaultwardenImageTag string = '${LATEST_VERSION}'/" bicep/main.bicep
+
+          # Verify the change was applied
+          grep "vaultwardenImageTag" bicep/main.bicep
+
+      - name: Create pull request
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_VERSION: ${{ steps.check.outputs.current }}
+          LATEST_VERSION: ${{ steps.check.outputs.latest }}
+          RELEASE_URL: ${{ steps.check.outputs.release_url }}
+        run: |
+          BRANCH_NAME="automated/vaultwarden-${LATEST_VERSION}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Create branch and commit
+          git checkout -b "$BRANCH_NAME"
+          git add bicep/main.bicep
+          git commit -m "chore: bump vaultwarden image tag to ${LATEST_VERSION}"
+          git push --set-upstream origin "$BRANCH_NAME"
+
+          # Build PR body
+          {
+            echo "## Description"
+            echo ""
+            echo "Automated update of the Vaultwarden container image tag from \`${CURRENT_VERSION}\` to \`${LATEST_VERSION}\`."
+            echo ""
+            echo "## Upstream Release"
+            echo ""
+            echo "**Release**: [v${LATEST_VERSION}](${RELEASE_URL})"
+            echo ""
+            echo "<details>"
+            echo "<summary>Release Notes</summary>"
+            echo ""
+            cat /tmp/release_body.md
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "## Changes"
+            echo ""
+            echo "- Updated \`vaultwardenImageTag\` default value in \`bicep/main.bicep\` from \`${CURRENT_VERSION}\` to \`${LATEST_VERSION}\`"
+            echo ""
+            echo "## Checklist"
+            echo ""
+            echo "- [x] I have tested my changes locally (e.g., ran \`./validate.sh\`)"
+            echo "- [x] I have updated documentation if needed"
+            echo "- [x] My changes follow the existing code style"
+          } > /tmp/pr_body.md
+
+          # Create pull request
+          gh pr create \
+            --title "chore: bump vaultwarden to ${LATEST_VERSION}" \
+            --body-file /tmp/pr_body.md \
+            --label "dependencies" \
+            --base main
