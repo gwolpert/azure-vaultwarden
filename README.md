@@ -43,7 +43,7 @@ Full documentation is available on [GitHub Pages](https://gwolpert.github.io/azu
 Before deploying, run the validation script to check your setup:
 
 ```bash
-./validate.sh
+python validate.py
 ```
 
 This will check:

@@ -14,6 +14,6 @@
 
 ## Checklist
 
-- [ ] I have tested my changes locally (e.g., ran `./validate.sh`)
+- [ ] I have tested my changes locally (e.g., ran `python validate.py`)
 - [ ] I have updated documentation if needed
 - [ ] My changes follow the existing code style

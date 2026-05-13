@@ -73,7 +73,7 @@ Automated update of the Vaultwarden container image tag from `{current_version}`
 
 ## Checklist
 
-- [ ] I have tested my changes locally (e.g., ran `./validate.py`)
+- [ ] I have tested my changes locally (e.g., ran `python validate.py`)
 - [ ] I have updated documentation if needed
 - [x] My changes follow the existing code style
 """

@@ -24,7 +24,7 @@ Feature requests are welcome! Please [open an issue](https://github.com/gwolpert
 3. **Make your changes** — keep them focused and minimal
 4. **Test your changes** by running the validation script:
    ```bash
-   ./validate.sh
+   python validate.py
    ```
 5. **Submit a pull request** with a clear description of what you changed and why
 
@@ -47,7 +47,7 @@ Feature requests are welcome! Please [open an issue](https://github.com/gwolpert
 Before submitting a PR, run the validation script:
 
 ```bash
-./validate.sh
+python validate.py
 ```
 
 This checks Bicep templates, file structure, and supporting workflow configuration.

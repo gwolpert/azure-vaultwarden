@@ -16,9 +16,9 @@ import sys
 # --- Color support ---
 
 _use_color = (
-    sys.platform != "win32"
-    or os.environ.get("TERM") not in (None, "", "dumb")
-    or "WT_SESSION" in os.environ
+    (sys.platform != "win32")
+    or (os.environ.get("TERM") not in (None, "", "dumb"))
+    or ("WT_SESSION" in os.environ)
 )
 
 RED = "\033[0;31m" if _use_color else ""
