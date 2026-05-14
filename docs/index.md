@@ -16,10 +16,10 @@ Deploy directly to Azure with one click:
 
 ## Documentation
 
-- [Architecture Overview]({{ '/ARCHITECTURE' | relative_url }}) — Architecture, security, scaling, and cost details
-- [Backup and Recovery]({{ '/BACKUP_PROTECTION' | relative_url }}) — PostgreSQL backup and restore procedures
-- [Testing Guide]({{ '/TESTING' | relative_url }}) — Post-deployment verification procedures
-- [Quick Reference]({{ '/QUICK_REFERENCE' | relative_url }}) — Common commands for day-to-day operations
+- [Architecture Overview](ARCHITECTURE.md) — Architecture, security, scaling, and cost details
+- [Backup and Recovery](BACKUP_PROTECTION.md) — PostgreSQL backup and restore procedures
+- [Testing Guide](TESTING.md) — Post-deployment verification procedures
+- [Quick Reference](QUICK_REFERENCE.md) — Common commands for day-to-day operations
 
 ## Deployment Methods
 

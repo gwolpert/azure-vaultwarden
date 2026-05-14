@@ -39,8 +39,8 @@ graph TB
         end
     end
 
-    AppService -->|DATABASE_URL from Key Vault| PostgreSQL
-    AppService -->|Managed Identity| KVPE
+    AppService -->|DB connection| PostgreSQL
+    AppService -->|Managed Identity – retrieves DATABASE_URL| KVPE
     KVPE --> KeyVault
     AppService --> StoragePE
     StoragePE --> StorageAccount
