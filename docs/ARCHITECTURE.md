@@ -7,96 +7,47 @@ title: Architecture Overview
 
 ## Component Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Azure Subscription                          │
-│                                                                   │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │                   Resource Group                            │ │
-│  │                                                              │ │
-│  │  ┌──────────────────────────────────────────────────────┐  │ │
-│  │  │              Virtual Network (10.101.0.0/24)         │  │ │
-│  │  │                                                        │  │ │
-│  │  │  ┌──────────────────────────────────────────────┐   │  │ │
-│  │  │  │  app-service-snet (10.101.0.0/26)           │   │  │ │
-│  │  │  │                                               │   │  │ │
-│  │  │  │  ┌────────────────────────────────────┐     │   │  │ │
-│  │  │  │  │  App Service Plan (B1 Basic)      │     │   │  │ │
-│  │  │  │  │  - 1 core, 1.75 GB RAM            │     │   │  │ │
-│  │  │  │  │                                    │     │   │  │ │
-│  │  │  │  │  ┌──────────────────────────┐    │     │   │  │ │
-│  │  │  │  │  │  App Service (Web App)   │    │     │   │  │ │
-│  │  │  │  │  │  - Container: vaultwarden│◄───┼─────┼───┼──┼─┐
-│  │  │  │  │  │  - Port: 80              │    │     │   │  │ │
-│  │  │  │  │  │  - DATABASE_URL from     │    │     │   │  │ │
-│  │  │  │  │  │    Key Vault             │    │     │   │  │ │
-│  │  │  │  │  │  - IP_HEADER: X-Client-IP│    │     │   │  │ │
-│  │  │  │  │  │  - Managed Identity      │    │     │   │  │ │
-│  │  │  │  │  │  - VNet Integration      │    │     │   │  │ │
-│  │  │  │  │  └──────────┬───────────────┘    │     │   │  │ │
-│  │  │  │  │             │                     │     │   │  │ │
-│  │  │  │  └─────────────┼─────────────────────┘     │   │  │ │
-│  │  │  │                │                            │   │  │ │
-│  │  │  └────────────────┼────────────────────────────┘   │  │ │
-│  │  │                   │ PostgreSQL (via VNet)           │  │ │
-│  │  │  ┌────────────────▼───────────────────────────┐   │  │ │
-│  │  │  │  postgresql-snet (10.101.0.64/26)          │   │  │ │
-│  │  │  │  - Delegated to PostgreSQL Flexible Server │   │  │ │
-│  │  │  │                                             │   │  │ │
-│  │  │  │  ┌─────────────────────────────────────┐  │   │  │ │
-│  │  │  │  │  Azure Database for PostgreSQL      │  │   │  │ │
-│  │  │  │  │  Flexible Server                    │  │   │  │ │
-│  │  │  │  │  - Burstable B1MS (1 vCore, 2 GB)  │  │   │  │ │
-│  │  │  │  │  - SSL enforced                     │  │   │  │ │
-│  │  │  │  │  - VNet integrated (private access) │  │   │  │ │
-│  │  │  │  │  - 35-day GRS automated backups     │  │   │  │ │
-│  │  │  │  │  - Optional CanNotDelete lock       │  │   │  │ │
-│  │  │  │  └─────────────────────────────────────┘  │   │  │ │
-│  │  │  └─────────────────────────────────────────────┘   │  │ │
-│  │  │                                                     │  │ │
-│  │  └─────────────────────────────────────────────────────┘  │ │
-│  │                                                              │ │
-│  │  ┌────────────────────────────────────────────────────┐    │ │
-│  │  │        private-endpoints-snet (10.101.0.128/26)    │    │ │
-│  │  │        - Hosts private endpoints for Key Vault     │    │ │
-│  │  │          and the Storage Account file share        │    │ │
-│  │  │        - privateEndpointNetworkPolicies: Disabled  │    │ │
-│  │  └────────────────────────────────────────────────────┘    │ │
-│  │                                                              │ │
-│  │  ┌────────────────────────────────────────────────────┐    │ │
-│  │  │        Private DNS Zones (linked to VNet)          │    │ │
-│  │  │        - privatelink.postgres.database.azure.com   │    │ │
-│  │  │        - privatelink.vaultcore.azure.net           │    │ │
-│  │  │        - privatelink.file.<storage-suffix>         │    │ │
-│  │  │        - Resolve each service to its private IP    │    │ │
-│  │  └────────────────────────────────────────────────────┘    │ │
-│  │                                                              │ │
-│  │  ┌────────────────────────────────────────────────────┐    │ │
-│  │  │        Azure Key Vault                             │    │ │
-│  │  │        - Admin token + Database URL secrets        │────┼─┘
-│  │  │        - publicNetworkAccess: Disabled             │      
-│  │  │        - Reached via private endpoint in           │      
-│  │  │          private-endpoints-snet                    │      
-│  │  │        - RBAC enabled                              │      
-│  │  │        - System-assigned identity access           │      
-│  │  └────────────────────────────────────────────────────┘      
-│  │                                                              │ │
-│  │  ┌────────────────────────────────────────────────────┐    │ │
-│  │  │        Log Analytics Workspace                     │    │ │
-│  │  │        - App Service logs                          │    │ │
-│  │  │        - Metrics                                   │    │ │
-│  │  │        - Performance data                          │    │ │
-│  │  └────────────────────────────────────────────────────┘    │ │
-│  │                                                              │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-         ▲
-         │ HTTPS (443)
-         │
-    ┌────┴─────┐
-    │  Users   │
-    └──────────┘
+```mermaid
+graph TB
+    Users([Users]) -->|HTTPS 443| AppService
+
+    subgraph Azure Subscription
+        subgraph Resource Group
+            subgraph VNet["Virtual Network (10.101.0.0/24)"]
+                subgraph AppSnet["app-service-snet (10.101.0.0/26)"]
+                    ASP["App Service Plan (B1 Basic)<br/>1 core, 1.75 GB RAM"]
+                    AppService["App Service (Web App)<br/>Container: vaultwarden<br/>Port: 80<br/>Managed Identity<br/>VNet Integration"]
+                end
+
+                subgraph PgSnet["postgresql-snet (10.101.0.64/26)<br/>Delegated to PostgreSQL Flexible Server"]
+                    PostgreSQL["Azure Database for PostgreSQL<br/>Flexible Server<br/>Burstable B1MS (1 vCore, 2 GB)<br/>SSL enforced<br/>VNet integrated (private access)<br/>35-day GRS automated backups<br/>Optional CanNotDelete lock"]
+                end
+
+                subgraph PESnet["private-endpoints-snet (10.101.0.128/26)<br/>privateEndpointNetworkPolicies: Disabled"]
+                    KVPE[Key Vault Private Endpoint]
+                    StoragePE[Storage Account Private Endpoint]
+                end
+            end
+
+            PrivateDNS["Private DNS Zones (linked to VNet)<br/>privatelink.postgres.database.azure.com<br/>privatelink.vaultcore.azure.net<br/>privatelink.file.‹storage-suffix›"]
+
+            KeyVault["Azure Key Vault<br/>Admin token + Database URL secrets<br/>publicNetworkAccess: Disabled<br/>RBAC enabled<br/>System-assigned identity access"]
+
+            StorageAccount["Azure Storage Account<br/>Azure Files share mounted at /data<br/>publicNetworkAccess: Disabled<br/>Geo-redundant storage (GRS)"]
+
+            LogAnalytics["Log Analytics Workspace<br/>App Service logs<br/>Metrics & Performance data"]
+        end
+    end
+
+    AppService -->|DATABASE_URL from Key Vault| PostgreSQL
+    AppService -->|Managed Identity| KVPE
+    KVPE --> KeyVault
+    AppService --> StoragePE
+    StoragePE --> StorageAccount
+    AppService -->|Logs & Metrics| LogAnalytics
+    PrivateDNS -.->|Resolves private IPs| PostgreSQL
+    PrivateDNS -.->|Resolves private IPs| KeyVault
+    PrivateDNS -.->|Resolves private IPs| StorageAccount
 ```
 
 ## Resource Flow
