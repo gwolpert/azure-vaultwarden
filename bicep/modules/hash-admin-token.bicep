@@ -32,7 +32,7 @@ param utcValue string = utcNow()
 var pythonScript = loadTextContent('../../scripts/hash-admin-token.py')
 
 // Reference the existing Key Vault to store the hashed admin token
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
   name: keyVaultName
 }
 
@@ -56,7 +56,7 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
     scriptContent: format('''
 #!/bin/bash
 set -e
-python3 -m pip install --quiet 'argon2-cffi==23.1.0'
+python3 -m pip install --quiet 'argon2-cffi==25.1.0'
 cat > /tmp/hash-admin-token.py << 'PYEOF'
 {0}
 PYEOF
@@ -66,7 +66,7 @@ python3 /tmp/hash-admin-token.py
 }
 
 // Store the hashed admin token directly in Key Vault
-resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
+resource adminTokenSecret 'Microsoft.KeyVault/vaults/secrets@2026-02-01' = {
   parent: keyVault
   name: 'vaultwarden-admin-token'
   properties: {
