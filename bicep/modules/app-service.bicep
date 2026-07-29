@@ -80,12 +80,12 @@ var appServiceName = '${baseName}-app'
 // Reference the existing storage account so we can read its primary access key
 // for the Azure Files SMB mount. The Web Apps `azurestorageaccounts` siteConfig
 // requires the raw access key — Key Vault references are not supported there.
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2026-04-01' existing = {
   name: storageAccountName
 }
 
 // Deploy App Service (Web App for Containers)
-module appServiceDeployment 'br/public:avm/res/web/site:0.22.0' = {
+module appServiceDeployment 'br/public:avm/res/web/site:0.24.0' = {
   name: '${deployment().name}-avm'
   params: {
     name: appServiceName

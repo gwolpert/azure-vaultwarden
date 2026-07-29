@@ -35,7 +35,7 @@ var keyVaultName = '${replace(baseName, '-', '')}kv'
 // is the private endpoint deployed below into the private-endpoints subnet of
 // the application VNet. The "AzureServices" bypass still allows trusted
 // Azure platform services to reach the vault when needed.
-module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.13.3' = {
+module keyVaultDeployment 'br/public:avm/res/key-vault/vault:0.14.0' = {
   name: '${deployment().name}-key-vault'
   params: {
     name: keyVaultName

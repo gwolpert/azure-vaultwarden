@@ -52,7 +52,7 @@ param dataFileShareQuotaGB int = 250
 var storageAccountName = '${replace(baseName, '-', '')}st'
 
 // Deploy Azure Storage Account using the latest Azure Verified Module
-module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.32.0' = {
+module storageAccountDeployment 'br/public:avm/res/storage/storage-account:0.33.0' = {
   name: '${deployment().name}-storage-account'
   params: {
     name: storageAccountName
