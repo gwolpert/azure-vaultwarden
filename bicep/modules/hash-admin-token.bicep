@@ -56,11 +56,12 @@ resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
     scriptContent: format('''
 #!/bin/bash
 set -e
-python3 -m pip install --quiet 'argon2-cffi==25.1.0'
+tdnf install --assumeyes python3-pip
+python3 -m pip install --quiet --no-cache-dir --target /tmp/hash-admin-token-dependencies 'argon2-cffi==25.1.0'
 cat > /tmp/hash-admin-token.py << 'PYEOF'
 {0}
 PYEOF
-python3 /tmp/hash-admin-token.py
+PYTHONPATH=/tmp/hash-admin-token-dependencies python3 /tmp/hash-admin-token.py
 ''', pythonScript)
   }
 }
