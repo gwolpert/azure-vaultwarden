@@ -150,7 +150,7 @@ az webapp config show \
 ```
 
 Verify:
-- [ ] linuxFxVersion: `DOCKER|vaultwarden/server:<pinned-tag>` (matches the `vaultwardenImageTag` parameter, default `1.37.0`)
+- [ ] linuxFxVersion: `DOCKER|vaultwarden/server:<pinned-tag>` (matches the `vaultwardenImageTag` parameter, default `1.37.2`)
 - [ ] alwaysOn: true
 - [ ] httpsOnly: true
 

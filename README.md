@@ -95,7 +95,7 @@ az deployment group create \
     adminToken="" \
     postgresqlAdminPassword="<your-secure-password>" \
     signupsAllowed=false \
-    vaultwardenImageTag="1.37.0"
+    vaultwardenImageTag="1.37.2"
 ```
 
 > Vaultwarden image tags are pinned to a specific version. Bump only after reviewing the upstream release notes at [vaultwarden/releases](https://github.com/dani-garcia/vaultwarden/releases).
@@ -127,7 +127,7 @@ All deployment inputs are passed as parameters to the Bicep/ARM template. The `p
 - **Key Vault network isolation**: the vault has `publicNetworkAccess: 'Disabled'` and is reached exclusively over the VNet through a private endpoint in the dedicated `private-endpoints-snet` subnet. Name resolution is provided by the linked `privatelink.vaultcore.azure.net` private DNS zone, which is what App Service Key Vault references (`DATABASE_URL`, `ADMIN_TOKEN`) use to resolve the vault to its private IP at runtime. The previous `Microsoft.KeyVault` service endpoint + `virtualNetworkRules` allow-list is no longer required and has been removed.
 - **Key Vault monitoring**: audit and policy evaluation logs plus all metrics are sent to the Log Analytics workspace.
 - **PostgreSQL monitoring**: server, query, and audit logs (`allLogs` category group) plus all metrics are sent to the Log Analytics workspace.
-- **Pinned Vaultwarden version**: the default `vaultwardenImageTag` is pinned to a specific upstream release (`1.37.0`) instead of `latest`. Update only after reading the [release notes](https://github.com/dani-garcia/vaultwarden/releases).
+- **Pinned Vaultwarden version**: the default `vaultwardenImageTag` is pinned to a specific upstream release (`1.37.2`) instead of `latest`. Update only after reading the [release notes](https://github.com/dani-garcia/vaultwarden/releases).
 - **Admin / SCM (Kudu) IP allow-list**: `adminAllowedIpAddresses` restricts the App Service management surface (Kudu / SCM site) to a list of operator CIDRs.
   - **Limitation:** Azure App Service on Linux does **not** support per-URL-path IP restrictions (the `path` field is not part of the `IpSecurityRestriction` ARM schema as of API `2024-11-01`). The Vaultwarden `/admin` web route therefore relies on the argon2id-hashed `ADMIN_TOKEN`. For per-path IP restrictions, front the App Service with Azure Front Door + WAF and apply path-scoped rules there.
 
