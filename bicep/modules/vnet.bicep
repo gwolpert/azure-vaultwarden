@@ -176,7 +176,7 @@ module postgresqlNsg 'br/public:avm/res/network/network-security-group:0.5.3' = 
 }
 
 // Deploy Virtual Network with subnets for App Service and PostgreSQL
-module vnetDeployment 'br/public:avm/res/network/virtual-network:0.10.0' = {
+module vnetDeployment 'br/public:avm/res/network/virtual-network:0.10.2' = {
   name: '${deployment().name}-vnet'
   params: {
     name: vnetName

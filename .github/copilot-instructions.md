@@ -10,7 +10,7 @@ Azure Verified Modules (AVM) are pre-built, tested, and validated Bicep modules 
 
 - Search for modules: `br/public:avm/res/{service}/{resource}:{version}`
 - Browse available modules: `https://github.com/Azure/bicep-registry-modules/tree/main/avm/res`
-- Example: `br/public:avm/res/storage/storage-account:0.30.0`
+- Example: `br/public:avm/res/storage/storage-account:0.33.0`
 
 ### Official AVM Index
 
@@ -34,7 +34,7 @@ Azure Verified Modules (AVM) are pre-built, tested, and validated Bicep modules 
 ### Example Usage
 
 ```bicep
-module storageAccount 'br/public:avm/res/storage/storage-account:0.30.0' = {
+module storageAccount 'br/public:avm/res/storage/storage-account:0.33.0' = {
   name: 'storage-account-deployment'
   scope: resourceGroup()
   params: {
@@ -56,7 +56,7 @@ If no AVM module exists for a resource type, use native Bicep resource declarati
 
 - **Resource Modules**: `br/public:avm/res/{service}/{resource}:{version}`
 - **Pattern Modules**: `br/public:avm/ptn/{pattern}:{version}`
-- Example: `br/public:avm/res/network/virtual-network:0.7.2`
+- Example: `br/public:avm/res/network/virtual-network:0.10.2`
 
 ### Symbolic Names
 

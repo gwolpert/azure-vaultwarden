@@ -30,6 +30,8 @@ param utcValue string = utcNow()
 
 // Load the Python hashing script from a separate file for easy editing
 var pythonScript = loadTextContent('../../scripts/hash-admin-token.py')
+var azCliVersion = '2.69.0'
+var azCliVersionSuffix = replace(azCliVersion, '.', '-')
 
 // Reference the existing Key Vault to store the hashed admin token
 resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
@@ -37,12 +39,13 @@ resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
 }
 
 resource hashScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
-  name: '${baseName}-hash-token-script'
+  // A CLI version change requires a new deployment script resource.
+  name: '${baseName}-hash-token-script-${azCliVersionSuffix}'
   location: location
   tags: tags
   kind: 'AzureCLI'
   properties: {
-    azCliVersion: '2.69.0'
+    azCliVersion: azCliVersion
     retentionInterval: 'PT1H'
     timeout: 'PT10M'
     cleanupPreference: 'Always'
